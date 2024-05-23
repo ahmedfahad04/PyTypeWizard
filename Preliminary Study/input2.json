@@ -1,0 +1,7 @@
+{
+    "rule_id": "Incompatible return type [7]",
+    "message": "Expected `str` but got `Optional[str]`",
+    "warning_line": "    return users.get(user_id, None)",
+    "source_code": "def find_user(users: Dict[int, str], user_id: int) -> str: return users.get(user_id, None)"
+  }
+  
