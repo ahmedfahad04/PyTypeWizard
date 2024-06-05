@@ -11,8 +11,8 @@ def process_items(items: List[int]) -> List[str]:
         processed_items.append(item * 2)  #  Type error: item * 2 is an int, not str
     return processed_items
 
-def find_user(users: Dict[int, str], user_id: int) -> Optional[str]: 
-    return users.get(user_id, None) #! [Solved] Type Error
+def find_user(users: Dict[int, str], user_id: int) -> str: 
+    return users.get(user_id, None) #! [Solved] Type Errorclear
 
 def calculate_total(prices: List[float]) -> float:
     total = 0

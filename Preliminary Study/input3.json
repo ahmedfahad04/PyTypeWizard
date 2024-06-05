@@ -1,0 +1,7 @@
+{
+    "rule_id": "Unsupported operand [58]",
+    "message": "`+` is not supported for operand types `str` and `List[str]`",
+    "warning_line": "    return 'Hello, ' + name",
+    "source_code": "def greet(name: List[str]) -> str: return 'Hello, ' + name"
+}
+  
