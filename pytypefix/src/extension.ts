@@ -5,6 +5,8 @@ import * as vscode from 'vscode';
 const outputChannel = vscode.window.createOutputChannel('Pyre', { log: true });
 const diagnosticCollection = vscode.languages.createDiagnosticCollection('pyre-errors');
 
+let pyreCheckTimeout: NodeJS.Timeout | undefined;
+
 // Check if Pyre is installed
 async function isPyreInstalled(): Promise<boolean> {
 	return new Promise((resolve) => {
@@ -88,37 +90,11 @@ async function runPyreCheck() {
 
 	const workspaceFolder = workspaceFolders[0].uri.fsPath;
 
-	// Ensure the workspace has a .pyre_configuration file
-	const pyreConfigPath = path.join(workspaceFolder, '.pyre_configuration');
-
-	try {
-		await vscode.workspace.fs.stat(vscode.Uri.file(pyreConfigPath));
-	} catch {
-		outputChannel.appendLine('❌ Error: .pyre_configuration file not found.');
-		outputChannel.appendLine(`Run ${createLink(workspaceFolder, 0, 0, 'pyre init')} in the terminal to create one.\n`);
-		const choice = await vscode.window.showErrorMessage(
-			'.pyre_configuration file not found. Run "pyre init" to create one.',
-			'Run in Terminal', 'Cancel'
-		);
-
-		if (choice === 'Run in Terminal') {
-			const terminal = vscode.window.createTerminal('Pyre Init');
-			terminal.sendText(`cd "${workspaceFolder}" && pyre init`);
-		}
-
-		return;
-	}
-
 	// Clear previous diagnostics
 	diagnosticCollection.clear();
 
 	// Run Pyre check
-	outputChannel.clear(); // Clear previous output
-	outputChannel.show(true); // Show and bring focus
-	outputChannel.appendLine(`▶️ Running: pyre check in ${workspaceFolder}\n`);
-
 	const shell = process.env.SHELL || '/bin/bash';
-
 	cp.exec(`cd "${workspaceFolder}" && ${shell} -ic "pyre check"`, (err, stdout, stderr) => {
 		if (err) {
 			const lines = stdout.trim().split('\n');
@@ -142,10 +118,7 @@ async function runPyreCheck() {
 					diagnostic.source = 'Pyre';
 					diagnosticCollection.set(vscode.Uri.file(fullPath), [diagnostic]);
 
-					outputChannel.appendLine(`❌ [${errType}] ${createLink(fullPath, +lineNum, +colNum, `${file}:${lineNum}:${colNum}`)} ${message}`);
 					errorCount++;
-				} else {
-					outputChannel.appendLine(line);
 				}
 			}
 
@@ -164,8 +137,18 @@ async function runPyreCheck() {
 	});
 }
 
+// Schedule Pyre check after a delay
+function schedulePyreCheck() {
+	if (pyreCheckTimeout) {
+		clearTimeout(pyreCheckTimeout);
+	}
+	pyreCheckTimeout = setTimeout(runPyreCheck, 5000); // 5000ms delay (adjust as needed)
+}
+
+
 // Register command to run Pyre check
 export function activate(context: vscode.ExtensionContext) {
+
 	let disposable = vscode.commands.registerCommand('extension.runPyreCheck', async () => {
 		outputChannel.clear();
 		let installed = await isPyreInstalled();
@@ -211,6 +194,18 @@ export function activate(context: vscode.ExtensionContext) {
 			}
 		})
 	);
+
+	// Listen for file changes to schedule Pyre checks
+	vscode.workspace.onDidChangeTextDocument(() => {
+		schedulePyreCheck();
+	});
+
+	// Schedule initial Pyre check
+	schedulePyreCheck();
 }
 
-export function deactivate() { }
+export function deactivate() {
+	if (pyreCheckTimeout) {
+		clearTimeout(pyreCheckTimeout);
+	}
+}
