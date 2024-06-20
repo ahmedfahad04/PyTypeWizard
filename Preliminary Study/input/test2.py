@@ -1,7 +1,8 @@
-from typing import List, Dict, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
-def add_numbers(a: int, b: int) -> int:
-    return a + b
+
+def add_numbers(a: int, b: int, c: str) -> int:
+    return a + b + c
 
 def greet(name: List[str]) -> str: return "Hello, " + name
 
@@ -20,15 +21,15 @@ def calculate_total(prices: List[float]) -> float:
         total += price
     return total
 
-def get_student_info(name: str, age: int) -> Tuple[str, int]:  #! [Solved] Type error: should be Tuple[str, int]
+def get_student_info(name: str, age: int) -> Tuple[str, str]:  #! [Solved] Type error: should be Tuple[str, int]
     return (name, age)
 
 def main():
-    # result = add_numbers(10, "20")  # Type error: second argument should be int
+    # result = add_numbers(5, '10', '25')  # Type error: second argument should be int
     # print(result)
 
-    message = greet(123)  
-    print(message)
+    # message = greet(123)  
+    # print(message)
 
     # items = [1, 2, 3, 4]
     # processed = process_items(items)
@@ -42,8 +43,8 @@ def main():
     # total = calculate_total(prices)
     # print(f"Total: {total}")
 
-    # student_info = get_student_info("John Doe", 20)
-    # print(f"Student Name: {student_info[0]}, Age: {student_info[1]}")
+    student_info = get_student_info("John Doe", 20)
+    print(f"Student Name: {student_info[0]}, Age: {student_info[1]}")
 
 if __name__ == "__main__":
     main()
