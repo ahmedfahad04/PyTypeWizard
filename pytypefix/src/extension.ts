@@ -3,6 +3,7 @@ import * as path from 'path';
 import * as vscode from 'vscode';
 
 const outputChannel = vscode.window.createOutputChannel('Pyre', { log: true });
+const diagnosticCollection = vscode.languages.createDiagnosticCollection('pyre-errors');
 
 // Check if Pyre is installed
 async function isPyreInstalled(): Promise<boolean> {
@@ -68,8 +69,7 @@ async function installPyre(): Promise<boolean> {
 
 // Function to create a clickable link in the output channel
 function createLink(filePath: string, line: number, column: number, title: string): string {
-	const path = vscode.Uri.file(filePath).toString();
-	return `[${title}](${path}#${line},${column})`;
+	return `"${filePath}", line ${line}`;
 }
 
 // Run Pyre check
@@ -90,6 +90,7 @@ async function runPyreCheck() {
 
 	// Ensure the workspace has a .pyre_configuration file
 	const pyreConfigPath = path.join(workspaceFolder, '.pyre_configuration');
+
 	try {
 		await vscode.workspace.fs.stat(vscode.Uri.file(pyreConfigPath));
 	} catch {
@@ -102,70 +103,71 @@ async function runPyreCheck() {
 
 		if (choice === 'Run in Terminal') {
 			const terminal = vscode.window.createTerminal('Pyre Init');
-			terminal.show();
 			terminal.sendText(`cd "${workspaceFolder}" && pyre init`);
 		}
 
 		return;
 	}
 
+	// Clear previous diagnostics
+	diagnosticCollection.clear();
+
 	// Run Pyre check
-	return new Promise<void>((resolve) => {
-		outputChannel.clear(); // Clear previous output
-		outputChannel.show(true); // Show and bring focus
-		outputChannel.appendLine(`▶️ Running: pyre check in ${workspaceFolder}\n`);
+	outputChannel.clear(); // Clear previous output
+	outputChannel.show(true); // Show and bring focus
+	outputChannel.appendLine(`▶️ Running: pyre check in ${workspaceFolder}\n`);
 
-		const shell = process.env.SHELL || '/bin/bash';
+	const shell = process.env.SHELL || '/bin/bash';
 
-		cp.exec(`cd "${workspaceFolder}" && ${shell} -ic "pyre check"`, (err, stdout, stderr) => {
-			if (err) {
-				outputChannel.appendLine(`❌ Error running Pyre:\n${stderr || err?.message}`);
-				const useTerminal = 'Run in Terminal';
-				vscode.window.showErrorMessage(`Error running Pyre. See Output > Pyre for details.`, useTerminal)
-					.then(choice => {
-						if (choice === useTerminal) {
-							const terminal = vscode.window.createTerminal('Pyre Check');
-							terminal.show();
-							terminal.sendText(`cd "${workspaceFolder}" && pyre check`);
-						}
-					});
-			} else {
-				const lines = stdout.trim().split('\n');
-				let errorCount = 0;
+	cp.exec(`cd "${workspaceFolder}" && ${shell} -ic "pyre check"`, (err, stdout, stderr) => {
+		if (err) {
+			const lines = stdout.trim().split('\n');
+			let errorCount = 0;
 
-				for (const line of lines) {
-					const match = line.match(/^(.+):(\d+):(\d+): (error|warning): (.+)$/);
-					if (match) {
-						const [_, file, lineNum, colNum, level, message] = match;
-						const fullPath = path.isAbsolute(file) ? file : path.join(workspaceFolder, file);
-						const color = level === 'error' ? 'red' : 'yellow';
-						const icon = level === 'error' ? '❌' : '⚠️';
-						errorCount += level === 'error' ? 1 : 0;
+			for (const line of lines) {
+				const pattern = /(?<file>.+):(?<lineNum>\d+):(?<colNum>\d+)\s(?<errType>[^:]+):\s(?<message>.+)/;
+				const match = line.match(pattern);
+				if (match) {
+					const [_, file, lineNum, colNum, errType, message] = match;
+					const fullPath = path.isAbsolute(file) ? file : path.join(workspaceFolder, file);
 
-						outputChannel.appendLine(`${icon} ${createLink(fullPath, +lineNum, +colNum, `${file}:${lineNum}:${colNum}`)} ${message}`);
-					} else {
-						outputChannel.appendLine(line);
-					}
+					const range = new vscode.Range(
+						+lineNum - 1, // Convert to zero-based line number
+						+colNum - 1, // Convert to zero-based column number
+						+lineNum - 1,
+						+colNum
+					);
+
+					const diagnostic = new vscode.Diagnostic(range, `[${errType}] ${message}`, vscode.DiagnosticSeverity.Error);
+					diagnostic.source = 'Pyre';
+					diagnosticCollection.set(vscode.Uri.file(fullPath), [diagnostic]);
+
+					outputChannel.appendLine(`❌ [${errType}] ${createLink(fullPath, +lineNum, +colNum, `${file}:${lineNum}:${colNum}`)} ${message}`);
+					errorCount++;
+				} else {
+					outputChannel.appendLine(line);
 				}
-
-				const summaryText = errorCount > 0
-					? `Found ${errorCount} error(s). See Output > Pyre for details.`
-					: 'Pyre check completed. No errors found.';
-
-				const summaryType = errorCount > 0
-					? vscode.window.showErrorMessage
-					: vscode.window.showInformationMessage;
-
-				summaryType(summaryText);
 			}
-			resolve();
-		});
+
+			const summaryText = errorCount > 0
+				? `Found ${errorCount} error(s). See Output > Pyre for details.`
+				: 'Pyre check completed. No errors found.';
+
+			const summaryType = errorCount > 0
+				? vscode.window.showErrorMessage
+				: vscode.window.showInformationMessage;
+
+			summaryType(summaryText);
+		} else {
+			vscode.window.showInformationMessage('No Error Found!')
+		}
 	});
 }
 
-export async function activate(context: vscode.ExtensionContext) {
+// Register command to run Pyre check
+export function activate(context: vscode.ExtensionContext) {
 	let disposable = vscode.commands.registerCommand('extension.runPyreCheck', async () => {
-		outputChannel.clear()
+		outputChannel.clear();
 		let installed = await isPyreInstalled();
 
 		if (!installed) {
@@ -187,6 +189,28 @@ export async function activate(context: vscode.ExtensionContext) {
 	});
 
 	context.subscriptions.push(disposable);
+
+	// Register hover provider for Pyre errors
+	context.subscriptions.push(
+		vscode.languages.registerHoverProvider('python', {
+			provideHover(document, position, token) {
+				const range = document.getWordRangeAtPosition(position);
+				if (!range) return;
+
+				const filePath = document.uri.fsPath;
+				const diagnostics = diagnosticCollection.get(vscode.Uri.file(filePath));
+				if (!diagnostics) return;
+
+				for (const diagnostic of diagnostics) {
+					if (diagnostic.range.contains(position)) {
+						return new vscode.Hover(diagnostic.message);
+					}
+				}
+
+				return null;
+			}
+		})
+	);
 }
 
 export function deactivate() { }
