@@ -1,11 +1,15 @@
 import * as cp from 'child_process';
+import { debounce } from 'lodash';
 import * as path from 'path';
 import * as vscode from 'vscode';
+
 
 const outputChannel = vscode.window.createOutputChannel('Pyre', { log: true });
 const diagnosticCollection = vscode.languages.createDiagnosticCollection('pyre-errors');
 
 let pyreCheckTimeout: NodeJS.Timeout | undefined;
+const debouncedPyreCheck = debounce(runPyreCheck, 1000);
+
 
 // Check if Pyre is installed
 async function isPyreInstalled(): Promise<boolean> {
@@ -69,11 +73,6 @@ async function installPyre(): Promise<boolean> {
 	return false;
 }
 
-// Function to create a clickable link in the output channel
-function createLink(filePath: string, line: number, column: number, title: string): string {
-	return `"${filePath}", line ${line}`;
-}
-
 // Run Pyre check
 async function runPyreCheck() {
 	const editor = vscode.window.activeTextEditor;
@@ -95,7 +94,7 @@ async function runPyreCheck() {
 
 	// Run Pyre check
 	const shell = process.env.SHELL || '/bin/bash';
-	cp.exec(`cd "${workspaceFolder}" && ${shell} -ic "pyre check"`, (err, stdout, stderr) => {
+	cp.exec(`cd "${workspaceFolder}" && ${shell} -ic "pyre incremental"`, (err, stdout, stderr) => {
 		if (err) {
 			const lines = stdout.trim().split('\n');
 			let errorCount = 0;
@@ -122,17 +121,8 @@ async function runPyreCheck() {
 				}
 			}
 
-			const summaryText = errorCount > 0
-				? `Found ${errorCount} error(s). See Output > Pyre for details.`
-				: 'Pyre check completed. No errors found.';
-
-			const summaryType = errorCount > 0
-				? vscode.window.showErrorMessage
-				: vscode.window.showInformationMessage;
-
-			summaryType(summaryText);
 		} else {
-			vscode.window.showInformationMessage('No Error Found!')
+
 		}
 	});
 }
@@ -196,8 +186,11 @@ export function activate(context: vscode.ExtensionContext) {
 	);
 
 	// Listen for file changes to schedule Pyre checks
+	// vscode.workspace.onDidChangeTextDocument(() => {
+	// 	schedulePyreCheck();
+	// });
 	vscode.workspace.onDidChangeTextDocument(() => {
-		schedulePyreCheck();
+		debouncedPyreCheck();
 	});
 
 	// Schedule initial Pyre check
