@@ -16,9 +16,7 @@ def extract_error_info(file_path: str, err_type: str, err_message: str, line_num
         start_line -= 1
     
     relevant_lines = ''.join(source_lines[start_line:line_num])
-    
-    print("RELEVANT: ", relevant_lines)
-    
+        
     # Parse the relevant lines to get the full function or class definition
     try:
         tree = ast.parse(relevant_lines)
@@ -43,7 +41,7 @@ def extract_error_info(file_path: str, err_type: str, err_message: str, line_num
     file_name = file_path.split('/')[-1].split('.')[0] + '_' + str(line_num)  + '_' + str(col_num) + '.json'
     
     # Writing to sample.json
-    with open(f'input/{file_name}', "w") as outfile:
+    with open(f'{file_name}', "w") as outfile:
         outfile.write(json_object)
     
     return json.dumps(error_info, indent=2)
@@ -59,4 +57,4 @@ if __name__ == "__main__":
     line_num = int(sys.argv[4])
     col_num = int(sys.argv[5])
     
-    extract_error_info(file_path, err_type, err_message, line_num, col_num)
+    print(extract_error_info(file_path, err_type, err_message, line_num, col_num))

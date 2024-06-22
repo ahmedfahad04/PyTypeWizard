@@ -95,34 +95,74 @@ async function runPyreCheck() {
 	// Run Pyre check
 	const shell = process.env.SHELL || '/bin/bash';
 	cp.exec(`cd "${workspaceFolder}" && ${shell} -ic "pyre incremental"`, (err, stdout, stderr) => {
-		if (err) {
-			const lines = stdout.trim().split('\n');
-			let errorCount = 0;
 
-			for (const line of lines) {
-				const pattern = /(?<file>.+):(?<lineNum>\d+):(?<colNum>\d+)\s(?<errType>[^:]+):\s(?<message>.+)/;
-				const match = line.match(pattern);
-				if (match) {
-					const [_, file, lineNum, colNum, errType, message] = match;
-					const fullPath = path.isAbsolute(file) ? file : path.join(workspaceFolder, file);
+		const lines = stdout.trim().split('\n');
+		let errorCount = 0;
 
-					const range = new vscode.Range(
-						+lineNum - 1, // Convert to zero-based line number
-						+colNum - 1, // Convert to zero-based column number
-						+lineNum - 1,
-						+colNum
-					);
+		// detect error and show using squiggle
+		for (const line of lines) {
+			const pattern = /(?<file>.+):(?<lineNum>\d+):(?<colNum>\d+)\s(?<errType>[^:]+):\s(?<message>.+)/;
+			const match = line.match(pattern);
+			if (match) {
+				const [_, file, lineNum, colNum, errType, message] = match;
+				const fullPath = path.isAbsolute(file) ? file : path.join(workspaceFolder, file);
 
-					const diagnostic = new vscode.Diagnostic(range, `[${errType}] ${message}`, vscode.DiagnosticSeverity.Error);
-					diagnostic.source = 'Pyre';
-					diagnosticCollection.set(vscode.Uri.file(fullPath), [diagnostic]);
+				const range = new vscode.Range(
+					+lineNum - 1, // Convert to zero-based line number
+					+colNum - 1, // Convert to zero-based column number
+					+lineNum - 1,
+					+colNum
+				);
 
-					errorCount++;
-				}
+				// detect error and show using squiggle
+				const diagnostic = new vscode.Diagnostic(range, `${errType} ${message}`, vscode.DiagnosticSeverity.Error);
+				diagnostic.source = 'Pyre';
+
+				diagnostic.relatedInformation = [
+					new vscode.DiagnosticRelatedInformation(
+						new vscode.Location(vscode.Uri.file(fullPath), range),
+						message
+					)
+				];
+
+				diagnosticCollection.set(vscode.Uri.file(fullPath), [diagnostic]);
+				// vscode.window.showInformationMessage("FULL PAth: ", fullPath)
+
+				//! create input json file 
+				const pythonPath = process.env.PYTHON_PATH || 'python'; // or specify the full path to python executable
+				cp.exec(`${shell} -ic "${pythonPath} /home/fahad/Documents/Projects/SPL3/pytypefix/src/error_extractor.py '${fullPath}' '${errType}' '${message}' ${lineNum} ${colNum}"`, (err, stdout, stderr) => {
+					if (err) {
+						console.error(`Error: ${stderr}`);
+					}
+
+					try {
+						vscode.window.showInformationMessage(stdout)
+						console.log('DeBUG: ', stdout)
+						const errorInfo = JSON.parse(stdout);
+
+						// Use errorInfo to create your diagnostic
+						const diagnostic = new vscode.Diagnostic(
+							new vscode.Range(+lineNum - 1, +colNum - 1, +lineNum - 1, +colNum),
+							`Pyre (${errorInfo.rule_id}): ${errorInfo.source_code}`,
+							vscode.DiagnosticSeverity.Error
+						);
+
+						diagnostic.source = 'Pyre';
+						diagnostic.relatedInformation = [
+							new vscode.DiagnosticRelatedInformation(
+								new vscode.Location(vscode.Uri.file(fullPath), new vscode.Range(+lineNum - 1, 0, +lineNum - 1, 1000)),
+								`Source: ${errorInfo.source_code}`
+							)
+						];
+
+						diagnosticCollection.set(vscode.Uri.file(fullPath), [diagnostic]);
+					} catch (parseError) {
+						console.error(`Error parsing JSON: ${parseError}`);
+					}
+				});
+
+				errorCount++;
 			}
-
-		} else {
-
 		}
 	});
 }
@@ -134,7 +174,6 @@ function schedulePyreCheck() {
 	}
 	pyreCheckTimeout = setTimeout(runPyreCheck, 5000); // 5000ms delay (adjust as needed)
 }
-
 
 // Register command to run Pyre check
 export function activate(context: vscode.ExtensionContext) {
@@ -186,9 +225,6 @@ export function activate(context: vscode.ExtensionContext) {
 	);
 
 	// Listen for file changes to schedule Pyre checks
-	// vscode.workspace.onDidChangeTextDocument(() => {
-	// 	schedulePyreCheck();
-	// });
 	vscode.workspace.onDidChangeTextDocument(() => {
 		debouncedPyreCheck();
 	});
