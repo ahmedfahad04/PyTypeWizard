@@ -3,7 +3,7 @@ import json
 import sys
 
 
-def extract_error_info(file_path: str, err_type: str, err_message: str, line_num: int) -> str:
+def extract_error_info(file_path: str, err_type: str, err_message: str, line_num: int, col_num: int) -> str:
     with open(file_path, 'r') as file:
         source_lines = file.readlines()
    
@@ -38,17 +38,25 @@ def extract_error_info(file_path: str, err_type: str, err_message: str, line_num
         "source_code": source_code
     }
     
+    # Serializing json
+    json_object = json.dumps(error_info, indent=2)
+    file_name = file_path.split('/')[-1].split('.')[0] + '_' + str(line_num)  + '_' + str(col_num) + '.json'
+    
+    # Writing to sample.json
+    with open(f'input/{file_name}', "w") as outfile:
+        outfile.write(json_object)
+    
     return json.dumps(error_info, indent=2)
 
 if __name__ == "__main__":
-    if len(sys.argv) != 5:
-        print("Usage: python error_extractor.py <file_path> <err_type> <err_message> <line_num>")
+    if len(sys.argv) != 6:
+        print("Usage: python error_extractor.py <file_path> <err_type> <err_message> <line_num> <column_num>")
         sys.exit(1)
     
     file_path = sys.argv[1]
     err_type = sys.argv[2]
     err_message = sys.argv[3]
     line_num = int(sys.argv[4])
+    col_num = int(sys.argv[5])
     
-    result = extract_error_info(file_path, err_type, err_message, line_num)
-    print(result)
+    extract_error_info(file_path, err_type, err_message, line_num, col_num)
