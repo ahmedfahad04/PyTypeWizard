@@ -20,9 +20,10 @@ coloredlogs.install(
     level="INFO", logger=logger, fmt="%(asctime)s - %(levelname)s - %(message)s"
 )
 
+# Global Constants
 MODEL_NAME = "../utils/t5base_final"
 MODEL_PATH = "../utils/t5base_final/checkpoint-1190"
-INPUT_FILE_PATH = "input1.json"  # replace with your input file path
+INPUT_FILE_PATH = "input1.json"  
 
 
 def process_prediction(code: str) -> str:
@@ -103,13 +104,10 @@ def generate_predictions(
     return {str(i): value for i, value in enumerate(predictions)}
 
 
-def main(
+def get_final_predictions(
     max_length: int = 256,
     beam_size: int = 50,
     num_seq: int = 50,
-    eval_all: bool = False,
-    eval_acc_steps: int = 1,
-    error_type: str = "",
     model_name: str = MODEL_NAME,
     load_model_path: str = MODEL_PATH,
     file_path: str = INPUT_FILE_PATH,
@@ -139,11 +137,12 @@ def main(
     logger.info("Final validated predictions:")
     for k, v in predictions.items():
         if k in valid_predictions:
-            logger.info(f"PRED # {k} ANS: {v}")
+            logger.info(f"PRED # {k} ANS: \n{process_prediction(v)}")
 
 
 if __name__ == "__main__":
-    main(
+
+    get_final_predictions(
         num_seq=10,
         model_name=MODEL_NAME,
         load_model_path=MODEL_PATH,
