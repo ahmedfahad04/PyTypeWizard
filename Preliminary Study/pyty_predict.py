@@ -1,15 +1,14 @@
 import argparse
 import json
+import os
+import subprocess
 import sys
-import time
+import tempfile
+from typing import Dict, List
 
 sys.path.append("..")
 
-import os
 import re
-import subprocess
-import tempfile
-from typing import Dict, List
 
 from transformers import T5ForConditionalGeneration, T5Tokenizer, set_seed
 
@@ -38,11 +37,7 @@ def process_code(code: str) -> str:
     return "\n".join(processed_lines)
 
 
-import subprocess
-import tempfile
-import os
-from typing import List, Dict
-
+#! validate prediction
 def validate_predictions(predictions: Dict[str, str]) -> List[str]:
     valid_predictions = []
 
@@ -70,7 +65,7 @@ def validate_predictions(predictions: Dict[str, str]) -> List[str]:
                 )
 
                 print("ISSUE #", pred_id, ">", result.stderr)
-                print('\n')
+                print("\n")
 
                 # If Pyre doesn't report any errors, consider the prediction valid
                 if result.returncode == 0:
@@ -82,49 +77,6 @@ def validate_predictions(predictions: Dict[str, str]) -> List[str]:
     return valid_predictions
 
 
-#! validate prediction
-def validate_preds(predictions):
-
-    # Directory to store temporary files
-    tmp_dir = "tmp_code_fixes"
-    os.makedirs(tmp_dir, exist_ok=True)
-
-    # Function to type-check using MyPy
-    def type_check_code(code: str) -> bool:
-        tmp_file_path = os.path.join(tmp_dir, "temp_code.py")
-        with open(tmp_file_path, "w") as f:
-            f.write(code)
-
-        result = subprocess.run(["mypy", tmp_file_path], capture_output=True, text=True)
-        # result = subprocess.run(['pyre', 'check', '--source-directory', tmp_dir], capture_output=True, text=True)
-        print("ReSULTS: ", result)
-        return "Success: no issues found" in result.stdout
-
-    # def type_check_code(code: str) -> bool:
-    #     tmp_file_path = os.path.join(tmp_dir, 'temp_code.py')
-    #     with open(tmp_file_path, 'w') as f:
-    #         f.write(code)
-
-    #     result = subprocess.run(['pyre', 'check', '--source-directory', tmp_dir], capture_output=True, text=True)
-    #     return "No errors!" in result.stdout
-
-    # Validate predictions using MyPy
-    valid_fixes = []
-    for i, pred in enumerate(predictions):
-        is_valid = type_check_code(pred)
-        print(f"Fix {i+1} is {'valid' if is_valid else 'invalid'}:\n{pred}\n")
-        if is_valid:
-            valid_fixes.append(pred)
-
-    # Clean up temporary files
-    import shutil
-
-    shutil.rmtree(tmp_dir)
-
-    # Print valid fixes
-    print("Valid Fixes:")
-    for fix in valid_fixes:
-        print(fix)
 
 
 def get_single_prediction(
@@ -224,7 +176,6 @@ predictions = list(
     )
 )
 
-# print(predictions)
 
 # Print the predictions
 # file_name = time.asctime().split(" ")[-2]
@@ -243,11 +194,10 @@ for i, pred in enumerate(predictions):
 
 fp.writelines(predictions)
 final_pred = validate_predictions(pred_dict)
-print("VALIDATeD: ", validate_predictions(pred_dict))
+print("VALIDATeD: ", final_pred)
 
 
 print("FINAL: ")
 for k, v in pred_dict.items():
     if k in final_pred:
         print("PRED # ", k, " ANS: ", v)
-    
