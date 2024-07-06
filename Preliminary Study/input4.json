@@ -1,0 +1,7 @@
+{
+    "rule_id": "Incompatible attribute type [8]",
+    "message": "Attribute `_attrs_match` declared in class `SubWikiTextWithAttrs` has type `Match[typing.Any]` but is used as type `None`.",
+    "warning_line": "    _attrs_match = None  # type: Match",
+    "source_code": "\nfrom typing import (\n    Dict, Optional, Union, Tuple, List, MutableSequence, Any\n)\nfrom warnings import warn\n"
+}
+  
