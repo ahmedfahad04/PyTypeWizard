@@ -1,5 +1,5 @@
-def add(a: int, b: int) -> int:
-    return a + b
+from typing import Tuple
 
 
-print(add('1', '25'))
+def get_student_info(name: str, age: int) -> Tuple[str, str]:
+    return (name, age)

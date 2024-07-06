@@ -126,13 +126,23 @@ async function runPyreCheck() {
 				];
 
 				diagnosticCollection.set(vscode.Uri.file(fullPath), [diagnostic]);
-				// vscode.window.showInformationMessage("FULL PAth: ", fullPath)
+				vscode.window.showInformationMessage(message)
+				const outputDir = path.resolve(__dirname, 'input');
+
+				if (!vscode.workspace.fs.stat(vscode.Uri.file(outputDir))) {
+					vscode.workspace.fs.createDirectory(vscode.Uri.file(outputDir));
+				}
 
 				//! create input json file 
 				const pythonPath = process.env.PYTHON_PATH || 'python'; // or specify the full path to python executable
-				cp.exec(`${shell} -ic "${pythonPath} /home/fahad/Documents/Projects/SPL3/pytypefix/src/error_extractor.py '${fullPath}' '${errType}' '${message}' ${lineNum} ${colNum}"`, (err, stdout, stderr) => {
+				let cmd = `${shell} -ic "${pythonPath} /home/fahad/Documents/Projects/SPL3/pytypefix/src/error_extractor.py '${fullPath}' '${errType}' '${message}' ${lineNum} ${colNum} '${outputDir}'"`;
+
+				vscode.window.showInformationMessage(message)
+
+
+				cp.exec(cmd, (err, stdout, stderr) => {
 					if (err) {
-						console.error(`Error: ${stderr}`);
+						console.error(`Error: ${stderr} `);
 					}
 
 					try {
@@ -143,7 +153,7 @@ async function runPyreCheck() {
 						// Use errorInfo to create your diagnostic
 						const diagnostic = new vscode.Diagnostic(
 							new vscode.Range(+lineNum - 1, +colNum - 1, +lineNum - 1, +colNum),
-							`Pyre (${errorInfo.rule_id}): ${errorInfo.source_code}`,
+							`Pyre(${ errorInfo.rule_id }): ${ errorInfo.source_code } `,
 							vscode.DiagnosticSeverity.Error
 						);
 
@@ -151,13 +161,13 @@ async function runPyreCheck() {
 						diagnostic.relatedInformation = [
 							new vscode.DiagnosticRelatedInformation(
 								new vscode.Location(vscode.Uri.file(fullPath), new vscode.Range(+lineNum - 1, 0, +lineNum - 1, 1000)),
-								`Source: ${errorInfo.source_code}`
+								`Source: ${ errorInfo.source_code } `
 							)
 						];
 
 						diagnosticCollection.set(vscode.Uri.file(fullPath), [diagnostic]);
 					} catch (parseError) {
-						console.error(`Error parsing JSON: ${parseError}`);
+						console.error(`Error parsing JSON: ${ parseError } `);
 					}
 				});
 

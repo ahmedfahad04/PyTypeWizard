@@ -1,0 +1,6 @@
+{
+  "rule_id": "Incompatible return type [7]",
+  "message": "Expected `Tuple[str, str]` but got `Tuple[str, int]`",
+  "warning_line": "    return (name, age)\n",
+  "source_code": "from typing import Tuple\ndef get_student_info(name: str, age: int) -> Tuple[str, str]:\n    return (name, age)"
+}

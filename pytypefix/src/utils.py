@@ -1,3 +1,5 @@
+
+
 def parse_pyre_output(output):
     
     parts = output.split(':')
@@ -11,6 +13,7 @@ def parse_pyre_output(output):
     
     return file_name, line_number, col_number, err_type, err_msg
 
+    
 # Example usage
 # file_name, line_number, col_number, err_type, err_msg = parse_pyre_output("test2.py:25:4 Incompatible return type [7]: Expected `Tuple[str, str]` but got `Tuple[str, int]`")
 # print(f"File Name: {file_name}")
