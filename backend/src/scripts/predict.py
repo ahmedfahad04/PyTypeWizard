@@ -5,7 +5,8 @@ import re
 import subprocess
 import sys
 import tempfile
-from typing import Dict, List
+import time
+from typing import Dict, Final, List
 
 import coloredlogs
 import torch
@@ -22,8 +23,11 @@ coloredlogs.install(
 )
 
 # Global Constants
-MODEL_NAME = "src/utils/t5base_final/"
-MODEL_PATH = "src/utils/t5base_final/checkpoint-1190"
+MODEL_NAME: Final[str] = "src/utils/t5base_final/"
+MODEL_PATH: Final[str] = "src/utils/t5base_final/checkpoint-1190"
+DEFAULT_SEQ_NUM: Final[int] = 50
+DEFAULT_BEAM_SIZE: Final[int] = 50
+DEFAULT_MAX_LENGTH: Final[int] = 256
 
 
 def process_prediction(code: str) -> str:
@@ -63,19 +67,30 @@ def validate_predictions(predictions: Dict[str, str]) -> List[str]:
 
 
 def get_single_prediction(
-    model, tokenizer, input_text, max_length=256, beam_size=50, num_seq=50
+    model,
+    tokenizer,
+    input_text,
+    max_length=DEFAULT_MAX_LENGTH,
+    beam_size=DEFAULT_BEAM_SIZE,
+    num_seq=DEFAULT_SEQ_NUM,
 ) -> List[str]:
+
     input_ids = tokenizer.encode(
-        input_text, truncation=True, padding=True, return_tensors="pt"
+        input_text,
+        truncation=True,
+        padding="max_length",
+        max_length=max_length,
+        return_tensors="pt",
     ).to(model.device)
 
-    beam_outputs = model.generate(
-        input_ids,
-        max_length=max_length,
-        num_beams=beam_size,
-        num_return_sequences=num_seq,
-        early_stopping=False,
-    )
+    with torch.no_grad():  # Disable gradient calculation
+        beam_outputs = model.generate(
+            input_ids,
+            max_length=max_length,
+            num_beams=beam_size,
+            num_return_sequences=num_seq,
+            early_stopping=True,  # Early stopping to potentially reduce the generation time
+        )
 
     return [
         tokenizer.decode(output, skip_special_tokens=True) for output in beam_outputs
@@ -104,7 +119,12 @@ def load_model_and_tokenizer(model_name: str, load_model_path: str):
 
 
 def generate_predictions(
-    model, tokenizer, input_text: str, max_length=256, beam_size=50, num_seq=10
+    model,
+    tokenizer,
+    input_text: str,
+    max_length=DEFAULT_MAX_LENGTH,
+    beam_size=DEFAULT_BEAM_SIZE,
+    num_seq=DEFAULT_SEQ_NUM,
 ) -> Dict[str, str]:
     predictions = get_single_prediction(
         model, tokenizer, input_text, max_length, beam_size, num_seq
@@ -114,9 +134,9 @@ def generate_predictions(
 
 def get_final_predictions(
     data: Dict[str, str],
-    max_length: int = 256,
-    beam_size: int = 50,
-    num_seq: int = 10,
+    max_length: int = DEFAULT_MAX_LENGTH,
+    beam_size: int = DEFAULT_BEAM_SIZE,
+    num_seq: int = DEFAULT_SEQ_NUM,
     model_name: str = MODEL_NAME,
     load_model_path: str = MODEL_PATH,
 ):
@@ -133,14 +153,20 @@ def get_final_predictions(
     input_text = f"fix {rule_id} {message} {warning_line}:\n{source_code}"
 
     logger.info("Generating predictions...")
+    start_time = time.time()
     predictions = generate_predictions(
         model, tokenizer, input_text, max_length, beam_size, num_seq
     )
-
-    print("Predictions: \n", predictions)
+    end_time = time.time()
+    prediction_time = end_time - start_time
+    logger.info(f"Predictions generated in {prediction_time:.2f} seconds.")
 
     logger.info("Validating predictions...")
+    start_time = time.time()
     valid_predictions = validate_predictions(predictions)
+    end_time = time.time()
+    validation_time = end_time - start_time
+    logger.info(f"Predictions validated in {validation_time:.2f} seconds.")
 
     preds = []
     logger.info("Final validated predictions:")
@@ -148,7 +174,7 @@ def get_final_predictions(
         if k in valid_predictions:
             preds.append(process_prediction(v))
             logger.info(f"PRED # {k} ANS: \n{process_prediction(v)}")
-            
+
     return preds
 
 
@@ -162,7 +188,7 @@ if __name__ == "__main__":
 
     get_final_predictions(
         data=sample_data,
-        num_seq=10,
+        num_seq=DEFAULT_SEQ_NUM,
         model_name=MODEL_NAME,
         load_model_path=MODEL_PATH,
     )
