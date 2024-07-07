@@ -56,6 +56,7 @@ def validate_predictions(predictions: Dict[str, str]) -> List[str]:
                 result = subprocess.run(
                     ["pyre", "check"], cwd=temp_dir, capture_output=True, text=True
                 )
+                print('RES: ', result.stderr)
                 if result.returncode == 0:
                     valid_predictions.append(pred_id)
             except subprocess.CalledProcessError as e:
