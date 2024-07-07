@@ -10,6 +10,8 @@ from typing import Dict, Final, List
 import coloredlogs
 from tqdm import tqdm
 from transformers import T5ForConditionalGeneration, T5Tokenizer, set_seed
+import torch
+
 
 sys.path.append("..")
 from utils import get_current_time
@@ -83,12 +85,20 @@ def get_single_prediction(
 
 
 def load_model_and_tokenizer(model_name: str, load_model_path: str):
+    # Load the tokenizer
     tokenizer = T5Tokenizer.from_pretrained(load_model_path)
     logger.info(f"Loaded tokenizer from directory {load_model_path}")
 
+    # Load the model
     model = T5ForConditionalGeneration.from_pretrained(load_model_path)
     logger.info(f"Loaded model from directory {load_model_path}")
+    
+    # Determine the device
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    model.to(device)
+    logger.info(f"Model is loaded to {device}")
 
+    # Resize the token embeddings and set model to evaluation mode
     model.resize_token_embeddings(len(tokenizer))
     model.eval()
 
@@ -130,6 +140,8 @@ def get_final_predictions(
     predictions = generate_predictions(
         model, tokenizer, input_text, max_length, beam_size, num_seq
     )
+    
+    print("Predictions: \n", predictions)
 
     logger.info("Validating predictions...")
     valid_predictions = validate_predictions(predictions)
