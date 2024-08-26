@@ -12,7 +12,6 @@ from predict import get_final_predictions
 
 app = FastAPI()
 
-
 class ModelInput(BaseModel):
     rule_id: str
     message: str
