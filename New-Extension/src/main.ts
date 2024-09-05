@@ -27,6 +27,8 @@ let state: LanguageClientState | undefined;
 let envListener: vscode.Disposable | undefined;
 
 let outputChannel = vscode.window.createOutputChannel("pyre");
+let chatPanel: vscode.WebviewPanel | undefined;
+
 
 export async function activate(context: vscode.ExtensionContext) {
 
@@ -46,6 +48,7 @@ export async function activate(context: vscode.ExtensionContext) {
 		state = createLanguageClient(pyrePath);
 	}
 
+	// Quick Fix Command Provider
 	const codeActionProvider = new PyreCodeActionProvider();
 	context.subscriptions.push(
 		vscode.languages.registerCodeActionsProvider(
@@ -64,16 +67,28 @@ export async function activate(context: vscode.ExtensionContext) {
 		const startColumn = diagnostic.range.start.character + 1;
 		const endColumn = diagnostic.range.end.character + 1;
 
-		// TODO: Implement actual fix logic here
-		vscode.window.showInformationMessage(`Fixing error in ${fileName} at line ${lineNumber}, columns ${startColumn}-${endColumn}`);
-
-		// For now, just show error details
 		const message = `File: ${fileName}\nLine: ${lineNumber}\nColumns: ${startColumn}-${endColumn}\nError: ${diagnostic.message}`;
-		vscode.window.showInformationMessage(message);
+
+		if (!chatPanel) {
+			chatPanel = vscode.window.createWebviewPanel(
+				'pyreChat',
+				'Pyre Chat',
+				vscode.ViewColumn.Two,
+				{ enableScripts: true }
+			);
+
+			chatPanel.webview.html = getChatHtml();
+
+			chatPanel.onDidDispose(() => {
+				chatPanel = undefined;
+			});
+		}
+
+		chatPanel.webview.postMessage({ command: 'addMessage', text: message });
 		outputChannel.appendLine(message);
 	});
 
-
+	// if workspace change or move to new workspace, create new language client instance
 	envListener = pythonExtension.exports.environments.onDidChangeActiveEnvironmentPath(async (e) => {
 		state?.languageClient?.stop();
 		state?.configListener.then((listener) => listener.dispose());
@@ -156,4 +171,41 @@ export function deactivate() {
 	state?.languageClient.stop();
 	state?.configListener.then((listener) => listener.dispose());
 	envListener?.dispose();
+}
+
+function getChatHtml() {
+	return `
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Pyre Chat</title>
+            <style>
+                body { font-family: Arial, sans-serif; }
+                #chat { height: 100vh; overflow-y: auto; padding: 10px; }
+                .message { background-color: #000000; border-radius: 5px; padding: 10px; margin-bottom: 10px; }
+            </style>
+        </head>
+        <body>
+            <div id="chat"></div>
+            <script>
+                const vscode = acquireVsCodeApi();
+                const chatDiv = document.getElementById('chat');
+                window.addEventListener('message', event => {
+                    const message = event.data;
+                    switch (message.command) {
+                        case 'addMessage':
+                            const messageDiv = document.createElement('div');
+                            messageDiv.className = 'message';
+                            messageDiv.textContent = message.text;
+                            chatDiv.appendChild(messageDiv);
+                            chatDiv.scrollTop = chatDiv.scrollHeight;
+                            break;
+                    }
+                });
+            </script>
+        </body>
+        </html>
+    `;
 }
