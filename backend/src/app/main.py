@@ -12,11 +12,13 @@ from predict import get_final_predictions
 
 app = FastAPI()
 
+
 class ModelInput(BaseModel):
     rule_id: str
     message: str
     warning_line: str
     source_code: str
+
 
 @app.get("/")
 def read_root():
@@ -25,12 +27,10 @@ def read_root():
 
 @app.post("/get-fixes")
 def get_type_fixes(input_obj: ModelInput):
-    preds = get_final_predictions(
-        data=input_obj.model_dump()
-    )
-    
+    preds = get_final_predictions(data=input_obj.model_dump(), num_seq=20, beam_size=20)
+
     output_obj = {
-        'fix': preds,
+        "fix": preds,
     }
-    
-    return output_obj 
+
+    return output_obj

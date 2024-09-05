@@ -10,11 +10,13 @@
  */
 
 import { EnvironmentPath, PVSC_EXTENSION_ID, PythonExtension } from '@vscode/python-extension';
+import axios from 'axios';
 import { spawn } from 'child_process';
 import { existsSync, statSync } from 'fs';
 import * as path from 'path';
 import { dirname, join } from 'path';
 import * as vscode from 'vscode';
+
 import { DidChangeConfigurationNotification, LanguageClient, LanguageClientOptions } from 'vscode-languageclient';
 import which from 'which';
 
@@ -28,7 +30,6 @@ type LanguageClientState = {
 // Extension state
 let state: LanguageClientState | undefined;
 let envListener: vscode.Disposable | undefined;
-
 let outputChannel = vscode.window.createOutputChannel("pyre");
 
 export async function activate(context: vscode.ExtensionContext) {
@@ -49,6 +50,7 @@ export async function activate(context: vscode.ExtensionContext) {
 		state = createLanguageClient(pyrePath);
 	}
 
+	// Quick Fix Provider
 	const codeActionProvider = new PyreCodeActionProvider();
 	context.subscriptions.push(
 		vscode.languages.registerCodeActionsProvider(
@@ -60,7 +62,7 @@ export async function activate(context: vscode.ExtensionContext) {
 		)
 	);
 
-
+	// Command execution
 	vscode.commands.registerCommand('pyre.fixError', (document: vscode.TextDocument, diagnostic: vscode.Diagnostic) => {
 		const filePath = document.uri.fsPath;
 		const errMessage = diagnostic.message;
@@ -133,18 +135,51 @@ function runErrorExtractor(context: vscode.ExtensionContext, filePath: string, e
 		outputDir
 	]);
 
+	let output = '';
+
 	process.stdout.on('data', (data) => {
-		vscode.window.showInformationMessage(`Error extractor output: ${data}`);
+		output += data.toString();
+		console.log(`Error extractor output: ${data}`);
 	});
 
 	process.stderr.on('data', (data) => {
-		vscode.window.showInformationMessage(`Error extractor error: ${data}`);
+		console.error(`Error extractor error: ${data}`);
 	});
 
-	process.on('close', (code) => {
-		vscode.window.showInformationMessage(`Error extractor process exited with code ${code}`);
+	process.on('close', async (code) => {
+		console.log(`Error extractor process exited with code ${code}`);
+		if (code === 0 && output) {
+			try {
+				console.log("RAW: \n", output)
+				const jsonOutput = JSON.parse(output);
+				console.log("PAYLOAD: ", jsonOutput)
+				await sendApiRequest(jsonOutput);
+			} catch (error) {
+				console.error('Error parsing output or sending API request:', error);
+			}
+		}
 	});
 }
+
+async function sendApiRequest(payload: any) {
+	const apiUrl = 'http://127.0.0.1:8000/get-fixes';
+
+	// Show loading message
+	const loadingMessage = vscode.window.setStatusBarMessage('Sending data to API...');
+
+	try {
+		const response = await axios.post(apiUrl, payload);
+		console.log('API response:', response.data);
+		vscode.window.showInformationMessage('Data sent to API successfully!');
+	} catch (error) {
+		console.error('API request failed:', error);
+		vscode.window.showErrorMessage('Failed to send data to API. Check console for details.');
+	} finally {
+		// Clear the loading message
+		loadingMessage.dispose();
+	}
+}
+
 
 async function findPyreCommand(envPath: EnvironmentPath): Promise<string | undefined> {
 
