@@ -41,17 +41,19 @@ def extract_error_info(
     # Parse the entire file to collect import statements
     try:
         full_tree = ast.parse("".join(source_lines))
+
         imports = []
         for node in full_tree.body:
             if isinstance(node, (ast.Import, ast.ImportFrom)):
                 imports.append(ast.unparse(node))
         imports_code = "\n".join(imports)
+
     except SyntaxError:
         # If parsing fails, no imports will be added
         imports_code = ""
 
     # Combine imports with source code
-    combined_code = f"{imports_code}\n{source_code}"
+    combined_code = f"{imports_code}\n{source_code}\n{warning_line}"
 
     # Construct the JSON object
     error_info = {
@@ -60,24 +62,6 @@ def extract_error_info(
         "warning_line": warning_line,
         "source_code": combined_code,
     }
-
-    # Serializing json
-    json_object = json.dumps(error_info, indent=2)
-    file_name = (
-        file_path.split("/")[-1].split(".")[0]
-        + "_"
-        + str(line_num)
-        + "_"
-        + str(col_num)
-        + ".json"
-    )
-
-    file_name = file_name
-    # print("FILE NAME: ", file_name)
-
-    # Writing to sample.json
-    with open(f"{file_name}", "w") as outfile:
-        outfile.write(json_object)
 
     return json.dumps(error_info, indent=2)
 
