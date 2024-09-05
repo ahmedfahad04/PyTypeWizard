@@ -10,11 +10,14 @@
  */
 
 import { EnvironmentPath, PVSC_EXTENSION_ID, PythonExtension } from '@vscode/python-extension';
+import { spawn } from 'child_process';
 import { existsSync, statSync } from 'fs';
+import * as path from 'path';
 import { dirname, join } from 'path';
 import * as vscode from 'vscode';
 import { DidChangeConfigurationNotification, LanguageClient, LanguageClientOptions } from 'vscode-languageclient';
 import which from 'which';
+
 import { PyreCodeActionProvider } from './codeActionProvider';
 
 type LanguageClientState = {
@@ -59,18 +62,14 @@ export async function activate(context: vscode.ExtensionContext) {
 
 
 	vscode.commands.registerCommand('pyre.fixError', (document: vscode.TextDocument, diagnostic: vscode.Diagnostic) => {
-		const fileName = document.uri.fsPath;
-		const lineNumber = diagnostic.range.start.line + 1;
-		const startColumn = diagnostic.range.start.character + 1;
-		const endColumn = diagnostic.range.end.character + 1;
+		const filePath = document.uri.fsPath;
+		const errMessage = diagnostic.message;
+		const lineNum = diagnostic.range.start.line + 1;
+		const colNum = diagnostic.range.start.character + 1;
+		const outputDir = vscode.workspace.workspaceFolders?.[0].uri.fsPath || '';
+		const errType = errMessage.split(':', 2)
 
-		// TODO: Implement actual fix logic here
-		vscode.window.showInformationMessage(`Fixing error in ${fileName} at line ${lineNumber}, columns ${startColumn}-${endColumn}`);
-
-		// For now, just show error details
-		const message = `File: ${fileName}\nLine: ${lineNumber}\nColumns: ${startColumn}-${endColumn}\nError: ${diagnostic.message}`;
-		vscode.window.showInformationMessage(message);
-		outputChannel.appendLine(message);
+		runErrorExtractor(context, filePath, errType[0], errMessage, lineNum, colNum, outputDir, activatedEnvPath.path);
 	});
 
 
@@ -119,6 +118,32 @@ function createLanguageClient(pyrePath: string): LanguageClientState {
 	languageClient.start();
 
 	return { languageClient, configListener };
+}
+
+function runErrorExtractor(context: vscode.ExtensionContext, filePath: string, errType: string, errMessage: string, lineNum: number, colNum: number, outputDir: string, pythonPath: string) {
+	const scriptPath = path.join(context.extensionPath, 'src', 'error_extractor.py');
+
+	const process = spawn(pythonPath, [
+		scriptPath,
+		filePath,
+		errType,
+		errMessage,
+		lineNum.toString(),
+		colNum.toString(),
+		outputDir
+	]);
+
+	process.stdout.on('data', (data) => {
+		vscode.window.showInformationMessage(`Error extractor output: ${data}`);
+	});
+
+	process.stderr.on('data', (data) => {
+		vscode.window.showInformationMessage(`Error extractor error: ${data}`);
+	});
+
+	process.on('close', (code) => {
+		vscode.window.showInformationMessage(`Error extractor process exited with code ${code}`);
+	});
 }
 
 async function findPyreCommand(envPath: EnvironmentPath): Promise<string | undefined> {
