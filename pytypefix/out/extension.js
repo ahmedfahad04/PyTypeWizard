@@ -25,9 +25,13 @@ var __importStar = (this && this.__importStar) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.deactivate = exports.activate = void 0;
 const cp = __importStar(require("child_process"));
+const lodash_1 = require("lodash");
 const path = __importStar(require("path"));
 const vscode = __importStar(require("vscode"));
 const outputChannel = vscode.window.createOutputChannel('Pyre', { log: true });
+const diagnosticCollection = vscode.languages.createDiagnosticCollection('pyre-errors');
+let pyreCheckTimeout;
+const debouncedPyreCheck = (0, lodash_1.debounce)(runPyreCheck, 1000);
 // Check if Pyre is installed
 async function isPyreInstalled() {
     return new Promise((resolve) => {
@@ -84,13 +88,9 @@ async function installPyre() {
     });
     return false;
 }
-// Function to create a clickable link in the output channel
-function createLink(filePath, line, column, title) {
-    const path = vscode.Uri.file(filePath).toString();
-    return `[${title}](${path}#${line},${column})`;
-}
 // Run Pyre check
 async function runPyreCheck() {
+    vscode.window.showInformationMessage('INSIDE RUN PYRE');
     const editor = vscode.window.activeTextEditor;
     if (!editor) {
         vscode.window.showErrorMessage('No active editor found.');
@@ -102,71 +102,82 @@ async function runPyreCheck() {
         return;
     }
     const workspaceFolder = workspaceFolders[0].uri.fsPath;
-    // Ensure the workspace has a .pyre_configuration file
-    const pyreConfigPath = path.join(workspaceFolder, '.pyre_configuration');
-    try {
-        await vscode.workspace.fs.stat(vscode.Uri.file(pyreConfigPath));
-    }
-    catch {
-        outputChannel.appendLine('❌ Error: .pyre_configuration file not found.');
-        outputChannel.appendLine(`Run ${createLink(workspaceFolder, 0, 0, 'pyre init')} in the terminal to create one.\n`);
-        const choice = await vscode.window.showErrorMessage('.pyre_configuration file not found. Run "pyre init" to create one.', 'Run in Terminal', 'Cancel');
-        if (choice === 'Run in Terminal') {
-            const terminal = vscode.window.createTerminal('Pyre Init');
-            terminal.show();
-            terminal.sendText(`cd "${workspaceFolder}" && pyre init`);
-        }
-        return;
-    }
+    // Clear previous diagnostics
+    diagnosticCollection.clear();
     // Run Pyre check
-    return new Promise((resolve) => {
-        outputChannel.clear(); // Clear previous output
-        outputChannel.show(true); // Show and bring focus
-        outputChannel.appendLine(`▶️ Running: pyre check in ${workspaceFolder}\n`);
-        const shell = process.env.SHELL || '/bin/bash';
-        cp.exec(`cd "${workspaceFolder}" && ${shell} -ic "pyre check"`, (err, stdout, stderr) => {
-            if (err) {
-                outputChannel.appendLine(`❌ Error running Pyre:\n${stderr || err?.message}`);
-                const useTerminal = 'Run in Terminal';
-                vscode.window.showErrorMessage(`Error running Pyre. See Output > Pyre for details.`, useTerminal)
-                    .then(choice => {
-                    if (choice === useTerminal) {
-                        const terminal = vscode.window.createTerminal('Pyre Check');
-                        terminal.show();
-                        terminal.sendText(`cd "${workspaceFolder}" && pyre check`);
-                    }
-                });
-            }
-            else {
-                const lines = stdout.trim().split('\n');
-                let errorCount = 0;
-                for (const line of lines) {
-                    const match = line.match(/^(.+):(\d+):(\d+): (error|warning): (.+)$/);
-                    if (match) {
-                        const [_, file, lineNum, colNum, level, message] = match;
-                        const fullPath = path.isAbsolute(file) ? file : path.join(workspaceFolder, file);
-                        const color = level === 'error' ? 'red' : 'yellow';
-                        const icon = level === 'error' ? '❌' : '⚠️';
-                        errorCount += level === 'error' ? 1 : 0;
-                        outputChannel.appendLine(`${icon} ${createLink(fullPath, +lineNum, +colNum, `${file}:${lineNum}:${colNum}`)} ${message}`);
-                    }
-                    else {
-                        outputChannel.appendLine(line);
-                    }
+    const shell = process.env.SHELL || '/bin/bash';
+    vscode.window.showInformationMessage(`cd "${workspaceFolder}" && ${shell} -ic "pyre incremental"`);
+    cp.exec(`cd "${workspaceFolder}" && ${shell} -ic "pyre --source-directory . incremental"`, (err, stdout, stderr) => {
+        const lines = stdout.trim().split('\n');
+        let errorCount = 0;
+        // detect error and show using squiggle
+        for (const line of lines) {
+            console.log(line);
+            const pattern = /(?<file>.+):(?<lineNum>\d+):(?<colNum>\d+)\s(?<errType>[^:]+):\s(?<message>.+)/;
+            const match = line.match(pattern);
+            if (match) {
+                const [_, file, lineNum, colNum, errType, message] = match;
+                // vscode.window.showInformationMessage(message)
+                const fullPath = path.isAbsolute(file) ? file : path.join(workspaceFolder, file);
+                const range = new vscode.Range(+lineNum - 1, // Convert to zero-based line number
+                +colNum - 1, // Convert to zero-based column number
+                +lineNum - 1, +colNum);
+                // detect error and show using squiggle
+                const diagnostic = new vscode.Diagnostic(range, `${errType} ${message}`, vscode.DiagnosticSeverity.Error);
+                diagnostic.source = 'Pyre';
+                diagnostic.relatedInformation = [
+                    new vscode.DiagnosticRelatedInformation(new vscode.Location(vscode.Uri.file(fullPath), range), message)
+                ];
+                diagnosticCollection.set(vscode.Uri.file(fullPath), [diagnostic]);
+                vscode.window.showInformationMessage('msg: ', diagnostic.message);
+                const outputDir = path.resolve(__dirname, 'input');
+                if (!vscode.workspace.fs.stat(vscode.Uri.file(outputDir))) {
+                    vscode.workspace.fs.createDirectory(vscode.Uri.file(outputDir));
                 }
-                const summaryText = errorCount > 0
-                    ? `Found ${errorCount} error(s). See Output > Pyre for details.`
-                    : 'Pyre check completed. No errors found.';
-                const summaryType = errorCount > 0
-                    ? vscode.window.showErrorMessage
-                    : vscode.window.showInformationMessage;
-                summaryType(summaryText);
+                //! create input json file 
+                // const pythonPath = process.env.PYTHON_PATH || 'python'; // or specify the full path to python executable
+                // let cmd = `${shell} -ic "${pythonPath} /home/fahad/Documents/Projects/SPL3/pytypefix/src/error_extractor.py '${fullPath}' '${errType}' '${message}' ${lineNum} ${colNum} '${outputDir}'"`;
+                // vscode.window.showInformationMessage(message)
+                // cp.exec(cmd, (err, stdout, stderr) => {
+                // 	if (err) {
+                // 		console.error(`Error: ${stderr} `);
+                // 	}
+                // 	try {
+                // 		vscode.window.showInformationMessage(stdout)
+                // 		console.log('DeBUG: ', stdout)
+                // 		const errorInfo = JSON.parse(stdout);
+                // 		// Use errorInfo to create your diagnostic
+                // 		const diagnostic = new vscode.Diagnostic(
+                // 			new vscode.Range(+lineNum - 1, +colNum - 1, +lineNum - 1, +colNum),
+                // 			`Pyre(${errorInfo.rule_id}): ${errorInfo.source_code} `,
+                // 			vscode.DiagnosticSeverity.Error
+                // 		);
+                // 		diagnostic.source = 'Pyre';
+                // 		diagnostic.relatedInformation = [
+                // 			new vscode.DiagnosticRelatedInformation(
+                // 				new vscode.Location(vscode.Uri.file(fullPath), new vscode.Range(+lineNum - 1, 0, +lineNum - 1, 1000)),
+                // 				`Source: ${errorInfo.source_code} `
+                // 			)
+                // 		];
+                // 		diagnosticCollection.set(vscode.Uri.file(fullPath), [diagnostic]);
+                // 	} catch (parseError) {
+                // 		console.error(`Error parsing JSON: ${parseError} `);
+                // 	}
+                // });
+                errorCount++;
             }
-            resolve();
-        });
+        }
     });
 }
-async function activate(context) {
+// Schedule Pyre check after a delay
+// function schedulePyreCheck() {
+// 	if (pyreCheckTimeout) {
+// 		clearTimeout(pyreCheckTimeout);
+// 	}
+// 	pyreCheckTimeout = setTimeout(runPyreCheck, 5000); // 5000ms delay (adjust as needed)
+// }
+// Register command to run Pyre check
+function activate(context) {
     let disposable = vscode.commands.registerCommand('extension.runPyreCheck', async () => {
         outputChannel.clear();
         let installed = await isPyreInstalled();
@@ -179,13 +190,41 @@ async function activate(context) {
                 return;
             }
         }
-        if (installed) {
+        else {
             await runPyreCheck();
         }
     });
     context.subscriptions.push(disposable);
+    // Register hover provider for Pyre errors
+    context.subscriptions.push(vscode.languages.registerHoverProvider('python', {
+        provideHover(document, position, token) {
+            const range = document.getWordRangeAtPosition(position);
+            if (!range)
+                return;
+            const filePath = document.uri.fsPath;
+            const diagnostics = diagnosticCollection.get(vscode.Uri.file(filePath));
+            if (!diagnostics)
+                return;
+            for (const diagnostic of diagnostics) {
+                if (diagnostic.range.contains(position)) {
+                    return new vscode.Hover(diagnostic.message);
+                }
+            }
+            return null;
+        }
+    }));
+    // Listen for file changes to schedule Pyre checks
+    vscode.workspace.onDidChangeTextDocument(() => {
+        debouncedPyreCheck();
+    });
+    // Schedule initial Pyre check
+    // schedulePyreCheck();
 }
 exports.activate = activate;
-function deactivate() { }
+function deactivate() {
+    if (pyreCheckTimeout) {
+        clearTimeout(pyreCheckTimeout);
+    }
+}
 exports.deactivate = deactivate;
 //# sourceMappingURL=extension.js.map

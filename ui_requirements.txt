@@ -1,0 +1,12 @@
+* Autostart the extension when any `python` project is opened.
+* Install pyre in client side (IDK how to do that perfectly, need to do more R&D)
+* When user update the types, periodically it will check for invalid Type Annotations
+* If it find something wrong, a Red Squiggle will be drown on that Line and if its hovered the following info will be shown
+    > Error Rule ID
+    > Error Message
+
+    Then there will be a quick fix button, upon clicking which will call the backend API to resolve the error.
+    "Here, required lines will be auto select or manually"
+
+* Upon getting the response a WebView UI will be opened, the updated source code will be shown in a WebView UI. User will have
+  have the option to select which solution he likes and upon clicking it will be replaced with the desired solution in source code.

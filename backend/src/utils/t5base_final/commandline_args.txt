@@ -1,0 +1,8 @@
+-e
+30
+-bs
+32
+-mn
+data_and_models/models/t5base
+-md
+t5base_final_check
