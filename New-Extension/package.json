@@ -15,7 +15,7 @@
 	],
 	"main": "./out/main",
 	"activationEvents": [
-		"workspaceContains:**/.pyre_configuration"
+		"*"
 	],
 	"scripts": {
 		"vscode:prepublish": "npm run compile",
@@ -26,13 +26,14 @@
 	},
 	"dependencies": {
 		"@vscode/python-extension": "^1.0.5",
+		"axios": "^1.7.7",
 		"vscode-languageclient": "^3.5.0",
 		"which": "^4.0.0"
 	},
 	"devDependencies": {
+		"@types/mocha": "^2.2.44",
 		"@types/node": "^18",
 		"@types/vscode": "^1.73.0",
-		"@types/mocha": "^2.2.44",
 		"@types/which": "^3.0.4",
 		"cson": "^4.1.0",
 		"tslint": "^5.8.0",

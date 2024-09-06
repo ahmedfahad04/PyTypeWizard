@@ -13,9 +13,13 @@ import { EnvironmentPath, PVSC_EXTENSION_ID, PythonExtension } from '@vscode/pyt
 import axios from 'axios';
 import { spawn } from 'child_process';
 import { existsSync, statSync } from 'fs';
-import * as path from 'path';
 import { dirname, join } from 'path';
 import * as vscode from 'vscode';
+import * as fs from 'fs';
+import * as path from 'path';
+
+import { exec } from 'child_process';
+
 
 import { DidChangeConfigurationNotification, LanguageClient, LanguageClientOptions } from 'vscode-languageclient';
 import which from 'which';
@@ -34,19 +38,103 @@ let outputChannel = vscode.window.createOutputChannel("pyre");
 
 export async function activate(context: vscode.ExtensionContext) {
 
-	const pythonExtension = vscode.extensions.getExtension<PythonExtension>(PVSC_EXTENSION_ID);
+	let pythonExtension = vscode.extensions.getExtension<PythonExtension>(PVSC_EXTENSION_ID);
 
 	if (!pythonExtension) {
-		outputChannel.appendLine("Python extension not found. Will use the default console environment.");
-		state = createLanguageClient('pyre');
-		outputChannel.appendLine("Done");
+		// Python extension is not installed
+		const installPython = await vscode.window.showInformationMessage(
+			'The Python extension is required for Pyre. Would you like to install it?',
+			'Yes', 'No'
+		);
+
+		if (installPython === 'Yes') {
+			await vscode.commands.executeCommand('workbench.extensions.installExtension', PVSC_EXTENSION_ID);
+			pythonExtension = vscode.extensions.getExtension<PythonExtension>(PVSC_EXTENSION_ID);
+		} else {
+			vscode.window.showWarningMessage('Pyre extension cannot function without the Python extension.');
+			return;
+		}
+	}
+
+	if (!pythonExtension) {
+		vscode.window.showErrorMessage('Failed to load Python extension. Pyre cannot function.');
 		return;
 	}
 
-	const activatedEnvPath = pythonExtension.exports.environments.getActiveEnvironmentPath();
+	if (!pythonExtension.isActive) {
+		await pythonExtension.activate();
+	}
+
+	const activatedEnvPath = pythonExtension.exports.environments.getActiveEnvironmentPath();  // `/bin/python`
 	const pyrePath = await findPyreCommand(activatedEnvPath);
 
-	if (pyrePath) {
+	//! install pyre
+	if (!pyrePath) {
+		const installPyre = await vscode.window.showInformationMessage(
+			'Pyre is not installed. Would you like to install it?',
+			'Yes', 'No'
+		);
+
+		if (installPyre === 'Yes') {
+			const installProgress = vscode.window.withProgress({
+				location: vscode.ProgressLocation.Notification,
+				title: "Installing Pyre",
+				cancellable: false
+			}, async (progress) => {
+				progress.report({ increment: 0 });
+
+				return new Promise<void>((resolve, reject) => {
+					exec('pip install pyre-check', (error, stdout, stderr) => {
+						if (error) {
+							vscode.window.showErrorMessage('Failed to install Pyre. Please install it manually.');
+							reject(error);
+						} else {
+							vscode.window.showInformationMessage('Pyre installed successfully!');
+							resolve();
+						}
+					});
+				});
+			});
+
+			await installProgress;
+			const newPyrePath = await findPyreCommand(activatedEnvPath);
+			if (newPyrePath) {
+				state = createLanguageClient(newPyrePath);
+			}
+		}
+	} else {
+
+		//! install pyre configuration
+		const pyreConfigExists = vscode.workspace.workspaceFolders?.some(folder => {
+			vscode.window.showInformationMessage(`PYRE CONFIG: ${path.join(folder.uri.fsPath, '.pyre_configuration')}`)
+			existsSync(path.join(folder.uri.fsPath, '.pyre_configuration'))
+		}
+		);
+
+		if (!pyreConfigExists) {
+			const workspaceFolder = vscode.workspace.workspaceFolders?.[0].uri.fsPath;
+
+			if (workspaceFolder) {
+				// Create .watchmanconfig file
+				const watchmanConfigPath = path.join(workspaceFolder, '.watchmanconfig');
+				fs.writeFileSync(watchmanConfigPath, '{}');
+
+				// Create .pyre_configuration file
+				const pyreConfigPath = path.join(workspaceFolder, '.pyre_configuration');
+				const pyreConfigContent = JSON.stringify({
+					"site_package_search_strategy": "pep561",
+					"source_directories": [
+						"."
+					]
+				}, null, 2);
+				fs.writeFileSync(pyreConfigPath, pyreConfigContent);
+
+				vscode.window.showInformationMessage('Pyre configuration added successfully.');
+			} else {
+				vscode.window.showErrorMessage('Unable to determine workspace folder.');
+			}
+		}
+
 		state = createLanguageClient(pyrePath);
 	}
 
@@ -180,11 +268,11 @@ async function sendApiRequest(payload: any) {
 	}
 }
 
-
 async function findPyreCommand(envPath: EnvironmentPath): Promise<string | undefined> {
 
 	if (envPath.id === 'DEFAULT_PYTHON') {
 		outputChannel.appendLine(`Using the default python environment`);
+		vscode.window.showInformationMessage(`Using the default python environment`);
 		return 'pyre';
 	}
 
