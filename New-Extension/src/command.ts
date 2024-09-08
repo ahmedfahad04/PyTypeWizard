@@ -6,6 +6,7 @@ import * as vscode from 'vscode';
 import { spawn } from 'child_process';
 import { sendApiRequest } from "./api";
 import which from "which";
+import { getSimplifiedSmartSelection } from "./smartSelection";
 
 let outputChannel = vscode.window.createOutputChannel("pyre");
 
@@ -18,6 +19,26 @@ export function registerCommands(context: vscode.ExtensionContext, pyrePath: str
             const colNum = diagnostic.range.start.character + 1;
             const outputDir = vscode.workspace.workspaceFolders?.[0].uri.fsPath || '';
             const errType = errMessage.split(':', 2);
+
+            const expandedRange = new vscode.Range(
+                document.lineAt(diagnostic.range.start.line).range.start,
+                document.lineAt(diagnostic.range.end.line).range.end
+            )
+
+            const targetPosition = new vscode.Position(diagnostic.range.start.line, diagnostic.range.start.character);
+            const selection = getSimplifiedSmartSelection(document, targetPosition);
+
+            console.log(`SELECTED CODE START\n ${selection?.start.line} char: ${selection?.start.character}`);
+            console.log(`SELECTED CODE END \n ${selection?.end.line} char: ${selection?.end.character}`);
+
+            let sourceCode: string;
+            if (selection) {
+                sourceCode = document.getText(new vscode.Range(document.lineAt(selection.start.line).range.start, document.lineAt(selection.end.line).range.end));
+            } else {
+                sourceCode = document.getText(expandedRange);
+            }
+
+            console.log(`SOUCE CODE: ${sourceCode}`);
 
             runErrorExtractor(context, filePath, errType[0], errMessage, lineNum, colNum, outputDir, pyrePath);
         })
@@ -73,6 +94,7 @@ export function runErrorExtractor(context: vscode.ExtensionContext, filePath: st
     process.on('close', async (code) => {
         if (code === 0 && output) {
             try {
+                console.log("OUTPUT: ", output)
                 const jsonOutput = JSON.parse(output);
                 await sendApiRequest(jsonOutput);
             } catch (error) {
