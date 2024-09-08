@@ -1,5 +1,6 @@
 import axios from 'axios';
 import * as vscode from 'vscode';
+import { extractSolutionCode } from './utils';
 
 let outputChannel = vscode.window.createOutputChannel("pyre");
 
@@ -10,7 +11,9 @@ export async function sendApiRequest(payload: any) {
     try {
         const response = await axios.post(apiUrl, payload);
         outputChannel.appendLine(JSON.stringify(response.data));
+        const fixes = extractSolutionCode(response.data)
         vscode.window.showInformationMessage('Data sent to API successfully!');
+        return fixes
     } catch (error) {
         vscode.window.showErrorMessage('Failed to send data to API. Check console for details.');
     } finally {

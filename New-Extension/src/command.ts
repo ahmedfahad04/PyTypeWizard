@@ -7,12 +7,15 @@ import { spawn } from 'child_process';
 import { sendApiRequest } from "./api";
 import which from "which";
 import { getSimplifiedSmartSelection } from "./smartSelection";
+import { getWebviewContent } from './utils'
 
 let outputChannel = vscode.window.createOutputChannel("pyre");
+let solutionPanel: vscode.WebviewPanel | undefined;
+
 
 export function registerCommands(context: vscode.ExtensionContext, pyrePath: string): void {
     context.subscriptions.push(
-        vscode.commands.registerCommand('pyre.fixError', (document: vscode.TextDocument, diagnostic: vscode.Diagnostic) => {
+        vscode.commands.registerCommand('pyre.fixError', async (document: vscode.TextDocument, diagnostic: vscode.Diagnostic) => {
             const filePath = document.uri.fsPath;
             const errMessage = diagnostic.message;
             const lineNum = diagnostic.range.start.line + 1;
@@ -28,8 +31,14 @@ export function registerCommands(context: vscode.ExtensionContext, pyrePath: str
             const targetPosition = new vscode.Position(diagnostic.range.start.line, diagnostic.range.start.character);
             const selection = getSimplifiedSmartSelection(document, targetPosition);
 
-            console.log(`SELECTED CODE START\n ${selection?.start.line} char: ${selection?.start.character}`);
-            console.log(`SELECTED CODE END \n ${selection?.end.line} char: ${selection?.end.character}`);
+            //? set selection for desired code snippet
+            if (selection && vscode.window.activeTextEditor) {
+                // Set the selection in the editor
+                vscode.window.activeTextEditor.selection = new vscode.Selection(document.lineAt(selection.start.line).range.start, document.lineAt(selection.end.line).range.end);
+
+                // Reveal the selection in the editor
+                vscode.window.activeTextEditor.revealRange(vscode.window.activeTextEditor.selection, vscode.TextEditorRevealType.InCenter);
+            }
 
             let sourceCode: string;
             if (selection) {
@@ -38,9 +47,33 @@ export function registerCommands(context: vscode.ExtensionContext, pyrePath: str
                 sourceCode = document.getText(expandedRange);
             }
 
+            //! should be integrated
             console.log(`SOUCE CODE: ${sourceCode}`);
 
-            runErrorExtractor(context, filePath, errType[0], errMessage, lineNum, colNum, outputDir, pyrePath);
+            // Create and show webview
+            if (!solutionPanel) {
+                solutionPanel = vscode.window.createWebviewPanel(
+                    'pyreSolution',
+                    'Pyre Solution',
+                    vscode.ViewColumn.Beside,
+                    { enableScripts: true }
+                );
+                solutionPanel.onDidDispose(() => {
+                    solutionPanel = undefined;
+                });
+            }
+
+            // Show loading message
+            solutionPanel.webview.html = getWebviewContent(['Generating solution...']);
+
+            // Run error extractor and get solution
+            const response = await runErrorExtractor(context, filePath, errType[0], errMessage, lineNum, colNum, outputDir, pyrePath);
+
+            // Update webview with solution
+            if (solutionPanel) {
+                solutionPanel.webview.html = getWebviewContent(response as string[]);
+            }
+
         })
     );
 }
@@ -78,28 +111,35 @@ export async function findPyreCommand(envPath: EnvironmentPath): Promise<string 
 }
 
 export function runErrorExtractor(context: vscode.ExtensionContext, filePath: string, errType: string, errMessage: string, lineNum: number, colNum: number, outputDir: string, pythonPath: string) {
-    const scriptPath = path.join(context.extensionPath, 'src', 'script', 'error_extractor.py');
+    return new Promise((resolve, reject) => {
 
-    const process = spawn(pythonPath, [scriptPath, filePath, errType, errMessage, lineNum.toString(), colNum.toString(), outputDir]);
-    let output = '';
+        const scriptPath = path.join(context.extensionPath, 'src', 'script', 'error_extractor.py');
 
-    process.stdout.on('data', (data) => {
-        output += data.toString();
-    });
+        const process = spawn(pythonPath, [scriptPath, filePath, errType, errMessage, lineNum.toString(), colNum.toString(), outputDir]);
+        let output = '';
 
-    process.stderr.on('data', (data) => {
-        console.error(`Error extractor error: ${data}`);
-    });
+        process.stdout.on('data', (data) => {
+            output += data.toString();
+        });
 
-    process.on('close', async (code) => {
-        if (code === 0 && output) {
-            try {
-                console.log("OUTPUT: ", output)
-                const jsonOutput = JSON.parse(output);
-                await sendApiRequest(jsonOutput);
-            } catch (error) {
-                console.error('Error parsing output or sending API request:', error);
+        process.stderr.on('data', (data) => {
+            console.error(`Error extractor error: ${data}`);
+        });
+
+        process.on('close', async (code) => {
+            if (code === 0 && output) {
+                try {
+                    console.log("OUTPUT: ", output)
+                    const jsonOutput = JSON.parse(output);
+                    const apiResponse = await sendApiRequest(jsonOutput);
+                    resolve(apiResponse); // Resolve with the API response
+                } catch (error) {
+                    console.error('Error parsing output or sending API request:', error);
+                    reject(error);
+                }
+            } else {
+                reject(new Error('Error extractor failed'));
             }
-        }
-    });
+        });
+    })
 }
