@@ -1,6 +1,10 @@
 import * as vscode from 'vscode';
 
-
+export async function applyFix(document: vscode.TextDocument, range: vscode.Range, fix: string) {
+    const edit = new vscode.WorkspaceEdit();
+    edit.replace(document.uri, range, fix);
+    await vscode.workspace.applyEdit(edit);
+}
 
 export function extractSolutionCode(response: any): string {
     if (response && response.fix && Array.isArray(response.fix)) {

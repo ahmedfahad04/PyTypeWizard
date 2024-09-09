@@ -1,9 +1,7 @@
 import { EnvironmentPath } from "@vscode/python-extension";
 import { existsSync, statSync } from 'fs';
 import { dirname, join } from 'path';
-import * as path from 'path';
 import * as vscode from 'vscode';
-import { spawn } from 'child_process';
 import { sendApiRequest } from "./api";
 import which from "which";
 import { getSimplifiedSmartSelection } from "./smartSelection";
@@ -22,6 +20,8 @@ export function registerCommands(context: vscode.ExtensionContext, pyrePath: str
             const colNum = diagnostic.range.start.character + 1;
             const outputDir = vscode.workspace.workspaceFolders?.[0].uri.fsPath || '';
             const errType = errMessage.split(':', 2);
+            const warningLine = document.lineAt(diagnostic.range.start.line).text.trim();
+
 
             const expandedRange = new vscode.Range(
                 document.lineAt(diagnostic.range.start.line).range.start,
@@ -66,8 +66,15 @@ export function registerCommands(context: vscode.ExtensionContext, pyrePath: str
             // Show loading message
             solutionPanel.webview.html = getWebviewContent(['Generating solution...']);
 
+            const obj = {
+                "rule_id": errType[0],
+                "message": errType[1],
+                "warning_line": warningLine,
+                "source_code": sourceCode,
+            }
+
             // Run error extractor and get solution
-            const response = await runErrorExtractor(context, filePath, errType[0], errMessage, lineNum, colNum, outputDir, pyrePath);
+            const response = await runErrorExtractor(context, filePath, errType[0], errType[1], lineNum, colNum, outputDir, pyrePath, obj);
 
             // Update webview with solution
             if (solutionPanel) {
@@ -110,36 +117,36 @@ export async function findPyreCommand(envPath: EnvironmentPath): Promise<string 
     return undefined;
 }
 
-export function runErrorExtractor(context: vscode.ExtensionContext, filePath: string, errType: string, errMessage: string, lineNum: number, colNum: number, outputDir: string, pythonPath: string) {
-    return new Promise((resolve, reject) => {
+export async function runErrorExtractor(context: vscode.ExtensionContext, filePath: string, errType: string, errMessage: string, lineNum: number, colNum: number, outputDir: string, pythonPath: string, inputobj: any) {
+    return new Promise(async (resolve, reject) => {
 
-        const scriptPath = path.join(context.extensionPath, 'src', 'script', 'error_extractor.py');
+        // const scriptPath = path.join(context.extensionPath, 'src', 'script', 'error_extractor.py');
 
-        const process = spawn(pythonPath, [scriptPath, filePath, errType, errMessage, lineNum.toString(), colNum.toString(), outputDir]);
-        let output = '';
+        // const process = spawn(pythonPath, [scriptPath, filePath, errType, errMessage, lineNum.toString(), colNum.toString(), outputDir]);
+        // let output = '';
 
-        process.stdout.on('data', (data) => {
-            output += data.toString();
-        });
+        // process.stdout.on('data', (data) => {
+        //     output += data.toString();
+        // });
 
-        process.stderr.on('data', (data) => {
-            console.error(`Error extractor error: ${data}`);
-        });
+        // process.stderr.on('data', (data) => {
+        //     console.error(`Error extractor error: ${data}`);
+        // });
 
-        process.on('close', async (code) => {
-            if (code === 0 && output) {
-                try {
-                    console.log("OUTPUT: ", output)
-                    const jsonOutput = JSON.parse(output);
-                    const apiResponse = await sendApiRequest(jsonOutput);
-                    resolve(apiResponse); // Resolve with the API response
-                } catch (error) {
-                    console.error('Error parsing output or sending API request:', error);
-                    reject(error);
-                }
-            } else {
-                reject(new Error('Error extractor failed'));
-            }
-        });
+        // process.on('close', async (code) => {
+        // if (code === 0 && output) {
+        try {
+            // console.log("OUTPUT: ", output)
+            // const jsonOutput = JSON.parse(output);
+            const apiResponse = await sendApiRequest(inputobj);
+            resolve(apiResponse); // Resolve with the API response
+        } catch (error) {
+            console.error('Error parsing output or sending API request:', error);
+            reject(error);
+        }
+        // } else {
+        // reject(new Error('Error extractor failed'));
+        // }
+        // });
     })
 }
