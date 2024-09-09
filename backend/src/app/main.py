@@ -29,8 +29,8 @@ def read_root():
 @app.post("/get-fixes")
 def get_type_fixes(
     input_obj: ModelInput,
-    num_seq: int = Query(20, ge=10, le=50),
-    beam_size: int = Query(20, ge=10, le=50),
+    num_seq: int = Query(10, ge=10, le=50),
+    beam_size: int = Query(10, ge=10, le=50),
 ):
     preds = get_final_predictions(
         data=input_obj.model_dump(), num_seq=num_seq, beam_size=beam_size

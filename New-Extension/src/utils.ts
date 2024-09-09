@@ -6,16 +6,14 @@ export async function applyFix(document: vscode.TextDocument, range: vscode.Rang
     await vscode.workspace.applyEdit(edit);
 }
 
-export function extractSolutionCode(response: any): string {
-    if (response && response.fix && Array.isArray(response.fix)) {
+export function extractSolutionCode(response: any): any {
+    console.log("GOT RESPONSE: ", response.fix);
+
+    if (response && response.fix) {
         vscode.window.showInformationMessage(response.fix[0])
         return response.fix;
     }
-    return '';
-}
-
-function formatPythonCode(code: string): string {
-    return code.trim().split('\n').map(line => line.trim()).join('\n');
+    return {};
 }
 
 export function getWebviewContent(solutions: string[]): string {

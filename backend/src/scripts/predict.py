@@ -158,6 +158,7 @@ def get_final_predictions(
     predictions = generate_predictions(
         model, tokenizer, input_text, max_length, beam_size, num_seq
     )
+
     end_time = time.time()
     prediction_time = end_time - start_time
     logger.info(f"Predictions generated in {prediction_time:.2f} seconds.")
@@ -169,14 +170,13 @@ def get_final_predictions(
     validation_time = end_time - start_time
     logger.info(f"Predictions validated in {validation_time:.2f} seconds.")
 
-    pprint.pprint(predictions)
-
     preds = []
     logger.info("Final validated predictions:")
     for k, v in predictions.items():
-        if k in valid_predictions:
-            preds.append(process_prediction(v))
-            logger.info(f"PRED # {k} ANS: \n{process_prediction(v)}")
+        # if k in valid_predictions:
+        preds.append(process_prediction(v))
+        # logger.info(f"PRED # {k} ANS: \n{process_prediction(v)}")
+        logger.info(process_prediction(v))
 
     return preds
 
