@@ -1,5 +1,6 @@
 # Exclude models
 Preliminary Study/t5base_final
+Preliminary Study/src
 backend/utils/t5base_final
 pytypeFix/node_modules
 backend/src/utils/t5base_final
