@@ -1,7 +1,7 @@
 import ast
 import json
-import sys
 import os
+import sys
 
 
 def extract_error_info(
