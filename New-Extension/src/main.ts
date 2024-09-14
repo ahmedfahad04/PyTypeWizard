@@ -1,10 +1,10 @@
+import { PVSC_EXTENSION_ID, PythonExtension } from '@vscode/python-extension';
 import * as vscode from 'vscode';
-import { PythonExtension, PVSC_EXTENSION_ID } from '@vscode/python-extension';
-import { createLanguageClient, listenForEnvChanges } from './languageClient';
-import { installPyre } from './install';
+import { LanguageClient } from 'vscode-languageclient';
 import { PyreCodeActionProvider } from './codeActionProvider';
 import { findPyreCommand, registerCommands } from './command';
-import { LanguageClient } from 'vscode-languageclient';
+import { installPyre } from './install';
+import { createLanguageClient, listenForEnvChanges } from './languageClient';
 
 type LanguageClientState = {
 	languageClient: LanguageClient,
@@ -46,6 +46,18 @@ export async function activate(context: vscode.ExtensionContext) {
 			new PyreCodeActionProvider(),
 			{ providedCodeActionKinds: [vscode.CodeActionKind.QuickFix] }
 		)
+	);
+
+	context.subscriptions.push(
+		vscode.commands.registerCommand('pyre.restartExtension', async () => {
+			// Deactivate the current extension instance
+			await deactivate();
+
+			// Reactivate the extension
+			await activate(context);
+
+			vscode.window.showInformationMessage('Pyre Extension has been restarted.');
+		})
 	);
 }
 

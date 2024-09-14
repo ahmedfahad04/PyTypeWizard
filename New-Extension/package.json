@@ -17,6 +17,14 @@
 	"activationEvents": [
 		"*"
 	],
+	"contributes": {
+		"commands": [
+			{
+				"command": "pyre.restartExtension",
+				"title": "Restart Pyre Extension"
+			}
+		]
+	},
 	"scripts": {
 		"vscode:prepublish": "npm run compile",
 		"compile": "tsc -p ./",
