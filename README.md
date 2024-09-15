@@ -67,7 +67,7 @@ This pipeline allows for efficient and accurate generation of type error fixes, 
 ## Future Work
 
 - Integration with more LLMs for diverse fix suggestions.
-- Adding automatic type annotation
+- Adding automatic type annotation through the VSCode extension
 
 ## Initial Planning
 

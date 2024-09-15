@@ -3,6 +3,8 @@
 ## Manually Handle Type Errors
 
 - Unbound Names [10]: For that case we can implement auto import
+- Undefined Imports
+  > TO resolve this append search path with this value got from this command `python -c 'import site; print(site.getsitepackages()[0])'`
 
 ## Features
 
