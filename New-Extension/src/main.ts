@@ -39,6 +39,18 @@ export async function activate(context: vscode.ExtensionContext) {
 		listenForEnvChanges(pythonExtension, state);
 	}
 
+	context.subscriptions.push(
+		vscode.commands.registerCommand('pyre.restartExtension', async () => {
+			// Deactivate the current extension instance
+			deactivate();
+
+			// Reactivate the extension
+			await activate(context);
+
+			vscode.window.showInformationMessage('Pyre Extension has been restarted.');
+		})
+	);
+
 	registerCommands(context, activatedEnvPath.path);
 	context.subscriptions.push(
 		vscode.languages.registerCodeActionsProvider(
@@ -48,17 +60,7 @@ export async function activate(context: vscode.ExtensionContext) {
 		)
 	);
 
-	context.subscriptions.push(
-		vscode.commands.registerCommand('pyre.restartExtension', async () => {
-			// Deactivate the current extension instance
-			await deactivate();
 
-			// Reactivate the extension
-			await activate(context);
-
-			vscode.window.showInformationMessage('Pyre Extension has been restarted.');
-		})
-	);
 }
 
 export function deactivate() {
