@@ -5,6 +5,7 @@
 - Unbound Names [10]: For that case we can implement auto import
 - Undefined Imports
   > TO resolve this append search path with this value got from this command `python -c 'import site; print(site.getsitepackages()[0])'`
+  > We need to add this value automatically
 
 ## Features
 
@@ -18,6 +19,8 @@
 - Collect at least 5 `Typed Repos` for testing. ✅
 
 - Consider the `NOTE` on the Test Repo for LLM Help (specifically in Reasoning or other case)
+
+- Before showing the Fixing option, I'll show an Explain button that will enable user to have explanation on how to resolve that error. \*\*\*
 
 ## Error Handling
 

