@@ -138,8 +138,9 @@ export async function runErrorExtractor(context: vscode.ExtensionContext, filePa
         process.on('close', async (code) => {
             if (code === 0 && output) {
                 try {
-                    console.log("OUTPUT: ", output)
                     const jsonOutput = JSON.parse(output);
+                    console.log("JSON DATA: ", jsonOutput);
+
                     const apiResponse = await sendApiRequest(jsonOutput);
                     Object.values(apiResponse)
                     resolve(Object.values(apiResponse)); // Resolve with the API response
