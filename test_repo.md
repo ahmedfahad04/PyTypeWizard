@@ -1,6 +1,7 @@
 # Repository URLs
 
 Resource Link [Typed Repo](https://github.com/typilus/typilus/blob/master/src/data_preparation/metadata/typedRepos.txt)
+Last Count: 111
 
 1. [Meson](https://github.com/mesonbuild/meson.git)
 2. [SnapCraft Linux](https://github.com/canonical/snapcraft.git)
