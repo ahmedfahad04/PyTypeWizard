@@ -2,7 +2,7 @@
 
 1. Basic workflow implementation ✅
 2. Understand the details of Document Splitting (Chunking). Its crucial for proper data retrieval. \*\* ✅
-3. Understand the efficient way of Document Loading
+3. Understand the efficient way of Document Loading ✅
 4. Understand the effective way to context retrieveing (term, hybrid search etc.)
 5. Preparing proper prompt template
 6. Adopt relevant Prompt Engineering Technique
@@ -11,15 +11,15 @@
 
 ### `Chunking`
 
-- We can divide any documents based on specific delimeter or length.
-- Popular Types are:
-  - Character Text Splitting _(Manually split data based on character: Worst)_ [CharacterTextSplitter]
-  - Recursive Character Splitting _(Provide \n, then \n used as splitter)_ [RecursiveCharacterTextSplitter]
-  - Document Based Splitting
-    [MarkdownTextSplitter, **`PythonCodeTextSplitter`**]
-  - Semantics Chunking
-    [SemanticChunker]
-  - Agentic Chunking
+We can divide any documents based on specific delimeter or length. Popular Types are:
+
+- Character Text Splitting _(Manually split data based on character: Worst)_ [CharacterTextSplitter]
+- Recursive Character Splitting _(Provide \n, then \n used as splitter)_ [RecursiveCharacterTextSplitter]
+- Document Based Splitting
+  [MarkdownTextSplitter, **`PythonCodeTextSplitter`**]
+- Semantics Chunking
+  [SemanticChunker]
+- Agentic Chunking
 
 ### A Bit Detailed about `Chunking`
 
@@ -34,3 +34,14 @@ We use embeddings to chunk
 We use LLM for that case. Its also called proposition-based chunking. Interesting Concepts
 
 > **We'll use `PythonCodeTextSplitter` for Chunking**
+
+### `Document Loaders`
+
+Some commonly used document loaders are:
+
+- TextLoader
+- CSVLoader
+- DirectoryLoader
+- Many more..
+
+> **We'll use `GenericPerser` for Chunking**
