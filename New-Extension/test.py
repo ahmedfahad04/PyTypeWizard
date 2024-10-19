@@ -235,3 +235,38 @@ What’s Wrong?
 
 2. Return Type Mismatch: The return type is annotated as Dict[str, List[str]], but the logic doesn’t ensure that all values will be lists of strings. The code could fail if the API returns unexpected data types like integers or None.
 """
+
+
+def calculate_taxes(incomes: list[float | str | int], tax_rate: int) -> list[float]:
+    return [float(income) * tax_rate for income in incomes]
+
+
+incomes = [50000.0, 60000.0, "75000.0"]
+tax_rate = 0.2
+taxes = calculate_taxes(incomes, tax_rate)
+print("tAX: ", taxes)
+
+
+# Option 1: Fix the data to ensure all values are float
+# def calculate_taxes(incomes: list[float], tax_rate: float) -> list[float]:
+#     return [income * tax_rate for income in incomes]
+
+
+# # After correction, the string "75000.0" is converted to a float
+# incomes = [50000.0, 60000.0, 75000.0]
+# tax_rate = 0.2
+# taxes = calculate_taxes(incomes, tax_rate)  # Now it works correctly.
+
+
+# # Option 2: Update the type hint to handle possible string-float mismatches from parsing
+# def calculate_taxes(incomes: list[Union[float, str]], tax_rate: float) -> list[float]:
+#     return [float(income) * tax_rate for income in incomes]
+
+
+# # PyTypeWizard allows for string numbers and converts them automatically
+# incomes = [50000.0, 60000.0, "75000.0"]  # Strings are handled and converted to float
+# tax_rate = 0.2
+# taxes = calculate_taxes(
+#     incomes, tax_rate
+# )
+# print("NEW TAX: ", taxes)

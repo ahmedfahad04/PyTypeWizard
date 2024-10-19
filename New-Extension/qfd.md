@@ -5,12 +5,14 @@
 1. **Type Inconsistency**: Wrong annotations cause crashes when unexpected data types are used.
 2. **Hidden Bugs**: Incorrect annotations prevent early detection of type errors, leading to runtime failures.
 3. **Harder Debugging**: Misleading types make tracking the source of bugs more difficult.
+4. **Misleading Documentation**
 
 ## Resolve
 
 1. **Type Inconsistency**: PyTypeWizard detects mismatches and auto-corrects annotations in real-time.
 2. **Hidden Bugs**: PyTypeWizard catches potential runtime type errors early by analyzing code context.
 3. **Harder Debugging**: It simplifies debugging by providing clear explanations and suggested fixes.
+4. Can help us in unit testing
 
 This version removes redundant points and highlights key issues and resolutions.
 

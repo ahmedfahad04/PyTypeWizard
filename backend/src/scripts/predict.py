@@ -26,8 +26,8 @@ coloredlogs.install(
 # Global Constants
 MODEL_NAME: Final[str] = "../utils/t5base_final/"
 MODEL_PATH: Final[str] = "../utils/t5base_final/checkpoint-1190"
-DEFAULT_SEQ_NUM: Final[int] = 50
-DEFAULT_BEAM_SIZE: Final[int] = 50
+DEFAULT_SEQ_NUM: Final[int] = 10
+DEFAULT_BEAM_SIZE: Final[int] = 10
 DEFAULT_MAX_LENGTH: Final[int] = 256
 
 
