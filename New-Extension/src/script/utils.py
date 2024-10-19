@@ -1,23 +1,99 @@
+# import io
+# import tokenize
 
 
-def parse_pyre_output(output):
-    
-    parts = output.split(':')
-    
-    file_name = parts[0]
-    line_number = parts[1]
-    col_number = parts[2].split(' ')[0]
-    err_type = ' '.join(parts[2].split(' ')[1:])
-    
-    err_msg = ':'.join(parts[3:]).strip()
-    
-    return file_name, line_number, col_number, err_type, err_msg
+# def str_to_token_list(s, line_idx, line_count):
+#     tokens = []  # list of tokens extracted from source code.
+#     buf = io.StringIO(s)
+#     tokens_generator = tokenize.generate_tokens(buf.readline)
+#     try:
+#         prev_line = -1
+#         prev_col_end = -1
+#         for token in tokens_generator:
+#             # ignore tokens that are not in our diff and ignore multi-line tokens that go beyond our diff, e.g. multi-line comments
+#             if not (line_idx <= token[2][0] < line_idx + line_count) or not (
+#                 line_idx <= token[3][0] < line_idx + line_count
+#             ):
+#                 prev_line = token[3][0]
+#                 prev_col_end = token[3][1]
+#                 continue
+#             # Calculate the whitespace btw tokens
+#             if prev_line != -1 and prev_line != token[2][0]:  # new line
+#                 tokens.append(" " * (token[2][1]))
+#             elif (prev_line != -1 and prev_line == token[2][0]) and (
+#                 prev_col_end != -1 and prev_col_end < token[2][1]
+#             ):
+#                 tokens.append(" " * (token[2][1] - prev_col_end))
+#             # if token[1].strip() != '':
+#             #     tokens.append(token[1])
+#             # elif token[0] == tokenize.NEWLINE:
+#             #     tokens.append('NEWLINE')
+#             tokens.append(token[1])
+#             if token[0] == tokenize.INDENT:
+#                 tokens.append("<IND>")
+#             elif token[0] == tokenize.DEDENT:
+#                 tokens.append("<DED>")
+#             # else:
+#             #     tokens.append(token[1])
+#             prev_line = token[3][0]
+#             prev_col_end = token[3][1]
+#     # suppress raise from buggy code
+#     # Note: Exception is only raised at EOF
+#     except Exception as e:
+#         print(traceback.format_exc())
+#     return tokens
 
-    
-# Example usage
-# file_name, line_number, col_number, err_type, err_msg = parse_pyre_output("test2.py:25:4 Incompatible return type [7]: Expected `Tuple[str, str]` but got `Tuple[str, int]`")
-# print(f"File Name: {file_name}")
-# print(f"Line Number: {line_number}")
-# print(f"Column Number: {col_number}")
-# print(f"Error Type: {err_type}")
-# print(f"Error Message: {err_msg}")
+
+# def count_lines(code: str) -> int:
+#     return len(code.strip().split("\n"))
+
+
+# # Sample Python code to tokenize
+# sample_code = """
+# def add(a: float, b: float) -> float:
+#     a = 1.5 * b
+#     print(a)
+#     if a > b:
+#         print("A is BIGGER")
+        
+#     else:
+#         print("B is BIGGER")
+        
+#     return a + b
+# """
+
+# # Test the str_to_token_list function
+# line_idx = 2  # Starting line index
+# line_count = count_lines(sample_code) + 1  # Number of lines in the sample code
+
+# tokens = str_to_token_list(sample_code, line_idx, line_count)
+
+# encoded = (
+#     sample_code.replace("    ", "<IND>").replace("    ", "<DED>").lstrip("\n").rstrip()
+# )
+
+# print("Tokenized output:")
+# print(encoded)
+
+# code = "".join(tokens)
+
+# print("==========================DECODED VERSION==========================")
+
+# src_code = (
+#     encoded.replace("<IND>", "    ").replace("<DED>", "    ").lstrip("\n").rstrip()
+# )
+
+
+# print("FINAL CODE: \n", src_code)
+
+import autopep8
+
+code = '''
+def add(a: int, b: float) -> float: 
+ a = 1.5 * b 
+ print(i) 
+ return a + b
+'''
+
+formatted_code = autopep8.fix_code(code)
+print(formatted_code)

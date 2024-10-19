@@ -7,6 +7,7 @@ import subprocess
 import sys
 import tempfile
 import time
+import autopep8
 from typing import Dict, Final, List
 
 import coloredlogs
@@ -42,27 +43,47 @@ def process_prediction(code: str) -> str:
 
 def validate_predictions(predictions: Dict[str, str]) -> List[str]:
     valid_predictions = []
+    validation_folder = "validation_files"
+    os.makedirs(validation_folder, exist_ok=True)
 
     with tempfile.TemporaryDirectory() as temp_dir:
-        with open(os.path.join(temp_dir, ".pyre_configuration"), "w") as config_file:
+        config_path = os.path.join(temp_dir, ".pyre_configuration")
+        with open(config_path, "w") as config_file:
             config_file.write('{"source_directories": ["."]}\n')
 
-        temp_file_path = os.path.join(temp_dir, "prediction.py")
-
+        script_path = os.path.join(temp_dir, "all_predictions.py")
+\
         for pred_id, code in tqdm(predictions.items(), desc="Validating predictions"):
-            processed_code = process_prediction(code)
+            processed_code = (
+                code.replace("<IND>", " ").replace("<DED>", " ").lstrip("\n").rstrip()
+            )
+            fixed_code = autopep8.fix_code(processed_code)
 
-            with open(temp_file_path, "w") as temp_file:
-                temp_file.write(processed_code)
+            with open(script_path, "w") as script_file:
+                script_file.write(fixed_code)
 
             try:
                 result = subprocess.run(
                     ["pyre", "check"], cwd=temp_dir, capture_output=True, text=True
                 )
-                if result.returncode == 0:
+                # logger.error(f"Pyre output: {pred_id} => \n{len(result.stdout)}")
+
+                if  len(result.stdout) == 0:
+                    logger.info(f"Prediction {pred_id} is valid.")
                     valid_predictions.append(pred_id)
-            except subprocess.CalledProcessError as e:
-                logger.error(f"Error for prediction {pred_id}: {e}")
+
+                    # Write valid prediction to the validation folder
+                    valid_file_path = os.path.join(
+                        validation_folder, f"valid_prediction_{pred_id}.py"
+                    )
+                    with open(valid_file_path, "w") as valid_file:
+                        valid_file.write(fixed_code)
+                else:
+                    logger.warning(
+                        f"Prediction {pred_id} is invalid. Pyre output:\n{result.stdout}"
+                    )
+            except subprocess.CalledProcessError:
+                pass
 
     return valid_predictions
 
@@ -151,6 +172,13 @@ def get_final_predictions(
     warning_line = data["warning_line"]
     source_code = data["source_code"]
 
+    indented_code = (
+        source_code.replace("    ", "<IND>")
+        .replace("    ", "<DED>")
+        .lstrip("\n")
+        .rstrip()
+    )
+
     input_text = f"fix {rule_id} {message} {warning_line}:\n{source_code}"
 
     logger.info("Generating predictions...")
@@ -165,7 +193,7 @@ def get_final_predictions(
 
     logger.info("Validating predictions...")
     start_time = time.time()
-    # valid_predictions = validate_predictions(predictions)
+    valid_predictions = validate_predictions(predictions)
     end_time = time.time()
     validation_time = end_time - start_time
     logger.info(f"Predictions validated in {validation_time:.2f} seconds.")
@@ -174,9 +202,13 @@ def get_final_predictions(
     logger.info("Final validated predictions:")
     for k, v in predictions.items():
         # if k in valid_predictions:
-        preds.append(process_prediction(v))
-        # logger.info(f"PRED # {k} ANS: \n{process_prediction(v)}")
-        logger.info(process_prediction(v))
+        refactored = autopep8.fix_code(v)
+        preds.append(refactored)
+        #     logger.info(f"PRED # {k} ANS: \n{refactored}")
+        logger.info(refactored)
+
+    # print("VALID PREDICTIONS: \n")
+    # print(*valid_predictions, sep="\n\n")
 
     return preds
 

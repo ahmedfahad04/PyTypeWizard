@@ -2,6 +2,55 @@ import ast
 import json
 import os
 import sys
+import io
+import tokenize
+
+
+def str_to_token_list(s, line_idx, line_count):
+    tokens = []  # list of tokens extracted from source code.
+    buf = io.StringIO(s)
+    tokens_generator = tokenize.generate_tokens(buf.readline)
+    try:
+        prev_line = -1
+        prev_col_end = -1
+        for token in tokens_generator:
+            # ignore tokens that are not in our diff and ignore multi-line tokens that go beyond our diff, e.g. multi-line comments
+            if not (line_idx <= token[2][0] < line_idx + line_count) or not (
+                line_idx <= token[3][0] < line_idx + line_count
+            ):
+                prev_line = token[3][0]
+                prev_col_end = token[3][1]
+                continue
+            # Calculate the whitespace btw tokens
+            if prev_line != -1 and prev_line != token[2][0]:  # new line
+                tokens.append(" " * (token[2][1]))
+            elif (prev_line != -1 and prev_line == token[2][0]) and (
+                prev_col_end != -1 and prev_col_end < token[2][1]
+            ):
+                tokens.append(" " * (token[2][1] - prev_col_end))
+            # if token[1].strip() != '':
+            #     tokens.append(token[1])
+            # elif token[0] == tokenize.NEWLINE:
+            #     tokens.append('NEWLINE')
+            tokens.append(token[1])
+            if token[0] == tokenize.INDENT:
+                tokens.append("<IND>")
+            elif token[0] == tokenize.DEDENT:
+                tokens.append("<DED>")
+            # else:
+            #     tokens.append(token[1])
+            prev_line = token[3][0]
+            prev_col_end = token[3][1]
+    # suppress raise from buggy code
+    # Note: Exception is only raised at EOF
+    except Exception as e:
+        print(traceback.format_exc())
+
+    return "".join(tokens)
+
+
+def count_lines(code: str) -> int:
+    return len(code.strip().split("\n"))
 
 
 def extract_error_info(
@@ -38,16 +87,27 @@ def extract_error_info(
 
     relevant_lines = "".join(source_lines[start_line:end_line])
 
-    # Parse the relevant lines to get the full function or class definition
-    try:
-        tree = ast.parse(relevant_lines)
-        if isinstance(tree.body[0], (ast.FunctionDef, ast.ClassDef)):
-            source_code = ast.unparse(tree.body[0])
-        else:
-            source_code = relevant_lines
-    except SyntaxError:
-        # If parsing fails, just use the relevant lines as source code
-        source_code = relevant_lines
+    # Extract the function definition
+    start_line = line_num - 1
+    while start_line >= 0 and not source_lines[start_line].startswith("def "):
+        start_line -= 1
+
+    if start_line >= 0:
+        # Extract the function signature
+        signature_line = source_lines[start_line]
+
+        # If the signature is split across multiple lines, include them
+        end_line = start_line
+        while not signature_line.endswith(":"):
+            end_line += 1
+            if end_line < len(source_lines):
+                signature_line += " " + source_lines[end_line].strip()
+            else:
+                break
+
+        source_code = signature_line
+    else:
+        source_code = "No function definition found"
 
     # Parse the entire file to collect import statements
     try:
@@ -64,62 +124,17 @@ def extract_error_info(
         imports_code = ""
 
     # Combine imports with source code
-    combined_code = f"{imports_code}\n{source_code}"
+    combined_code = f"{source_code}"
 
     # Construct the JSON object
     error_info = {
-        "rule_id": err_type,
-        "message": err_message,
+        "rule_id": err_type.strip(),
+        "message": err_message.strip(),
         "warning_line": warning_line.strip(),
         "source_code": combined_code,
     }
 
     return json.dumps(error_info, indent=2)
-
-
-def extract_info(
-    file_path: str,
-    err_type: str,
-    err_message: str,
-    line_num: int,
-    col_num: int,
-    output_dir: str,
-) -> dict:
-    with open(file_path, "r") as file:
-        source_code = file.read()
-
-    tree = ast.parse(source_code)
-
-    for node in ast.walk(tree):
-        print(node)
-        if (
-            isinstance(node, ast.FunctionDef)
-            and node.lineno <= line_num <= node.end_lineno
-        ):
-
-            func_source = ast.get_source_segment(source_code, node)
-            print("INSIDE ", func_source)
-
-            warning_line = source_code.splitlines()[line_num - 1].strip()
-
-            imports = []
-            for node in tree.body:
-                if isinstance(node, (ast.Import, ast.ImportFrom)):
-                    imports.append(ast.unparse(node))
-            imports_code = "\n".join(imports)
-
-            result = {
-                "rule_id": f"{err_type}",
-                "message": err_message.split(":")[1],
-                "warning_line": warning_line,
-                "source_code": f"{imports_code}\n\n{func_source}",
-            }
-
-            print("RESULT: ", result)
-
-            return json.dumps(result, indent=2)
-
-    return None
 
 
 if __name__ == "__main__":

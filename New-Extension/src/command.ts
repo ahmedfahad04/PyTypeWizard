@@ -122,34 +122,35 @@ export async function findPyreCommand(envPath: EnvironmentPath): Promise<string 
 export async function runErrorExtractor(context: vscode.ExtensionContext, filePath: string, errType: string, errMessage: string, lineNum: number, colNum: number, outputDir: string, pythonPath: string, inputobj: any) {
     return new Promise(async (resolve, reject) => {
 
-        // const scriptPath = path.join(context.extensionPath, 'src', 'script', 'error_extractor.py');
+        const scriptPath = path.join(context.extensionPath, 'src', 'script', 'error_extractor.py');
 
-        // const process = spawn(pythonPath, [scriptPath, filePath, errType, errMessage, lineNum.toString(), colNum.toString(), outputDir]);
-        // let output = '';
+        const process = spawn(pythonPath, [scriptPath, filePath, errType, errMessage, lineNum.toString(), colNum.toString(), outputDir]);
+        let output = '';
 
-        // process.stdout.on('data', (data) => {
-        //     output += data.toString();
-        // });
+        process.stdout.on('data', (data) => {
+            output += data.toString();
+        });
 
-        // process.stderr.on('data', (data) => {
-        //     console.error(`Error extractor error: ${data}`);
-        // });
+        process.stderr.on('data', (data) => {
+            console.error(`Error extractor error: ${data}`);
+        });
 
-        // process.on('close', async (code) => {
-            // if (code === 0 && output) {
+        process.on('close', async (code) => {
+            if (code === 0 && output) {
                 try {
-                    // console.log("OUTPUT: ", output)
-                    // const jsonOutput = JSON.parse(output);
-                    const apiResponse = await sendApiRequest(inputobj);
+                    const jsonOutput = JSON.parse(output);
+                    console.log("JSON DATA: ", jsonOutput);
+
+                    const apiResponse = await sendApiRequest(jsonOutput);
                     Object.values(apiResponse)
                     resolve(Object.values(apiResponse)); // Resolve with the API response
                 } catch (error) {
                     console.error('Error parsing output or sending API request:', error);
                     reject(error);
                 }
-            // } else {
-            //     reject(new Error('Error extractor failed'));
-            // }
+            } else {
+                reject(new Error('Error extractor failed'));
+            }
         });
     })
 }
