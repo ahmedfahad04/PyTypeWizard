@@ -1,15 +1,39 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import axios from 'axios';
 import * as vscode from 'vscode';
 
+interface RelevantContext {
+    content: string;
+    file_path: string;
+    start_line: number;
+    end_line: number;
+    similarity_score: number;
+}
+
+interface RAGResponse {
+    relevant_contexts: RelevantContext[];
+    query: string;
+}
+
 export function activate(context: vscode.ExtensionContext) {
-    // Initialize Gemini API
-    console.log("API KEY: ", process.env.GEMINI_API_KEY)
-    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || 'AIzaSyC_n6RCX0mchoMJo725ccRLSEHuWP7f_gs');
+    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || 'AIzaSyAEExJQrlV9np1hENEqKM8uK91824wAuA4');
     const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
+    const RAG_SERVER_URL = 'http://localhost:8000';
 
     let currentPanel: vscode.WebviewPanel | undefined = undefined;
 
+    // Start RAG server
+    const startRAGServer = () => {
+        const pythonPath = vscode.workspace.getConfiguration('python').get<string>('pythonPath') || 'python';
+        const terminal = vscode.window.createTerminal('RAG Server');
+        terminal.sendText(`${pythonPath} -m pip install fastapi uvicorn sentence-transformers scikit-learn`);
+        terminal.sendText(`${pythonPath} rag_server.py`);
+    };
+
     let disposable = vscode.commands.registerCommand('vscode-gemini-chat.openChat', () => {
+        // Start the RAG server when chat is opened
+        // startRAGServer();
+
         if (currentPanel) {
             currentPanel.reveal(vscode.ViewColumn.Two);
         } else {
@@ -25,7 +49,6 @@ export function activate(context: vscode.ExtensionContext) {
 
             currentPanel.webview.html = getWebviewContent();
 
-            // Handle messages from the webview
             currentPanel.webview.onDidReceiveMessage(
                 async message => {
                     switch (message.command) {
@@ -34,13 +57,24 @@ export function activate(context: vscode.ExtensionContext) {
                                 // Get workspace content
                                 const workspaceContent = await getWorkspaceContent();
 
-                                // Prepare context for Gemini
-                                const prompt = `Given the following code repository context:
-                                ${workspaceContent}
+                                // Get relevant context from RAG system
+                                const ragResponse = await axios.post<RAGResponse>(`${RAG_SERVER_URL}/query`, {
+                                    query: message.text,
+                                    workspace_files: workspaceContent
+                                });
+
+                                // Format relevant contexts
+                                const contextStr = ragResponse.data.relevant_contexts
+                                    .map(ctx => `File: ${ctx.file_path} (Lines ${ctx.start_line}-${ctx.end_line})\n\`\`\`\n${ctx.content}\n\`\`\``)
+                                    .join('\n\n');
+
+                                // Prepare prompt with relevant context
+                                const prompt = `Given the following relevant code context:
+                                ${contextStr}
                                 
                                 Question: ${message.text}
                                 
-                                Please provide a relevant answer based on the code context.`;
+                                Please provide a detailed answer based on the code context. If the context doesn't contain enough information to answer the question, please let me know.`;
 
                                 // Get response from Gemini
                                 const result = await model.generateContent(prompt);
@@ -77,19 +111,19 @@ export function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(disposable);
 }
 
-async function getWorkspaceContent(): Promise<string> {
+async function getWorkspaceContent(): Promise<Record<string, string>> {
     const workspaceFolders = vscode.workspace.workspaceFolders;
     if (!workspaceFolders) {
-        return '';
+        return {};
     }
 
     const files = await vscode.workspace.findFiles('**/*.{ts,js,py,java,cpp,c,h,hpp,css,html,json}');
-    let content = '';
+    const content: Record<string, string> = {};
 
     for (const file of files) {
         try {
             const document = await vscode.workspace.openTextDocument(file);
-            content += `\nFile: ${file.fsPath}\n${document.getText()}\n`;
+            content[file.fsPath] = document.getText();
         } catch (error) {
             console.error(`Error reading file ${file.fsPath}:`, error);
         }
@@ -97,10 +131,6 @@ async function getWorkspaceContent(): Promise<string> {
 
     return content;
 }
-
-// src/extension.ts
-
-// ... (previous activation and workspace content code remains the same) ...
 
 function getWebviewContent() {
     return `<!DOCTYPE html>
