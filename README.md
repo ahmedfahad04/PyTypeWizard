@@ -72,3 +72,11 @@ This pipeline allows for efficient and accurate generation of type error fixes, 
 ## Initial Planning
 
 [Workplan](https://docs.google.com/document/d/1KlKjsn5AFJs1EB_KFU0lZRfT7zvXr8WtVh7bwfAcHbE/edit)
+
+## Current Status
+
+**Frontend**: `New-Extension` folder
+
+**Backend**: `backend` folder
+
+Others: Helper folder
