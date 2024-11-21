@@ -1,0 +1,18 @@
+================================== Ai Message ==================================
+
+The context provides two class definitions:
+
+**Class Names:**
+
+* `Showroom`
+* `A`
+
+**Method Names:**
+
+* **Within the `Showroom` class:**
+    * `__init__` (constructor)
+    * `bulk_add_inventory`
+
+* **Within the `A` class:**
+    * `f`
+<class 'NoneType'>
