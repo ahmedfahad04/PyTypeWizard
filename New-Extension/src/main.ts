@@ -29,9 +29,16 @@ export async function activate(context: vscode.ExtensionContext) {
 	const activatedEnvPath = pythonExtension.exports.environments.getActiveEnvironmentPath();
 	let pyrePath = await findPyreCommand(activatedEnvPath);
 
-	if (!pyrePath) {
+	vscode.window.showInformationMessage(`Pyre Path: ${pyrePath}`)
+
+
+	if (pyrePath?.length > 0) {
+		vscode.window.showInformationMessage("INSIDE INSTALL PYRE")
 		await installPyre();
 		pyrePath = await findPyreCommand(activatedEnvPath);
+	} else {
+		vscode.window.showErrorMessage("INSTALLATION FAILED")
+
 	}
 
 	if (pyrePath) {

@@ -1,13 +1,15 @@
-import * as vscode from 'vscode';
+import { exec } from 'child_process';
 import { existsSync, writeFileSync } from 'fs';
 import { join } from 'path';
-import { exec } from 'child_process';
+import * as vscode from 'vscode';
 
 export async function installPyre(): Promise<void> {
     const installPyre = await vscode.window.showInformationMessage(
         'Pyre is not installed. Would you like to install it?',
         'Yes', 'No'
     );
+
+    vscode.window.showInformationMessage("INSIDE INSTALL PYRE")
 
     if (installPyre === 'Yes') {
         const installProgress = vscode.window.withProgress({
