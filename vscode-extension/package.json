@@ -18,12 +18,7 @@
 		"*"
 	],
 	"contributes": {
-		"commands": [
-			{
-				"command": "pytypewizard.restartExtension",
-				"title": "Restart PyTypeWizard"
-			}
-		]
+		"commands": []
 	},
 	"scripts": {
 		"vscode:prepublish": "npm run compile",

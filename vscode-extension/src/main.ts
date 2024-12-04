@@ -47,8 +47,6 @@ export async function activate(context: vscode.ExtensionContext) {
 		await installPyre();
 		pyrePath = await findPyreCommand(activePythonPath);
 
-	} else {
-		vscode.window.showErrorMessage('TypeChecker Config setup failed')
 	}
 
 	// creating language server at pyrePath
@@ -57,18 +55,7 @@ export async function activate(context: vscode.ExtensionContext) {
 		listenForEnvChanges(pythonExtension, state);
 	}
 
-	context.subscriptions.push(
-		vscode.commands.registerCommand('pytypewizard.restartExtension', async () => {
-			// Deactivate the current extension instance
-			deactivate();
-
-			// Reactivate the extension
-			await activate(context);
-
-			vscode.window.showInformationMessage('PyTypeWizard Extension has been restarted.');
-		})
-	);
-
+	// show the 'Fix Issue' as QuickFix option under detected error
 	registerCommands(context, activePythonPath.path);
 	context.subscriptions.push(
 		vscode.languages.registerCodeActionsProvider(
