@@ -1,0 +1,41 @@
+CONTEXT TEXT: 
+ # Lets create a class for our showroom
+
+ - -
+
+class Showroom:
+    """
+    Class for our car inventory.
+    """
+
+    def __init__(self):
+        """
+        Constructor for Showroom class.
+
+        Attributes:
+            inventory: dictionary containing inventory
+            total_stock_value: total stock value in GBP
+            price_list: dictionary of currently advised model sale prices in GBP
+            is_open: boolean flag indicating whether showroom is open, defaults to False
+        """
+
+        self.inventory: dict[str, float] = {}
+        self.total_stock_value: float = 0
+        self.price_list: dict[str, float] | None = None
+        self.is_open: bool = False
+
+    def bulk_add_inventory(self, car_models: list[str], model_counts: list[int]):
+        """
+        Bulk add multiple inventory items based on lists of car_models and model_counts.
+        Note that car_models and model_counts must be the same length.
+
+ - -
+
+# from __future__ import annotations
+
+
+# We need to uncomment from __future__ import annotations at the top of
+# the file for this to evaluate without raising a NameError.
+class A:
+    def f(self) -> A:
+        return self

@@ -1,7 +1,0 @@
-{
-    "rule_id": "Incompatible parameter type [6]",
-    "message": " Expected `Union[bytes, hub.core.storage.cachable.Cachable]` for 2nd positional only parameter to call `LRUCache.__setitem__` but got `Optional[CommitChunkSet]`.",
-    "warning_line": "            self.meta_cache[commit_chunk_set_key] = self.commit_chunk_set",
-    "source_code": "            commit_chunk_set_key = get_tensor_commit_chunk_set_key(self.key, commit_id)\n            self.meta_cache[commit_chunk_set_key] = self.commit_chunk_set\n\n"
-}
-  
