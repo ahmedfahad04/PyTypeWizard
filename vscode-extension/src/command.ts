@@ -8,7 +8,7 @@ import { sendApiRequest } from "./api";
 import { getSimplifiedSmartSelection } from "./smartSelection";
 import { getWebviewContent } from './utils';
 
-let outputChannel = vscode.window.createOutputChannel("pyre");
+let outputChannel = vscode.window.createOutputChannel("PyTypeWizard");
 let solutionPanel: vscode.WebviewPanel | undefined;
 
 

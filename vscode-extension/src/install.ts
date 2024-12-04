@@ -3,6 +3,10 @@ import { existsSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import * as vscode from 'vscode';
 
+
+let outputChannel = vscode.window.createOutputChannel("PyTypeWizard");
+
+
 export async function installPyre(): Promise<void> {
     const installPyre = await vscode.window.showInformationMessage(
         'Pyre is not installed. Would you like to install it?',
@@ -44,7 +48,7 @@ export function configurePyre(): void {
 
     const pyreConfigPath = join(workspaceFolder, '.pyre_configuration');
     const pyreWatchManPath = join(workspaceFolder, '.watchmanconfig')
-    
+
     if (!existsSync(pyreConfigPath)) {
         const pyreConfigContent = JSON.stringify({
             "site_package_search_strategy": "pep561",
@@ -55,3 +59,26 @@ export function configurePyre(): void {
         vscode.window.showInformationMessage('Pyre configuration added successfully.');
     }
 }
+
+export function checkPyreConfigFiles(): boolean {
+    const workspaceFolder = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+    if (!workspaceFolder) {
+        vscode.window.showErrorMessage('No workspace folder found');
+        return false;
+    }
+
+    const pyreConfigPath = join(workspaceFolder, '.pyre');
+    const pyreLocalConfigPath = join(workspaceFolder, '.pyre_configuration');
+    const watchmanConfigPath = join(workspaceFolder, '.watchmanconfig');
+
+    const hasPyreConfig = existsSync(pyreConfigPath);
+    const hasPyreLocalConfig = existsSync(pyreLocalConfigPath);
+    const hasWatchmanConfig = existsSync(watchmanConfigPath);
+
+    outputChannel.appendLine(`Pyre: ${hasPyreConfig}`);
+    outputChannel.appendLine(`Pyre Local: ${hasPyreLocalConfig}`);
+    outputChannel.appendLine(`Watchman: ${hasWatchmanConfig}`);
+
+    return hasPyreConfig && hasPyreLocalConfig && hasWatchmanConfig;
+}
+

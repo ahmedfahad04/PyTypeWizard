@@ -11,7 +11,7 @@ import * as vscode from 'vscode';
 import { LanguageClient } from 'vscode-languageclient';
 import { PyreCodeActionProvider } from './codeActionProvider';
 import { findPyreCommand, registerCommands } from './command';
-import { installPyre } from './install';
+import { checkPyreConfigFiles, installPyre } from './install';
 import { createLanguageClient, listenForEnvChanges } from './languageClient';
 
 type LanguageClientState = {
@@ -40,14 +40,15 @@ export async function activate(context: vscode.ExtensionContext) {
 	const activePythonPath = pythonExtension.exports.environments.getActiveEnvironmentPath();
 	let pyrePath: string | undefined = await findPyreCommand(activePythonPath);
 
+	const isPyreConfigInstalled = checkPyreConfigFiles()
 
-	// check if PyRe is installed or not; if not then install it
-	if (pyrePath && pyrePath.length > 0) {
+	// check if PyRe Configuration file is installed or not; if not then install it
+	if (pyrePath && pyrePath.length > 0 && !isPyreConfigInstalled) {
 		await installPyre();
 		pyrePath = await findPyreCommand(activePythonPath);
 
 	} else {
-		vscode.window.showInformationMessage('TypeChecker Config setup failed')
+		vscode.window.showErrorMessage('TypeChecker Config setup failed')
 	}
 
 	// creating language server at pyrePath
