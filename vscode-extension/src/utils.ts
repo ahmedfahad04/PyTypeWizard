@@ -1,5 +1,7 @@
 import * as vscode from 'vscode';
 
+export let outputChannel = vscode.window.createOutputChannel("PyTypeWizard");
+
 export async function applyFix(document: vscode.TextDocument, range: vscode.Range, fix: string) {
     const edit = new vscode.WorkspaceEdit();
     edit.replace(document.uri, range, fix);

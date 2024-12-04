@@ -18,7 +18,29 @@
 		"*"
 	],
 	"contributes": {
-		"commands": []
+		"commands": [],
+		"viewsContainers": {
+			"activitybar": [
+				{
+					"id": "pytypewizard-vscode",
+					"title": "PyTypeWizard",
+					"icon": "./asset/magic_wand.svg"
+				}
+			]
+		},
+		"views": {
+			"pytypewizard-vscode": [
+				{
+					"id": "pytypewizard-vscode",
+					"name": "Dependencies",
+					"type": "tree"
+				},
+				{
+					"id": "package-outline",
+					"name": "Outline"
+				}
+			]
+		}
 	},
 	"scripts": {
 		"vscode:prepublish": "npm run compile",

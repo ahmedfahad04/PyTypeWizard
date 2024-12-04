@@ -2,9 +2,7 @@ import { exec } from 'child_process';
 import { existsSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import * as vscode from 'vscode';
-
-
-let outputChannel = vscode.window.createOutputChannel("PyTypeWizard");
+import { outputChannel } from './utils';
 
 
 export async function installPyre(): Promise<void> {

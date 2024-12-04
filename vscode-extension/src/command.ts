@@ -6,11 +6,9 @@ import * as vscode from 'vscode';
 import which from "which";
 import { sendApiRequest } from "./api";
 import { getSimplifiedSmartSelection } from "./smartSelection";
-import { getWebviewContent } from './utils';
+import { getWebviewContent, outputChannel } from './utils';
 
-let outputChannel = vscode.window.createOutputChannel("PyTypeWizard");
 let solutionPanel: vscode.WebviewPanel | undefined;
-
 
 export function registerCommands(context: vscode.ExtensionContext, pyrePath: string): void {
     context.subscriptions.push(
@@ -112,7 +110,7 @@ export async function findPyreCommand(envPath: EnvironmentPath): Promise<string 
     const pyreFromPathEnvVariable = await which('pyre', { nothrow: true });
 
     if (pyreFromPathEnvVariable != null) {
-        vscode.window.showInformationMessage(`Using pyre from: ${pyreFromPathEnvVariable}`);
+        outputChannel.appendLine(`Using pyre from: ${pyreFromPathEnvVariable}`);
         return pyreFromPathEnvVariable;
     }
 
@@ -120,7 +118,7 @@ export async function findPyreCommand(envPath: EnvironmentPath): Promise<string 
     return undefined;
 }
 
-export async function runErrorExtractor(context: vscode.ExtensionContext, filePath: string, errType: string, errMessage: string, lineNum: number, colNum: number, outputDir: string, pythonPath: string, inputobj: any) {
+export async function runErrorExtractor(context: vscode.ExtensionContext, filePath: string, errType: string, errMessage: string, lineNum: number, colNum: number, outputDir: string, pythonPath: string, _inputobj: any) {
     return new Promise(async (resolve, reject) => {
 
         const scriptPath = path.join(context.extensionPath, 'src', 'script', 'error_extractor.py');
