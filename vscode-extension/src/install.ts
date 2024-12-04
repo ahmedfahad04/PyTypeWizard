@@ -44,6 +44,7 @@ export function configurePyre(): void {
 
     const pyreConfigPath = join(workspaceFolder, '.pyre_configuration');
     const pyreWatchManPath = join(workspaceFolder, '.watchmanconfig')
+    
     if (!existsSync(pyreConfigPath)) {
         const pyreConfigContent = JSON.stringify({
             "site_package_search_strategy": "pep561",

@@ -105,17 +105,18 @@ export async function findPyreCommand(envPath: EnvironmentPath): Promise<string 
             : undefined;
 
     if (pyrePath && existsSync(pyrePath) && statSync(pyrePath).isFile()) {
-        outputChannel.appendLine(`Using pyre path: ${pyrePath} from python environment: ${envPath.id} at ${envPath.path}`);
+        vscode.window.showInformationMessage(`Using pyre path: ${pyrePath} from python environment: ${envPath.id} at ${envPath.path}`);
         return pyrePath;
     }
 
     const pyreFromPathEnvVariable = await which('pyre', { nothrow: true });
+
     if (pyreFromPathEnvVariable != null) {
-        outputChannel.appendLine(`Using pyre path: ${pyreFromPathEnvVariable} from PATH`);
+        vscode.window.showInformationMessage(`Using pyre from: ${pyreFromPathEnvVariable}`);
         return pyreFromPathEnvVariable;
     }
 
-    outputChannel.appendLine(`Could not find pyre path from python environment: ${envPath.id} at ${envPath.path}`);
+    vscode.window.showInformationMessage(`Could not find pyre path from python environment: ${envPath.id} at ${envPath.path}`);
     return undefined;
 }
 

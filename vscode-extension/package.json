@@ -1,13 +1,13 @@
 {
-	"name": "pyre-vscode",
+	"name": "pytypewizard-vscode",
 	"version": "0.0.2",
-	"publisher": "fb-pyre-check",
+	"publisher": "Istiaq Ahmed Fahad",
 	"engines": {
 		"vscode": "^1.15.0"
 	},
 	"license": "MIT",
-	"displayName": "pyre-vscode",
-	"description": "VSCode extension for Pyre-check",
+	"displayName": "pytypewizard-vscode",
+	"description": "VSCode extension for Python Static Type Checking",
 	"keywords": [
 		"python",
 		"pyre",
@@ -20,8 +20,8 @@
 	"contributes": {
 		"commands": [
 			{
-				"command": "pyre.restartExtension",
-				"title": "Restart PyTypeFix"
+				"command": "pytypewizard.restartExtension",
+				"title": "Restart PyTypeWizard"
 			}
 		]
 	},
