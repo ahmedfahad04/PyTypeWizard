@@ -1,10 +1,11 @@
 # Exclude models
-Preliminary Study/t5base_final
-Preliminary Study/src
-backend/utils/t5base_final
+others/Preliminary_Study_T5/t5base_final
+others/Preliminary_Study_T5/src
+backend/src/utils/t5base_final
 pytypeFix/node_modules
 backend/src/utils/t5base_final
 pytypefix/out/
+others/RAG Testing/Testing RAG Implementations/test_repo
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

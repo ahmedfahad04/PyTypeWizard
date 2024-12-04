@@ -1,0 +1,41 @@
+{
+	"name": "code-rag-assistant",
+	"displayName": "Code RAG Assistant",
+	"version": "0.0.1",
+	"description": "RAG-powered code search and context assistant",
+	"main": "./out/extension.js",
+	"contributes": {
+		"commands": [
+			{
+				"command": "codeRag.query",
+				"title": "Code RAG: Query Workspace"
+			},
+			{
+				"command": "codeRag.indexWorkspace",
+				"title": "Code RAG: Index Workspace"
+			},
+			{
+				"command": "codeRag.advancedSearch",
+				"title": "Code RAG: Advanced Search"
+			},
+			{
+				"command": "codeRag.diagnostics",
+				"title": "Code RAG: Show Diagnostics"
+			}
+		]
+	},
+	"scripts": {
+		"compile": "tsc -p ./",
+		"watch": "tsc -watch -p ./",
+		"vscode:prepublish": "npm run compile"
+	},
+	"devDependencies": {
+		"@types/node": "^18.19.64",
+		"@types/vscode": "^1.78.0",
+		"typescript": "^5.6.3",
+		"vscode": "^1.1.37"
+	},
+	"dependencies": {
+		"axios": "^1.7.7"
+	}
+}

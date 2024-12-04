@@ -32,7 +32,7 @@ export async function activate(context: vscode.ExtensionContext) {
 	vscode.window.showInformationMessage(`Pyre Path: ${pyrePath}`)
 
 
-	if (pyrePath?.length > 0) {
+	if (!pyrePath) {
 		vscode.window.showInformationMessage("INSIDE INSTALL PYRE")
 		await installPyre();
 		pyrePath = await findPyreCommand(activatedEnvPath);
