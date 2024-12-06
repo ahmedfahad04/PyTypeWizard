@@ -1,8 +1,7 @@
 import * as vscode from 'vscode';
 import { Middleware } from 'vscode-languageclient';
-import { DidChangeConfigurationNotification, LanguageClient, LanguageClientOptions } from 'vscode-languageclient/node';
+import { LanguageClient, LanguageClientOptions } from 'vscode-languageclient/node';
 import { findPyreCommand } from './command';
-import { PyreErrorCodes } from './types';
 
 type LanguageClientState = {
     languageClient: LanguageClient,
@@ -10,18 +9,24 @@ type LanguageClientState = {
 }
 
 //! here it use pyre to check for type error
-
 export function createLanguageClient(pyrePath: string): LanguageClientState {
     const serverOptions = {
         command: pyrePath,
         args: ["persistent"]
     };
 
-    // Middleware to filter diagnostics
+    // Function to get selected error types from settings
+    function getSelectedErrorTypes(): string[] {
+        const config = vscode.workspace.getConfiguration('pyre');
+        return config.get<string[]>('enabledErrorTypes', []);
+    }
+
+    // Middleware to filter diagnostics dynamically
     const middleware: Middleware = {
         handleDiagnostics: (uri, diagnostics, next) => {
+            const selectedErrorTypes = getSelectedErrorTypes(); // Get the user's selected types
             const filteredDiagnostics = diagnostics.filter(diagnostic => {
-                return Object.values(PyreErrorCodes).some(errorType =>
+                return selectedErrorTypes.some(errorType =>
                     diagnostic.message.includes(errorType)
                 );
             });
@@ -47,8 +52,13 @@ export function createLanguageClient(pyrePath: string): LanguageClientState {
     languageClient.registerProposedFeatures();
 
     const configListener = languageClient.start().then(() => {
-        return vscode.workspace.onDidChangeConfiguration(() => {
-            languageClient.sendNotification(DidChangeConfigurationNotification.type, { settings: null });
+        return vscode.workspace.onDidChangeConfiguration(event => {
+            if (event.affectsConfiguration('pyre.enabledErrorTypes')) {
+                // Restart the language client to apply new settings
+                languageClient.stop().then(() => {
+                    languageClient.start();
+                });
+            }
         });
     });
 
@@ -70,3 +80,4 @@ export function listenForEnvChanges(pythonExtension: any, state: any): void {
         }
     });
 }
+

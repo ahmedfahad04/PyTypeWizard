@@ -18,7 +18,6 @@
 		"*"
 	],
 	"contributes": {
-		"commands": [],
 		"viewsContainers": {
 			"activitybar": [
 				{
@@ -40,6 +39,35 @@
 					"name": "Outline"
 				}
 			]
+		},
+		"configuration": {
+			"title": "PyTypeWizard Settings",
+			"properties": {
+				"pyre.enabledErrorTypes": {
+					"type": "array",
+					"default": [
+						"Incompatible variable type",
+						"Incompatible parameter type",
+						"Incompatible return type"
+					],
+					"description": "Select the error types to enable in PyTypeWizard diagnostics.",
+					"items": {
+						"type": "string",
+						"enum": [
+							"Incompatible variable type",
+							"Incompatible parameter type",
+							"Incompatible return type",
+							"Invalid type",
+							"Unbound name",
+							"Incompatible attribute type",
+							"Unsupported operand",
+							"Strengthened precondition",
+							"Weakened postcondition",
+							"Call error"
+						]
+					}
+				}
+			}
 		}
 	},
 	"scripts": {
