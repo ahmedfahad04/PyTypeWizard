@@ -8,7 +8,7 @@
 
 import { PVSC_EXTENSION_ID, PythonExtension } from '@vscode/python-extension';
 import * as vscode from 'vscode';
-import { LanguageClient } from 'vscode-languageclient';
+import { LanguageClient } from 'vscode-languageclient/node';
 import { PyreCodeActionProvider } from './codeActionProvider';
 import { findPyreCommand, registerCommands } from './command';
 import { checkPyreConfigFiles, installPyre } from './install';
@@ -64,9 +64,8 @@ export async function activate(context: vscode.ExtensionContext) {
 			{ providedCodeActionKinds: [vscode.CodeActionKind.QuickFix] }
 		)
 	);
-
-
 }
+
 export function deactivate() {
 	state?.languageClient.stop();
 	state?.configListener.then(listener => listener.dispose());

@@ -52,7 +52,7 @@
 	"dependencies": {
 		"@vscode/python-extension": "^1.0.5",
 		"axios": "^1.7.7",
-		"vscode-languageclient": "^3.5.0",
+		"vscode-languageclient": "^9.0.1",
 		"which": "^4.0.0"
 	},
 	"devDependencies": {

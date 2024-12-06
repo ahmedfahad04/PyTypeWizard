@@ -10,6 +10,8 @@ export class PyreCodeActionProvider implements vscode.CodeActionProvider {
         const actions: vscode.CodeAction[] = [];
 
         for (const diagnostic of diagnostics) {
+
+            // Create Fix action
             const action = new vscode.CodeAction('Fix Pyre Error', vscode.CodeActionKind.QuickFix);
             action.command = {
                 title: 'Fix Pyre Error',
