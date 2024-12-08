@@ -1,3 +1,5 @@
+import { statSync } from 'fs';
+import { dirname, join } from 'path';
 import * as vscode from 'vscode';
 
 export let outputChannel = vscode.window.createOutputChannel("PyTypeWizard");
@@ -62,4 +64,16 @@ export function getWebviewContent(solutions: string[]): string {
         ${solutionsHtml}
     </body>
     </html>`;
+}
+
+export function getPyRePath(pythonPath: string): string {
+    const stat = statSync(pythonPath);
+
+    let pyrePath = stat.isFile()
+        ? join(dirname(pythonPath), 'pyre_check')
+        : stat.isDirectory()
+            ? join(pythonPath, 'lib', 'pyre_check')
+            : '';
+
+    return pyrePath.includes('bin') ? pyrePath.replace('bin', 'lib') : pyrePath;
 }

@@ -7,12 +7,15 @@
  */
 
 import { PVSC_EXTENSION_ID, PythonExtension } from '@vscode/python-extension';
+import { exec } from 'child_process';
 import * as vscode from 'vscode';
 import { LanguageClient } from 'vscode-languageclient/node';
 import { PyreCodeActionProvider } from './codeActionProvider';
 import { findPyreCommand, registerCommands } from './command';
-import { checkPyreConfigFiles, installPyre } from './install';
-import { createLanguageClient, listenForEnvChanges } from './languageClient';
+import { ErrorProvider } from './errorProvider';
+import { checkPyreConfigFiles, isPyreCheckInstalled, setupPyreConfig } from './install';
+import { createLanguageClient, listenForEnvChanges, refreshPyreErrors } from './languageClient';
+import { getPyRePath } from './utils';
 
 type LanguageClientState = {
 	languageClient: LanguageClient,
@@ -37,22 +40,57 @@ export async function activate(context: vscode.ExtensionContext) {
 		await pythonExtension.activate();
 	}
 
+	// check if pyre-check package is installed or not
+	const isPyreInstalled = await isPyreCheckInstalled();
+
+	if (!isPyreInstalled) {
+		const installProgress = vscode.window.withProgress({
+			location: vscode.ProgressLocation.Notification,
+			title: "Installing necessary packages",
+			cancellable: false
+		}, async (progress) => {
+			progress.report({ message: "Installing..." });
+			return new Promise<void>((resolve, reject) => {
+				exec('pip install pyre-check', (error) => {
+					if (error) {
+						vscode.window.showErrorMessage('Failed to install pyre-check. Please install it manually.');
+						reject(error);
+					} else {
+						vscode.window.showInformationMessage('Packages installed successfully!');
+						resolve();
+					}
+				});
+			});
+		});
+
+		try {
+			await installProgress;
+		} catch (error) {
+			return; // Exit if installation failed
+		}
+	}
+
 	const activePythonPath = pythonExtension.exports.environments.getActiveEnvironmentPath();
-	let pyrePath: string | undefined = await findPyreCommand(activePythonPath);
+	let pyreExePath: string | undefined = await findPyreCommand(activePythonPath);
+
+	const pyrePath = getPyRePath(activePythonPath.path);
 
 	const isPyreConfigInstalled = checkPyreConfigFiles()
 
 	// check if PyRe Configuration file is installed or not; if not then install it
-	if (pyrePath && pyrePath.length > 0 && !isPyreConfigInstalled) {
-		await installPyre();
-		pyrePath = await findPyreCommand(activePythonPath);
+	if (pyreExePath && pyreExePath.length > 0 && !isPyreConfigInstalled) {
 
+		await setupPyreConfig(pyrePath);
+		pyreExePath = await findPyreCommand(activePythonPath);
 	}
 
+	// register error provider
+	let errorProvider = new ErrorProvider();
+
 	// creating language server at pyrePath
-	if (pyrePath) {
-		state = createLanguageClient(pyrePath);
-		listenForEnvChanges(pythonExtension, state);
+	if (pyreExePath) {
+		state = createLanguageClient(pyreExePath, errorProvider);
+		listenForEnvChanges(pythonExtension, state, errorProvider);
 	}
 
 	// show the 'Fix Issue' as QuickFix option under detected error
@@ -64,6 +102,24 @@ export async function activate(context: vscode.ExtensionContext) {
 			{ providedCodeActionKinds: [vscode.CodeActionKind.QuickFix] }
 		)
 	);
+
+
+
+	vscode.window.createTreeView('pytypewizard-vscode', {
+		treeDataProvider: errorProvider
+	});
+
+	// Add a command to refresh the error list manually
+	const refreshCommand = vscode.commands.registerCommand('pytypewizard.refreshErrors', () => {
+		if (state) {
+			refreshPyreErrors(errorProvider, state.languageClient);
+		}
+	});
+
+	context.subscriptions.push(refreshCommand);
+
+	// Example: Populate the view when the extension activates
+	// refreshPyreErrors(errorProvider);
 }
 
 export function deactivate() {
