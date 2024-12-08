@@ -75,9 +75,8 @@ export async function activate(context: vscode.ExtensionContext) {
 
 	const pyrePath = getPyRePath(activePythonPath.path);
 
-	const isPyreConfigInstalled = checkPyreConfigFiles()
-
 	// check if PyRe Configuration file is installed or not; if not then install it
+	const isPyreConfigInstalled = checkPyreConfigFiles()
 	if (pyreExePath && pyreExePath.length > 0 && !isPyreConfigInstalled) {
 
 		await setupPyreConfig(pyrePath);
@@ -102,8 +101,6 @@ export async function activate(context: vscode.ExtensionContext) {
 			{ providedCodeActionKinds: [vscode.CodeActionKind.QuickFix] }
 		)
 	);
-
-
 
 	vscode.window.createTreeView('pytypewizard-vscode', {
 		treeDataProvider: errorProvider

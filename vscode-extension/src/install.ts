@@ -4,20 +4,27 @@ import { join } from 'path';
 import * as vscode from 'vscode';
 import { outputChannel } from './utils';
 
+export async function isPyreCheckInstalled(): Promise<boolean> {
+    return new Promise((resolve) => {
+        exec('pip show pyre-check', (error) => {
+            resolve(!error);
+        });
+    });
+}
 
-export async function installPyre(): Promise<void> {
-    const installPyre = await vscode.window.showInformationMessage(
-        'Pyre is not installed. Would you like to install it?',
+export async function setupPyreConfig(pyrePath: string): Promise<void> {
+    const setupPyreConfig = await vscode.window.showInformationMessage(
+        'PyTypeWizard is not activated. Would you like to activate it?',
         'Yes', 'No'
     );
 
     vscode.window.showInformationMessage("INSIDE INSTALL PYRE")
 
-    if (installPyre === 'Yes') {
+    if (setupPyreConfig === 'Yes') {
         const installProgress = vscode.window.withProgress({
             location: vscode.ProgressLocation.Notification,
             title: "Installing Pyre",
-            cancellable: false
+            cancellable: true
         }, async () => {
             return new Promise<void>((resolve, reject) => {
                 exec('pip install pyre-check', (error) => {
@@ -33,11 +40,12 @@ export async function installPyre(): Promise<void> {
         });
 
         await installProgress;
-        configurePyre();
+        configurePyre(pyrePath);
     }
 }
 
-export function configurePyre(): void {
+export function configurePyre(pyrePath: string): void {
+
     const workspaceFolder = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
     if (!workspaceFolder) {
         vscode.window.showErrorMessage('Unable to determine workspace folder.');
@@ -50,11 +58,12 @@ export function configurePyre(): void {
     if (!existsSync(pyreConfigPath)) {
         const pyreConfigContent = JSON.stringify({
             "site_package_search_strategy": "pep561",
-            "source_directories": ["."]
+            "source_directories": ["."],
+            "typeshed": pyrePath.replace('bin', 'lib') + '/typeshed'
         }, null, 2);
         writeFileSync(pyreConfigPath, pyreConfigContent);
         writeFileSync(pyreWatchManPath, '{}');
-        vscode.window.showInformationMessage('Pyre configuration added successfully.');
+        vscode.window.showInformationMessage('PyTypeWizard configuration added successfully.');
     }
 }
 

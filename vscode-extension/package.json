@@ -18,6 +18,12 @@
 		"*"
 	],
 	"contributes": {
+		"commands": [
+			{
+				"command": "pytypewizard.refreshErrors",
+				"title": "Refresh PyTypeWizard Errors"
+			}
+		],
 		"viewsContainers": {
 			"activitybar": [
 				{
@@ -30,13 +36,13 @@
 		"views": {
 			"pytypewizard-vscode": [
 				{
-					"id": "pytypewizard-vscode",
-					"name": "Dependencies",
-					"type": "tree"
-				},
-				{
 					"id": "package-outline",
 					"name": "Outline"
+				},
+				{
+					"id": "pytypewizard-vscode",
+					"name": "Type Errors",
+					"type": "tree"
 				}
 			]
 		},
@@ -61,8 +67,6 @@
 							"Unbound name",
 							"Incompatible attribute type",
 							"Unsupported operand",
-							"Strengthened precondition",
-							"Weakened postcondition",
 							"Call error"
 						]
 					}

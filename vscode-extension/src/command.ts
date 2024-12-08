@@ -1,12 +1,12 @@
 import { EnvironmentPath } from "@vscode/python-extension";
 import { spawn } from "child_process";
 import { existsSync, statSync } from 'fs';
-import path, { dirname, join } from 'path';
+import path from 'path';
 import * as vscode from 'vscode';
 import which from "which";
 import { sendApiRequest } from "./api";
 import { getSimplifiedSmartSelection } from "./smartSelection";
-import { getWebviewContent, outputChannel } from './utils';
+import { getPyRePath, getWebviewContent, outputChannel } from './utils';
 
 let solutionPanel: vscode.WebviewPanel | undefined;
 
@@ -90,21 +90,13 @@ export async function findPyreCommand(envPath: EnvironmentPath): Promise<string 
     if (envPath.id === 'DEFAULT_PYTHON') {
         outputChannel.appendLine(`Using the default python environment`);
         vscode.window.showInformationMessage(`Using the default python environment`);
-        return 'pyre';
     }
 
-    const path = envPath.path;
-    const stat = statSync(path)
+    const pyreCheckPath = getPyRePath(envPath.path)
 
-    const pyrePath = stat.isFile()
-        ? join(dirname(envPath.path), 'pyre')
-        : stat.isDirectory()
-            ? join(path, 'bin', 'pyre')
-            : undefined;
-
-    if (pyrePath && existsSync(pyrePath) && statSync(pyrePath).isFile()) {
-        vscode.window.showInformationMessage(`Using pyre path: ${pyrePath} from python environment: ${envPath.id} at ${envPath.path}`);
-        return pyrePath;
+    if (pyreCheckPath && existsSync(pyreCheckPath) && statSync(pyreCheckPath).isFile()) {
+        vscode.window.showInformationMessage(`Using pyre path: ${pyreCheckPath} from python environment: ${envPath.id} at ${envPath.path}`);
+        return pyreCheckPath;
     }
 
     const pyreFromPathEnvVariable = await which('pyre', { nothrow: true });
@@ -115,7 +107,7 @@ export async function findPyreCommand(envPath: EnvironmentPath): Promise<string 
     }
 
     vscode.window.showInformationMessage(`Could not find pyre path from python environment: ${envPath.id} at ${envPath.path}`);
-    return undefined;
+    return pyreCheckPath;
 }
 
 export async function runErrorExtractor(context: vscode.ExtensionContext, filePath: string, errType: string, errMessage: string, lineNum: number, colNum: number, outputDir: string, pythonPath: string, _inputobj: any) {
