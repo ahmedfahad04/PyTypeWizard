@@ -2,8 +2,6 @@ import * as vscode from 'vscode';
 import { Middleware } from 'vscode-languageclient';
 import { LanguageClient, LanguageClientOptions } from 'vscode-languageclient/node';
 import { findPyreCommand } from './command';
-import { ErrorProvider } from './errorProvider';
-import { ErrorTreeItem } from './model/treeDataProvider';
 
 type LanguageClientState = {
     languageClient: LanguageClient,
@@ -11,7 +9,7 @@ type LanguageClientState = {
 }
 
 //! here it use pyre to check for type error
-export function createLanguageClient(pyrePath: string, errorProvider: ErrorProvider): LanguageClientState {
+export function createLanguageClient(pyrePath: string): LanguageClientState {
     const serverOptions = {
         command: pyrePath,
         args: ["persistent"],
@@ -30,33 +28,6 @@ export function createLanguageClient(pyrePath: string, errorProvider: ErrorProvi
                 selectedErrorTypes.some(errorType => diagnostic.message.includes(errorType))
             );
 
-            // Convert diagnostics into tree items
-            const errorItems = filteredDiagnostics.map(diagnostic => {
-                const location = `${uri.fsPath}:${diagnostic.range.start.line + 1}:${diagnostic.range.start.character + 1}`;
-                return new ErrorTreeItem(
-                    'Pyre Error', // Label
-                    diagnostic.message, // Description
-                    location, // Tooltip
-                    vscode.TreeItemCollapsibleState.None,
-                    {
-                        title: 'Open Error',
-                        command: 'vscode.open',
-                        arguments: [
-                            uri,
-                            {
-                                selection: new vscode.Range(
-                                    diagnostic.range.start,
-                                    diagnostic.range.start
-                                )
-                            }
-                        ]
-                    }
-                );
-            });
-
-            // Update the tree view with the latest errors
-            errorProvider.refresh(errorItems);
-
             // Pass the filtered diagnostics to the next handler
             next(uri, filteredDiagnostics);
         }
@@ -67,7 +38,7 @@ export function createLanguageClient(pyrePath: string, errorProvider: ErrorProvi
         synchronize: {
             fileEvents: vscode.workspace.createFileSystemWatcher('**/.clientrc'),
         },
-        // middleware,
+        middleware, // shows the filtered errors only
     };
 
     const languageClient = new LanguageClient(
@@ -95,7 +66,7 @@ export function createLanguageClient(pyrePath: string, errorProvider: ErrorProvi
 }
 
 
-export function listenForEnvChanges(pythonExtension: any, state: any, errorProvider: any): void {
+export function listenForEnvChanges(pythonExtension: any, state: any): void {
     pythonExtension.exports.environments.onDidChangeActiveEnvironmentPath(async (e) => {
         state?.languageClient?.stop();
         state?.configListener.then((listener: any) => listener.dispose());
@@ -103,40 +74,7 @@ export function listenForEnvChanges(pythonExtension: any, state: any, errorProvi
 
         const pyrePath = await findPyreCommand(e);
         if (pyrePath) {
-            state = createLanguageClient(pyrePath, errorProvider);
+            state = createLanguageClient(pyrePath);
         }
     });
 }
-
-// Function to fetch actual Pyre errors from the language client
-export async function refreshPyreErrors(errorProvider: ErrorProvider, languageClient: LanguageClient) {
-    const diagnostics = await languageClient.sendRequest('textDocument/publishDiagnostics');  // or similar method to fetch diagnostics
-    const errorItems = diagnostics.map((diagnostic: any) => {
-        const uri = diagnostic.uri; // The URI for the file where the error occurred
-        const location = `${uri.fsPath}:${diagnostic.range.start.line + 1}:${diagnostic.range.start.character + 1}`;
-
-        return new ErrorTreeItem(
-            'Pyre Error', // Label
-            diagnostic.message, // Description
-            location, // Tooltip
-            vscode.TreeItemCollapsibleState.None,
-            {
-                title: 'Open Error',
-                command: 'vscode.open',
-                arguments: [
-                    uri,
-                    {
-                        selection: new vscode.Range(
-                            diagnostic.range.start,
-                            diagnostic.range.start
-                        )
-                    }
-                ]
-            }
-        );
-    });
-
-    // Update the error provider with the latest errors
-    errorProvider.refresh(errorItems); // Pass the error items to the tree view provider
-}
-

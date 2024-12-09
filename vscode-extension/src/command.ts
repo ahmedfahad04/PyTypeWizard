@@ -75,7 +75,6 @@ export function registerCommands(context: vscode.ExtensionContext, pyrePath: str
             // Run error extractor and get solution
             const response = await runErrorExtractor(context, filePath, errType[0], errType[1], lineNum, colNum, outputDir, pyrePath, obj);
 
-
             // Update webview with solution
             if (solutionPanel) {
                 solutionPanel.webview.html = getWebviewContent(response as string[]);
@@ -130,11 +129,11 @@ export async function runErrorExtractor(context: vscode.ExtensionContext, filePa
             if (code === 0 && output) {
                 try {
                     const jsonOutput = JSON.parse(output);
-                    console.log("JSON DATA: ", jsonOutput);
 
                     const apiResponse = await sendApiRequest(jsonOutput);
-                    Object.values(apiResponse)
-                    resolve(Object.values(apiResponse)); // Resolve with the API response
+                    outputChannel.appendLine(`DATA: ${apiResponse[9]}`)
+
+                    resolve(Object.values(apiResponse));
                 } catch (error) {
                     console.error('Error parsing output or sending API request:', error);
                     reject(error);

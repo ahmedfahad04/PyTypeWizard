@@ -20,50 +20,93 @@ export function extractSolutionCode(response: any): any {
     return {};
 }
 
-export function getWebviewContent(solutions: string[]): string {
-    const solutionsHtml = solutions.map((solution, index) => `
-        <h3>Fix ${index + 1}:</h3>
-        <pre><code>${solution}</code></pre>
-    `).join('');
+export function getWebviewContent(solutions: any): string {
 
-    return `<!DOCTYPE html>
-    <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Pyre Solutions</title>
-        <style>
-            body {
-                font-family: Arial, sans-serif;
-                line-height: 1.6;
-                color: #333;
-                max-width: 800px;
-                margin: 0 auto;
-                padding: 20px;
-            }
-            h2 {
-                color: #2c3e50;
-            }
-            h3 {
-                color: #34495e;
-            }
-            pre {
-                background-color: #000000;
-                color: #ffffff;
-                padding: 15px;
-                border-radius: 5px;
-                overflow-x: auto;
-            }
-            code {
-                font-family: 'Courier New', Courier, monospace;
-            }
-        </style>
-    </head>
-    <body>
-        <h2>Suggested Fixes:</h2>
-        ${solutionsHtml}
-    </body>
-    </html>`;
+    const solutionCards = solutions.map((solution, index) => `
+            <div class="solution-card">
+                <div class="solution-header">Solution ${index + 1}</div>
+                <pre class="code-block"><code>${solution}</code></pre>
+                <div class="button-group">
+                    <button onclick="applyFix(${index})">Apply Fix</button>
+                    <button onclick="provideFeedback(${index})">Feedback</button>
+                </div>
+            </div>
+        `).join('');
+
+    return `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <style>
+                    .solution-card {
+                        background: var(--vscode-editor-background);
+                        border: 1px solid var(--vscode-panel-border);
+                        border-radius: 6px;
+                        margin: 10px 0;
+                        padding: 15px;
+                        transition: transform 0.2s;
+                    }
+                    .solution-card:hover {
+                        transform: translateY(-2px);
+                        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+                    }
+                    .solution-header {
+                        font-size: 16px;
+                        font-weight: bold;
+                        margin-bottom: 10px;
+                    }
+                    .code-block {
+                        background: var(--vscode-editor-background);
+                        padding: 10px;
+                        border-radius: 4px;
+                        overflow-x: auto;
+                    }
+                    .button-group {
+                        margin-top: 10px;
+                        display: flex;
+                        gap: 10px;
+                    }
+                    .loading {
+                        display: flex;
+                        justify-content: center;
+                        align-items: center;
+                        height: 200px;
+                    }
+                    .spinner {
+                        border: 4px solid rgba(0, 0, 0, 0.1);
+                        border-left-color: var(--vscode-button-background);
+                        border-radius: 50%;
+                        width: 40px;
+                        height: 40px;
+                        animation: spin 1s linear infinite;
+                    }
+                    @keyframes spin {
+                        to { transform: rotate(360deg); }
+                    }
+                </style>
+            </head>
+            <body>
+                <div id="content">
+                    ${solutions.length ? solutionCards : `
+                        <div class="loading">
+                            <div class="spinner"></div>
+                        </div>
+                    `}
+                </div>
+                <script>
+                    const vscode = acquireVsCodeApi();
+                    
+                    function applyFix(index) {
+                        vscode.postMessage({ command: 'applyFix', index });
+                    }
+                    
+                    function provideFeedback(index) {
+                        vscode.postMessage({ command: 'provideFeedback', index });
+                    }
+                </script>
+            </body>
+            </html>
+        `;
 }
 
 export function getPyRePath(pythonPath: string): string {

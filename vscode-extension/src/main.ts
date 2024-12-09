@@ -12,9 +12,8 @@ import * as vscode from 'vscode';
 import { LanguageClient } from 'vscode-languageclient/node';
 import { PyreCodeActionProvider } from './codeActionProvider';
 import { findPyreCommand, registerCommands } from './command';
-import { ErrorProvider } from './errorProvider';
 import { checkPyreConfigFiles, isPyreCheckInstalled, setupPyreConfig } from './install';
-import { createLanguageClient, listenForEnvChanges, refreshPyreErrors } from './languageClient';
+import { createLanguageClient, listenForEnvChanges } from './languageClient';
 import { getPyRePath } from './utils';
 
 type LanguageClientState = {
@@ -83,13 +82,10 @@ export async function activate(context: vscode.ExtensionContext) {
 		pyreExePath = await findPyreCommand(activePythonPath);
 	}
 
-	// register error provider
-	let errorProvider = new ErrorProvider();
-
 	// creating language server at pyrePath
 	if (pyreExePath) {
-		state = createLanguageClient(pyreExePath, errorProvider);
-		listenForEnvChanges(pythonExtension, state, errorProvider);
+		state = createLanguageClient(pyreExePath);
+		listenForEnvChanges(pythonExtension, state);
 	}
 
 	// show the 'Fix Issue' as QuickFix option under detected error
@@ -101,22 +97,6 @@ export async function activate(context: vscode.ExtensionContext) {
 			{ providedCodeActionKinds: [vscode.CodeActionKind.QuickFix] }
 		)
 	);
-
-	vscode.window.createTreeView('pytypewizard-vscode', {
-		treeDataProvider: errorProvider
-	});
-
-	// Add a command to refresh the error list manually
-	const refreshCommand = vscode.commands.registerCommand('pytypewizard.refreshErrors', () => {
-		if (state) {
-			refreshPyreErrors(errorProvider, state.languageClient);
-		}
-	});
-
-	context.subscriptions.push(refreshCommand);
-
-	// Example: Populate the view when the extension activates
-	// refreshPyreErrors(errorProvider);
 }
 
 export function deactivate() {
