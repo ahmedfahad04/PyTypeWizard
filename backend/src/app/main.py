@@ -23,18 +23,13 @@ class ModelInput(BaseModel):
 
 async def generate_prediction(input_obj, num_seq, beam_size):
     # Run the blocking function in a separate thread to avoid blocking the event loop
-    preds = await asyncio.to_thread(
-        get_final_predictions,
+    preds = get_final_predictions(
         data=input_obj.model_dump(),
         num_seq=num_seq,
         beam_size=beam_size,
     )
 
-    output_obj = {
-        "fix": preds,
-    }
-
-    return output_obj
+    return list(preds.values())
 
 
 @app.get("/")
