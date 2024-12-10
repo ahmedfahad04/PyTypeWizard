@@ -47,7 +47,7 @@ export function registerCommands(context: vscode.ExtensionContext, pyrePath: str
             }
 
             //! should be integrated
-            console.log(`SOUCE CODE: ${sourceCode}`);
+            // console.log(`SOUCE CODE: ${sourceCode}`);
 
             // Create and show webview
             if (!solutionPanel) {
