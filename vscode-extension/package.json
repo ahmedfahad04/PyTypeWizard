@@ -76,12 +76,14 @@
 	},
 	"scripts": {
 		"vscode:prepublish": "npm run compile",
-		"compile": "tsc -p ./",
+		"compile": "tsc -p ./ && npm run copy-styles",
+		"copy-styles": "mkdir -p out/styles && cp src/styles/*.css out/styles/",
 		"watch": "tsc -watch -p ./",
 		"test": "npm run compile && node ./node_modules/vscode/bin/test",
 		"lint": "tslint --force -p ."
 	},
 	"dependencies": {
+		"@vscode-elements/elements": "^1.9.0",
 		"@vscode/python-extension": "^1.0.5",
 		"axios": "^1.7.7",
 		"vscode-languageclient": "^9.0.1",
@@ -96,5 +98,10 @@
 		"tslint": "^5.8.0",
 		"tslint-microsoft-contrib": "^5.2.1",
 		"typescript": "^5.5.4"
-	}
+	},
+	"files": [
+		"out/**/*",
+		"src/styles/**/*",
+		"asset/**/*"
+	]
 }

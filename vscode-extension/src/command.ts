@@ -63,7 +63,7 @@ export function registerCommands(context: vscode.ExtensionContext, pyrePath: str
             }
 
             // Show loading message
-            solutionPanel.webview.html = getWebviewContent(['Generating solution...']);
+            solutionPanel.webview.html = getWebviewContent(['Generating solution...'], context);
 
             const obj = {
                 "rule_id": errType[0],
@@ -77,7 +77,7 @@ export function registerCommands(context: vscode.ExtensionContext, pyrePath: str
 
             // Update webview with solution
             if (solutionPanel) {
-                solutionPanel.webview.html = getWebviewContent(response as string[]);
+                solutionPanel.webview.html = getWebviewContent(response as string[], context);
             }
 
         })

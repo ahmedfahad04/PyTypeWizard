@@ -1,0 +1,66 @@
+body {
+    background-color: var(--vscode-editor-background);
+    color: var(--vscode-editor-foreground);
+    font-family: var(--vscode-font-family);
+    font-size: var(--vscode-font-size);
+    padding: 10px;
+}
+
+.solution-card {
+    background: var(--vscode-sideBar-background);
+    border: 1px solid var(--vscode-panel-border);
+    border-radius: 6px;
+    margin: 10px 0;
+    padding: 15px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.solution-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.solution-header {
+    font-size: 16px;
+    font-weight: bold;
+    margin-bottom: 10px;
+    color: var(--vscode-editor-foreground);
+}
+
+.code-block {
+    background: var(--vscode-editor-background);
+    color: var(--vscode-editor-foreground);
+    border-radius: 4px;
+    overflow-x: auto;
+    font-family: var(--vscode-editor-font-family);
+    font-size: var(--vscode-editor-font-size);
+}
+
+.button-group {
+    margin-top: 10px;
+    display: flex;
+    gap: 10px;
+}
+
+.loading {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 200px;
+}
+
+.spinner {
+    border: 4px solid rgba(0, 0, 0, 0.1);
+    border-left-color: var(--vscode-button-background);
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
