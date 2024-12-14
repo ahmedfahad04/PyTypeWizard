@@ -5,12 +5,18 @@ import path from 'path';
 import * as vscode from 'vscode';
 import which from "which";
 import { sendApiRequest } from "./api";
+import { PyreCodeActionProvider } from "./codeActionProvider";
+import { errors } from "./main";
+import { PanelManager } from "./model/panelManager";
+import { OutlineProvider } from "./outlineProvider";
 import { getSimplifiedSmartSelection } from "./smartSelection";
-import { getPyRePath, getWebviewContent, outputChannel } from './utils';
-
-let solutionPanel: vscode.WebviewPanel | undefined;
+import { getPyRePath, outputChannel } from './utils';
 
 export function registerCommands(context: vscode.ExtensionContext, pyrePath: string): void {
+
+    const panelManager = PanelManager.getInstance();
+
+    // command 1 (for webview)
     context.subscriptions.push(
         vscode.commands.registerCommand('pyre.fixError', async (document: vscode.TextDocument, diagnostic: vscode.Diagnostic) => {
             const filePath = document.uri.fsPath;
@@ -21,11 +27,10 @@ export function registerCommands(context: vscode.ExtensionContext, pyrePath: str
             const errType = errMessage.split(':', 2);
             const warningLine = document.lineAt(diagnostic.range.start.line).text.trim();
 
-
             const expandedRange = new vscode.Range(
                 document.lineAt(diagnostic.range.start.line).range.start,
                 document.lineAt(diagnostic.range.end.line).range.end
-            )
+            );
 
             const targetPosition = new vscode.Position(diagnostic.range.start.line, diagnostic.range.start.character);
             const selection = getSimplifiedSmartSelection(document, targetPosition);
@@ -46,42 +51,65 @@ export function registerCommands(context: vscode.ExtensionContext, pyrePath: str
                 sourceCode = document.getText(expandedRange);
             }
 
-            //! should be integrated
-            // console.log(`SOUCE CODE: ${sourceCode}`);
+            const errorObject = {
+                rule_id: errType[0],
+                message: errType[1],
+                warning_line: warningLine,
+                source_code: sourceCode,
+                file_name: filePath,
+                line_num: lineNum,
+                col_num: colNum
+            };
 
-            // Create and show webview
-            if (!solutionPanel) {
-                solutionPanel = vscode.window.createWebviewPanel(
-                    'pyreSolution',
-                    'Pyre Solution',
-                    vscode.ViewColumn.Beside,
-                    { enableScripts: true }
-                );
-                solutionPanel.onDidDispose(() => {
-                    solutionPanel = undefined;
+            if (panelManager) {
+
+                // Show loading message
+                panelManager.setSolutions([])
+
+                // Run error extractor and get solution
+                const response = await runErrorExtractor(context, filePath, errType[0], errType[1], lineNum, colNum, outputDir, pyrePath, errorObject);
+
+                // Update webview with solutions
+                panelManager.setSolutions(Array.isArray(response) ? response : []);
+                panelManager.showPanel(context, errors)
+
+                // copy to clipboard handler
+                panelManager.addMessageHandler('copyToClipboard', (message) => {
+                    if (Array.isArray(response) && response.length > message.index) {
+                        const data = response[message.index];
+                        vscode.env.clipboard.writeText(data).then(() => {
+                            vscode.window.showInformationMessage('Copied to clipboard!');
+                        });
+                    } else {
+                        vscode.window.showErrorMessage('Invalid response or index');
+                    }
                 });
             }
+        }));
 
-            // Show loading message
-            solutionPanel.webview.html = getWebviewContent(['Generating solution...'], context);
-
-            const obj = {
-                "rule_id": errType[0],
-                "message": errType[1],
-                "warning_line": warningLine,
-                "source_code": sourceCode,
+    //! TODO: Not working as expected
+    context.subscriptions.push(
+        vscode.commands.registerCommand('pytypewizard.toggleDashboard', () => {
+            if (!panelManager.getPanel()) {
+                panelManager.createPanel(context, errors);
+            } else {
+                panelManager.togglePanel();
             }
-
-            // Run error extractor and get solution
-            const response = await runErrorExtractor(context, filePath, errType[0], errType[1], lineNum, colNum, outputDir, pyrePath, obj);
-
-            // Update webview with solution
-            if (solutionPanel) {
-                solutionPanel.webview.html = getWebviewContent(response as string[], context);
-            }
-
         })
     );
+
+    // command 3 (for Quick Fix option)
+    context.subscriptions.push(
+        vscode.languages.registerCodeActionsProvider(
+            { scheme: 'file', language: 'python' },
+            new PyreCodeActionProvider(),
+            { providedCodeActionKinds: [vscode.CodeActionKind.QuickFix] }
+        )
+    );
+
+    // command 4 (register the Tree view)
+    vscode.window.registerTreeDataProvider('package-outline', new OutlineProvider());
+
 }
 
 export async function findPyreCommand(envPath: EnvironmentPath): Promise<string | undefined> {

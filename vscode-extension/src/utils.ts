@@ -1,6 +1,7 @@
 import { readFileSync, statSync } from 'fs';
 import { dirname, join } from 'path';
 import * as vscode from 'vscode';
+import { ErrorObjectType } from './types/errorObjType';
 
 export let outputChannel = vscode.window.createOutputChannel("PyTypeWizard");
 
@@ -16,7 +17,6 @@ export async function applyFix(document: vscode.TextDocument, range: vscode.Rang
 }
 
 export async function copyToClipboard(text: string): Promise<void> {
-    vscode.window.showInformationMessage(`Working inside`)
     try {
         await vscode.env.clipboard.writeText(text);
         vscode.window.showInformationMessage('Code copied to clipboard!');
@@ -36,63 +36,98 @@ export function extractSolutionCode(response: any): any {
     return {};
 }
 
-export function getWebviewContent(solutions: any, context: vscode.ExtensionContext): string {
+export function getWebviewContent(solutions: any[], context: vscode.ExtensionContext, errorObject: ErrorObjectType[]): string {
     const styleSheet = getStylesheet(context);
 
-    const solutionCards = solutions.map((solution, index) => `
-            <div class="solution-card">
-                <div class="solution-header">Solution ${index + 1}</div>
-                <pre class="code-block"><code>${solution}</code></pre>
-                <div class="button-group">
-                    <button class="vscode-button" onclick="copyCode(${index})">Copy</button>
-                </div>
+    // Generate error detail cards
+    const problemDetails = errorObject.map((error, index) => `
+    <div class="problem-details">
+        <div class="detail-item">
+            <div class="row">
+                <button class="error-location" onclick="handleLocationClick('${error.file_name}', ${error.line_num}, ${error.col_num})">
+                ${error.display_name} - Line: ${error.line_num}, Col: ${error.col_num}</button>
+                <button class="btn" onClick="applyFix(${index})">Fix</button>
             </div>
-        `).join('');
+            <div class="error-message">
+                ${error.rule_id} - ${error.message}
+            </div>
+        </div>
+    </div>
+    `).join('');
+
+    // Generate solution card
+    let solutionCard;
+    if (solutions.length > 0) {
+        solutionCard = solutions.map((solution, index) => `
+                <h2>Proposed Solution</h2>
+                <div class="solution-card">
+                    <div class="solution-header">Solution ${index + 1}</div>
+                    <pre><code>${solution}</code></pre>
+                    <div class="button-group">
+                        <button class="vscode-button id="button-2" secondary" onclick="copyCode(${index})">Copy</button>
+                    </div>
+                </div>
+            `).join('');
+    } else {
+        solutionCard = null
+    }
 
     return `
-            <!DOCTYPE html>
-            <html lang="en">
-            <head>
-                <style>
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <style>
                 ${styleSheet}
-                </style>
-
-                <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
-                <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css">
-                <link rel="stylesheet" href="https://unpkg.com/@highlightjs/cdn-assets@11.7.0/styles/github-dark.min.css"/>
-                <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
-                <script src="node_modules/@vscode-elements/elements/dist/bundled.js" type="module"></script>
-                <!-- and it's easy to individually load additional languages -->
-                <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/python.min.js"></script>
-                <script>hljs.highlightAll();</script>
-            </head>
-            <body>
-                <div id="content">
-                    ${solutions.length ? solutionCards : `
-                        <div class="loading">
-                            <div class="spinner"></div>
-                        </div>
-                    `}
+            </style>
+        </head>
+        <body>
+            <header>
+                <h1>PyTypeWizard Dashboard</h1>
+                <div class="project-health">
+                    <span class='sub-heading'>Total Errors: ${errorObject.length}</span>
+                    <span class="health-warning">Project Health: Warning</span>
                 </div>
-                <script>
-                    const vscode = acquireVsCodeApi();
-                    
-                    function applyFix(index) {
-                        vscode.postMessage({ command: 'applyFix', index });
-                    }
-                    
-                    function provideFeedback(index) {
-                        vscode.postMessage({ command: 'provideFeedback', index });
-                    }
+            </header>
+            <hr />
+           
+            <div id="problem-details-section">
+                ${problemDetails}
+            </div>
+            
+            ${solutionCard ?? ''}
+            <script>
+                const vscode = acquireVsCodeApi();
 
-                    function copyCode(index) {
-                        vscode.postMessage({ command: 'copyToClipboard', index });
-                    }
-                </script>
-            </body>
-            </html>
-        `;
+                document.getElementById('alternatives').addEventListener('click', () => {
+                    vscode.postMessage({ command: 'showAlternatives' }); 
+                });
+
+                function copyCode(index) {
+                    console.log('Inside COPy');
+
+                    vscode.postMessage({ command: 'copyToClipboard', index });
+                }
+
+                function applyFix(index) {
+                    console.log('Inside FIX');
+                    vscode.postMessage({ command: 'quickFix', index });
+                }
+
+                function handleLocationClick(filePath, line, column) {
+                    console.log('Inside location click');
+                    vscode.postMessage({
+                        command: 'viewFile',
+                        filePath: filePath,
+                        line: line,
+                        column: column
+                    });
+                }
+            </script>
+        </body>
+        </html>
+    `;
 }
+
 
 export function getPyRePath(pythonPath: string): string {
     const stat = statSync(pythonPath);
