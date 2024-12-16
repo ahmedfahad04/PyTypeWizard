@@ -79,33 +79,7 @@ export class PanelManager {
         );
     }
 
-    // private registerMessageHandlers(context: vscode.ExtensionContext) {
-    //     this.solutionPanel?.webview.onDidReceiveMessage(
-    //         (message) => {
-    //             switch (message.command) {
-    //                 case 'viewFile':
-    //                     vscode.workspace.openTextDocument(message.filePath).then(doc => {
-    //                         vscode.window.showTextDocument(doc).then(editor => {
-    //                             const position = new vscode.Position(message.line - 1, message.column - 1);
-    //                             editor.selection = new vscode.Selection(position, position);
-    //                             editor.revealRange(new vscode.Range(position, position));
-    //                         });
-    //                     });
-    //                     break;
-
-    //                 case 'quickFix':
-    //                     vscode.window.showWarningMessage(`Inside Fix, ${message.index}, ${message.command}`);
-    //                     break;
-
-    //                 default:
-    //                     vscode.window.showErrorMessage(`Unknown command: ${message.command}`);
-    //             }
-    //         },
-    //         undefined,
-    //         context.subscriptions
-    //     );
-    // }
-
+    
     showPanel(context: vscode.ExtensionContext, errors: any[]) {
         if (!this.solutionPanel) {
             this.createPanel(context, errors);

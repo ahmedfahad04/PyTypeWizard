@@ -6,6 +6,7 @@ import * as vscode from 'vscode';
 import which from "which";
 import { sendApiRequest } from "./api";
 import { PyreCodeActionProvider } from "./codeActionProvider";
+import { getGeminiService } from "./llm";
 import { errors } from "./main";
 import { PanelManager } from "./model/panelManager";
 import { OutlineProvider } from "./outlineProvider";
@@ -18,7 +19,7 @@ export function registerCommands(context: vscode.ExtensionContext, pyrePath: str
 
     // command 1 (for webview)
     context.subscriptions.push(
-        vscode.commands.registerCommand('pyre.fixError', async (document: vscode.TextDocument, diagnostic: vscode.Diagnostic) => {
+        vscode.commands.registerCommand('pytypewizard.fixError', async (document: vscode.TextDocument, diagnostic: vscode.Diagnostic) => {
             const filePath = document.uri.fsPath;
             const errMessage = diagnostic.message;
             const lineNum = diagnostic.range.start.line + 1;
@@ -51,15 +52,21 @@ export function registerCommands(context: vscode.ExtensionContext, pyrePath: str
                 sourceCode = document.getText(expandedRange);
             }
 
+            vscode.window.showInformationMessage(`SOURCE: ${selection?.start} - ${selection?.end}`)
+            vscode.window.showInformationMessage(`SOURCE: ${sourceCode}`)
+
+
             const errorObject = {
                 rule_id: errType[0],
                 message: errType[1],
                 warning_line: warningLine,
                 source_code: sourceCode,
-                file_name: filePath,
-                line_num: lineNum,
-                col_num: colNum
+                // file_name: filePath,
+                // line_num: lineNum,
+                // col_num: colNum
             };
+
+            console.log(`DATA: \n${errorObject.source_code}`)
 
             if (panelManager) {
 
@@ -88,6 +95,7 @@ export function registerCommands(context: vscode.ExtensionContext, pyrePath: str
         }));
 
     //! TODO: Not working as expected
+    // command 2 (for Toogle PyTypeWizard View)
     context.subscriptions.push(
         vscode.commands.registerCommand('pytypewizard.toggleDashboard', () => {
             if (!panelManager.getPanel()) {
@@ -106,6 +114,57 @@ export function registerCommands(context: vscode.ExtensionContext, pyrePath: str
             { providedCodeActionKinds: [vscode.CodeActionKind.QuickFix] }
         )
     );
+
+    // Add this to registerCommands function
+    context.subscriptions.push(
+        vscode.commands.registerCommand('pytypewizard.explainError', async (document: vscode.TextDocument, diagnostic: vscode.Diagnostic) => {
+            const errMessage = diagnostic.message;
+            const errType = errMessage.split(':', 2);
+            const warningLine = document.lineAt(diagnostic.range.start.line).text.trim();
+
+            if (panelManager) {
+
+                panelManager.setSolutions([]);
+
+                const prompt = `
+                    Explain the following error in given instructions:
+
+                    # Error Details
+                    Error Type: ${errType[0]}
+                    Error Message: ${errType[1]}
+                    Code: ${warningLine}
+    
+                    # Instruction
+                    Explain the given Python type error in simple and clear language in bullet point. The explanation should include the following section:
+                    1. What this error means.
+                    2. Why it occurs in the provided code.
+                    3. A short and practical hint (not the solution) to fix the error.
+    
+                    Keep the explanation in details and focused so that developers can quickly understand and resolve the issue. Answer in markdown format.
+                    `;
+
+                vscode.window.showWarningMessage(`PROMPT:>> ${prompt}`)
+
+                const response = await vscode.window.withProgress({
+                    location: vscode.ProgressLocation.Notification,
+                    title: "Generating error explanation...",
+                    cancellable: false
+                }, async (progress) => {
+                    progress.report({ increment: 50 });
+                    const gemini = getGeminiService();
+                    const result = await gemini.generateResponse(prompt);
+                    progress.report({ increment: 50 });
+                    return result;
+                });
+
+                panelManager.setSolutions([response]);
+                panelManager.showPanel(context, errors);
+
+            }
+
+        })
+    );
+
 
     // command 4 (register the Tree view)
     vscode.window.registerTreeDataProvider('package-outline', new OutlineProvider());
@@ -158,7 +217,8 @@ export async function runErrorExtractor(context: vscode.ExtensionContext, filePa
                 try {
                     const jsonOutput = JSON.parse(output);
 
-                    const apiResponse = await sendApiRequest(jsonOutput);
+
+                    const apiResponse = await sendApiRequest(_inputobj);
                     outputChannel.appendLine(`DATA: ${apiResponse[9]}`)
 
                     resolve(Object.values(apiResponse));

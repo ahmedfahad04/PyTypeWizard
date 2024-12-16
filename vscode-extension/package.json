@@ -70,6 +70,11 @@
 							"Call error"
 						]
 					}
+				},
+				"pytypewizard.geminiApiKey": {
+					"type": "string",
+					"default": "",
+					"description": "API Key for Google Gemini"
 				}
 			}
 		}
@@ -83,6 +88,7 @@
 		"lint": "tslint --force -p ."
 	},
 	"dependencies": {
+		"@google/generative-ai": "^0.21.0",
 		"@vscode-elements/elements": "^1.9.0",
 		"@vscode/python-extension": "^1.0.5",
 		"axios": "^1.7.7",

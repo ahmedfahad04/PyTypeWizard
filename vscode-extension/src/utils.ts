@@ -25,6 +25,19 @@ export async function copyToClipboard(text: string): Promise<void> {
     }
 }
 
+export function extractPythonCode(text: string): string {
+    // Regular expression to match Python code blocks enclosed in triple backticks
+    const regex = /([\s\S]*?)/g;
+    let match: RegExpExecArray | null;
+    const codeBlocks: string[] = [];
+
+    while ((match = regex.exec(text)) !== null) {
+        // Remove "python" from the beginning of the captured group
+        codeBlocks.push(match[1].trim());
+    }
+
+    return codeBlocks.join('\n'); // Join multiple code blocks if any
+}
 
 export function extractSolutionCode(response: any): any {
     console.log("GOT RESPONSE: ", response.fix);

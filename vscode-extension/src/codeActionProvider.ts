@@ -12,18 +12,25 @@ export class PyreCodeActionProvider implements vscode.CodeActionProvider {
         for (const diagnostic of diagnostics) {
 
             // Create Fix action
-            const action = new vscode.CodeAction('Fix Pyre Error', vscode.CodeActionKind.QuickFix);
-            action.command = {
+            const fixAction = new vscode.CodeAction('Fix Pyre Error', vscode.CodeActionKind.QuickFix);
+            fixAction.command = {
                 title: 'Fix Pyre Error',
-                command: 'pyre.fixError',
+                command: 'pytypewizard.fixError',
                 arguments: [document, diagnostic]
             };
-            action.diagnostics = [diagnostic];
-            action.isPreferred = true;
-            actions.push(action);
+            fixAction.diagnostics = [diagnostic];
+            fixAction.isPreferred = true;
+            actions.push(fixAction);
+
+            const explainAction = new vscode.CodeAction('Explain Error', vscode.CodeActionKind.QuickFix);
+            explainAction.command = {
+                command: 'pytypewizard.explainError',
+                title: 'Explain Error',
+                arguments: [document, diagnostic]
+            };
+            actions.push(explainAction);
         }
 
         return actions;
-    }
-}
+    }}
 
