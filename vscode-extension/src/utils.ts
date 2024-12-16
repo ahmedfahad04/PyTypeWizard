@@ -73,59 +73,62 @@ export function getWebviewContent(solutions: any[], context: vscode.ExtensionCon
     }
 
     return `
-        <!DOCTYPE html>
-        <html lang="en">
-        <head>
-            <style>
-                ${styleSheet}
-            </style>
-        </head>
-        <body>
-            <header>
-                <h1>PyTypeWizard Dashboard</h1>
-                <div class="project-health">
-                    <span class='sub-heading'>Total Errors: ${errorObject.length}</span>
-                    <span class="health-warning">Project Health: Warning</span>
-                </div>
-            </header>
-            <hr />
-           
-            <div id="problem-details-section">
-                ${problemDetails}
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/vs2015.min.css">
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/python.min.js"></script>
+        <style>
+            ${styleSheet}
+        </style>
+    </head>
+    <body>
+        <header>
+            <h1>PyTypeWizard Dashboard</h1>
+            <div class="project-health">
+                <span class='sub-heading'>Total Errors: ${errorObject.length}</span>
+                <span class="health-warning">Project Health: Warning</span>
             </div>
+        </header>
+        <hr />
+       
+        <div id="problem-details-section">
+            ${problemDetails}
+        </div>
+        
+        ${solutionCard ?? ''}
+        <script>
+            const vscode = acquireVsCodeApi();
             
-            ${solutionCard ?? ''}
-            <script>
-                const vscode = acquireVsCodeApi();
+            // Initialize syntax highlighting
+            hljs.highlightAll();
 
-                document.getElementById('alternatives').addEventListener('click', () => {
-                    vscode.postMessage({ command: 'showAlternatives' }); 
+            document.getElementById('alternatives')?.addEventListener('click', () => {
+                vscode.postMessage({ command: 'showAlternatives' }); 
+            });
+
+            function copyCode(index) {
+                vscode.postMessage({ command: 'copyToClipboard', index });
+            }
+
+            function applyFix(index) {
+                vscode.postMessage({ command: 'quickFix', index });
+            }
+
+            function handleLocationClick(filePath, line, column) {
+                vscode.postMessage({
+                    command: 'viewFile',
+                    filePath: filePath,
+                    line: line,
+                    column: column
                 });
-
-                function copyCode(index) {
-                    console.log('Inside COPy');
-
-                    vscode.postMessage({ command: 'copyToClipboard', index });
-                }
-
-                function applyFix(index) {
-                    console.log('Inside FIX');
-                    vscode.postMessage({ command: 'quickFix', index });
-                }
-
-                function handleLocationClick(filePath, line, column) {
-                    console.log('Inside location click');
-                    vscode.postMessage({
-                        command: 'viewFile',
-                        filePath: filePath,
-                        line: line,
-                        column: column
-                    });
-                }
-            </script>
-        </body>
-        </html>
+            }
+        </script>
+    </body>
+    </html>
     `;
+
 }
 
 
