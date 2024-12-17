@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 
 export class PyreCodeActionProvider implements vscode.CodeActionProvider {
-    provideCodeActions(document: vscode.TextDocument, range: vscode.Range, context: vscode.CodeActionContext, token: vscode.CancellationToken): vscode.ProviderResult<(vscode.Command | vscode.CodeAction)[]> {
+    provideCodeActions(document: vscode.TextDocument, _range: vscode.Range, context: vscode.CodeActionContext, _token: vscode.CancellationToken): vscode.ProviderResult<(vscode.Command | vscode.CodeAction)[]> {
         const diagnostics = context.diagnostics;
         if (diagnostics.length === 0) {
             return [];
@@ -10,18 +10,27 @@ export class PyreCodeActionProvider implements vscode.CodeActionProvider {
         const actions: vscode.CodeAction[] = [];
 
         for (const diagnostic of diagnostics) {
-            const action = new vscode.CodeAction('Fix Pyre Error', vscode.CodeActionKind.QuickFix);
-            action.command = {
+
+            // Create Fix action
+            const fixAction = new vscode.CodeAction('Fix Pyre Error', vscode.CodeActionKind.QuickFix);
+            fixAction.command = {
                 title: 'Fix Pyre Error',
-                command: 'pyre.fixError',
+                command: 'pytypewizard.fixError',
                 arguments: [document, diagnostic]
             };
-            action.diagnostics = [diagnostic];
-            action.isPreferred = true;
-            actions.push(action);
+            fixAction.diagnostics = [diagnostic];
+            fixAction.isPreferred = true;
+            actions.push(fixAction);
+
+            const explainAction = new vscode.CodeAction('Explain Error', vscode.CodeActionKind.QuickFix);
+            explainAction.command = {
+                command: 'pytypewizard.explainError',
+                title: 'Explain Error',
+                arguments: [document, diagnostic]
+            };
+            actions.push(explainAction);
         }
 
         return actions;
-    }
-}
+    }}
 

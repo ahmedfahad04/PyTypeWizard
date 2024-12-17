@@ -1,20 +1,25 @@
 import { EnvironmentPath } from "@vscode/python-extension";
 import { spawn } from "child_process";
 import { existsSync, statSync } from 'fs';
-import path, { dirname, join } from 'path';
+import path from 'path';
 import * as vscode from 'vscode';
 import which from "which";
 import { sendApiRequest } from "./api";
+import { PyreCodeActionProvider } from "./codeActionProvider";
+import { getGeminiService } from "./llm";
+import { errors } from "./main";
+import { PanelManager } from "./model/panelManager";
+import { OutlineProvider } from "./outlineProvider";
 import { getSimplifiedSmartSelection } from "./smartSelection";
-import { getWebviewContent } from './utils';
-
-let outputChannel = vscode.window.createOutputChannel("pyre");
-let solutionPanel: vscode.WebviewPanel | undefined;
-
+import { getPyRePath, outputChannel } from './utils';
 
 export function registerCommands(context: vscode.ExtensionContext, pyrePath: string): void {
+
+    const panelManager = PanelManager.getInstance();
+
+    // command 1 (for webview)
     context.subscriptions.push(
-        vscode.commands.registerCommand('pyre.fixError', async (document: vscode.TextDocument, diagnostic: vscode.Diagnostic) => {
+        vscode.commands.registerCommand('pytypewizard.fixError', async (document: vscode.TextDocument, diagnostic: vscode.Diagnostic) => {
             const filePath = document.uri.fsPath;
             const errMessage = diagnostic.message;
             const lineNum = diagnostic.range.start.line + 1;
@@ -23,11 +28,10 @@ export function registerCommands(context: vscode.ExtensionContext, pyrePath: str
             const errType = errMessage.split(':', 2);
             const warningLine = document.lineAt(diagnostic.range.start.line).text.trim();
 
-
             const expandedRange = new vscode.Range(
                 document.lineAt(diagnostic.range.start.line).range.start,
                 document.lineAt(diagnostic.range.end.line).range.end
-            )
+            );
 
             const targetPosition = new vscode.Position(diagnostic.range.start.line, diagnostic.range.start.character);
             const selection = getSimplifiedSmartSelection(document, targetPosition);
@@ -48,43 +52,141 @@ export function registerCommands(context: vscode.ExtensionContext, pyrePath: str
                 sourceCode = document.getText(expandedRange);
             }
 
-            //! should be integrated
-            console.log(`SOUCE CODE: ${sourceCode}`);
+            vscode.window.showInformationMessage(`SOURCE: ${selection?.start} - ${selection?.end}`)
+            vscode.window.showInformationMessage(`SOURCE: ${sourceCode}`)
 
-            // Create and show webview
-            if (!solutionPanel) {
-                solutionPanel = vscode.window.createWebviewPanel(
-                    'pyreSolution',
-                    'Pyre Solution',
-                    vscode.ViewColumn.Beside,
-                    { enableScripts: true }
-                );
-                solutionPanel.onDidDispose(() => {
-                    solutionPanel = undefined;
+
+            const errorObject = {
+                rule_id: errType[0],
+                message: errType[1],
+                warning_line: warningLine,
+                source_code: sourceCode,
+                // file_name: filePath,
+                // line_num: lineNum,
+                // col_num: colNum
+            };
+
+            console.log(`DATA: \n${errorObject.source_code}`)
+
+            if (panelManager) {
+
+                // Show loading message
+                panelManager.setSolutions([])
+
+                // Run error extractor and get solution
+                const response = await runErrorExtractor(context, filePath, errType[0], errType[1], lineNum, colNum, outputDir, pyrePath, errorObject);
+
+                // Update webview with solutions
+                panelManager.setSolutions(Array.isArray(response) ? response : []);
+                panelManager.showPanel(context, errors)
+
+                // copy to clipboard handler
+                panelManager.addMessageHandler('copyToClipboard', (message) => {
+                    if (Array.isArray(response) && response.length > message.index) {
+                        const data = response[message.index];
+                        vscode.env.clipboard.writeText(data).then(() => {
+                            vscode.window.showInformationMessage('Copied to clipboard!');
+                        });
+                    } else {
+                        vscode.window.showErrorMessage('Invalid response or index');
+                    }
                 });
             }
+        }));
 
-            // Show loading message
-            solutionPanel.webview.html = getWebviewContent(['Generating solution...']);
-
-            const obj = {
-                "rule_id": errType[0],
-                "message": errType[1],
-                "warning_line": warningLine,
-                "source_code": sourceCode,
+    //! TODO: Not working as expected
+    // command 2 (for Toogle PyTypeWizard View)
+    context.subscriptions.push(
+        vscode.commands.registerCommand('pytypewizard.toggleDashboard', () => {
+            if (!panelManager.getPanel()) {
+                panelManager.createPanel(context, errors);
+            } else {
+                panelManager.togglePanel();
             }
+        })
+    );
 
-            // Run error extractor and get solution
-            const response = await runErrorExtractor(context, filePath, errType[0], errType[1], lineNum, colNum, outputDir, pyrePath, obj);
+    // command 3 (for Quick Fix option)
+    context.subscriptions.push(
+        vscode.languages.registerCodeActionsProvider(
+            { scheme: 'file', language: 'python' },
+            new PyreCodeActionProvider(),
+            { providedCodeActionKinds: [vscode.CodeActionKind.QuickFix] }
+        )
+    );
 
+    // Add this to registerCommands function
+    context.subscriptions.push(
+        vscode.commands.registerCommand('pytypewizard.explainError', async (document: vscode.TextDocument, diagnostic: vscode.Diagnostic) => {
+            const errMessage = diagnostic.message;
+            const errType = errMessage.split(':', 2);
+            const warningLine = document.lineAt(diagnostic.range.start.line).text.trim();
 
-            // Update webview with solution
-            if (solutionPanel) {
-                solutionPanel.webview.html = getWebviewContent(response as string[]);
-            }
+            const prompt = `
+                Explain the following error in given instructions:
+
+                # Error Details
+                Error Type: ${errType[0]}
+                Error Message: ${errType[1]}
+                Code: ${warningLine}
+
+                # Instruction
+                Explain the given Python type error in simple and clear language in bullet point. The explanation should include the following section:
+                1. What this error means.
+                2. Why it occurs in the provided code.
+                3. A short and practical hint (not the solution) to fix the error.
+
+                Keep the explanation in details and focused so that developers can quickly understand and resolve the issue. Answer in markdown format.
+                `;
+
+            // const prompt = `
+            //     Explain the following error in given instructions:
+
+            //     # Error Details
+            //     Error Type: ${errType[0]}
+            //     Error Message: ${errType[1]}
+            //     Code: ${warningLine}
+
+            //     # Instruction
+            //     put the solution only as python code snippet. no explanation needed.
+            //     `;
+
+            vscode.window.showWarningMessage(`PROMPT:>> ${prompt}`)
+
+            const response = await vscode.window.withProgress({
+                location: vscode.ProgressLocation.Notification,
+                title: "Generating error explanation...",
+                cancellable: false
+            }, async (progress) => {
+                progress.report({ increment: 50 });
+                const gemini = getGeminiService();
+                const result = await gemini.generateResponse(prompt);
+                progress.report({ increment: 50 });
+                return result;
+            });
+
+            panelManager.setSolutions([response]);
+            panelManager.showPanel(context, errors);
 
         })
     );
+
+    // command 4 (register the Tree view)
+    vscode.window.registerTreeDataProvider('package-outline', new OutlineProvider());
+
+    // command 5 (Create a chat participant)
+    vscode.chat.createChatParticipant('pytypewizard-chat', async (request, context, response, token) => {
+        const userQuery = request.prompt;
+        const chatModels = await vscode.lm.selectChatModels({ family: 'gpt-4' });
+        const messages = [
+            vscode.LanguageModelChatMessage.User(userQuery)
+        ]
+        const chatRequest = await chatModels[0].sendRequest(messages, undefined, token);
+        for await (const token of chatRequest.text) {
+            response.markdown(token);
+        }
+    })
+
 }
 
 export async function findPyreCommand(envPath: EnvironmentPath): Promise<string | undefined> {
@@ -92,34 +194,27 @@ export async function findPyreCommand(envPath: EnvironmentPath): Promise<string 
     if (envPath.id === 'DEFAULT_PYTHON') {
         outputChannel.appendLine(`Using the default python environment`);
         vscode.window.showInformationMessage(`Using the default python environment`);
-        return 'pyre';
     }
 
-    const path = envPath.path;
-    const stat = statSync(path)
+    const pyreCheckPath = getPyRePath(envPath.path)
 
-    const pyrePath = stat.isFile()
-        ? join(dirname(envPath.path), 'pyre')
-        : stat.isDirectory()
-            ? join(path, 'bin', 'pyre')
-            : undefined;
-
-    if (pyrePath && existsSync(pyrePath) && statSync(pyrePath).isFile()) {
-        outputChannel.appendLine(`Using pyre path: ${pyrePath} from python environment: ${envPath.id} at ${envPath.path}`);
-        return pyrePath;
+    if (pyreCheckPath && existsSync(pyreCheckPath) && statSync(pyreCheckPath).isFile()) {
+        vscode.window.showInformationMessage(`Using pyre path: ${pyreCheckPath} from python environment: ${envPath.id} at ${envPath.path}`);
+        return pyreCheckPath;
     }
 
     const pyreFromPathEnvVariable = await which('pyre', { nothrow: true });
+
     if (pyreFromPathEnvVariable != null) {
-        outputChannel.appendLine(`Using pyre path: ${pyreFromPathEnvVariable} from PATH`);
+        outputChannel.appendLine(`Using pyre from: ${pyreFromPathEnvVariable}`);
         return pyreFromPathEnvVariable;
     }
 
-    outputChannel.appendLine(`Could not find pyre path from python environment: ${envPath.id} at ${envPath.path}`);
-    return undefined;
+    vscode.window.showInformationMessage(`Could not find pyre path from python environment: ${envPath.id} at ${envPath.path}`);
+    return pyreCheckPath;
 }
 
-export async function runErrorExtractor(context: vscode.ExtensionContext, filePath: string, errType: string, errMessage: string, lineNum: number, colNum: number, outputDir: string, pythonPath: string, inputobj: any) {
+export async function runErrorExtractor(context: vscode.ExtensionContext, filePath: string, errType: string, errMessage: string, lineNum: number, colNum: number, outputDir: string, pythonPath: string, _inputobj: any) {
     return new Promise(async (resolve, reject) => {
 
         const scriptPath = path.join(context.extensionPath, 'src', 'script', 'error_extractor.py');
@@ -139,11 +234,12 @@ export async function runErrorExtractor(context: vscode.ExtensionContext, filePa
             if (code === 0 && output) {
                 try {
                     const jsonOutput = JSON.parse(output);
-                    console.log("JSON DATA: ", jsonOutput);
 
-                    const apiResponse = await sendApiRequest(jsonOutput);
-                    Object.values(apiResponse)
-                    resolve(Object.values(apiResponse)); // Resolve with the API response
+
+                    const apiResponse = await sendApiRequest(_inputobj);
+                    outputChannel.appendLine(`DATA: ${apiResponse[9]}`)
+
+                    resolve(Object.values(apiResponse));
                 } catch (error) {
                     console.error('Error parsing output or sending API request:', error);
                     reject(error);

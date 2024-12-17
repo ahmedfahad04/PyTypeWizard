@@ -1,13 +1,13 @@
 {
-	"name": "pyre-vscode",
+	"name": "pytypewizard-vscode",
 	"version": "0.0.2",
-	"publisher": "fb-pyre-check",
+	"publisher": "Istiaq Ahmed Fahad",
 	"engines": {
 		"vscode": "^1.15.0"
 	},
 	"license": "MIT",
-	"displayName": "pyre-vscode",
-	"description": "VSCode extension for Pyre-check",
+	"displayName": "pytypewizard-vscode",
+	"description": "VSCode extension for Python Static Type Checking",
 	"keywords": [
 		"python",
 		"pyre",
@@ -20,22 +20,79 @@
 	"contributes": {
 		"commands": [
 			{
-				"command": "pyre.restartExtension",
-				"title": "Restart PyTypeFix"
+				"command": "pytypewizard.refreshErrors",
+				"title": "Refresh PyTypeWizard Errors"
 			}
-		]
+		],
+		"viewsContainers": {
+			"activitybar": [
+				{
+					"id": "pytypewizard-vscode",
+					"title": "PyTypeWizard",
+					"icon": "./asset/magic_wand.svg"
+				}
+			]
+		},
+		"views": {
+			"pytypewizard-vscode": [
+				{
+					"id": "package-outline",
+					"name": "Outline"
+				},
+				{
+					"id": "pytypewizard-vscode",
+					"name": "Type Errors",
+					"type": "tree"
+				}
+			]
+		},
+		"configuration": {
+			"title": "PyTypeWizard Settings",
+			"properties": {
+				"pyre.enabledErrorTypes": {
+					"type": "array",
+					"default": [
+						"Incompatible variable type",
+						"Incompatible parameter type",
+						"Incompatible return type"
+					],
+					"description": "Select the error types to enable in PyTypeWizard diagnostics.",
+					"items": {
+						"type": "string",
+						"enum": [
+							"Incompatible variable type",
+							"Incompatible parameter type",
+							"Incompatible return type",
+							"Invalid type",
+							"Unbound name",
+							"Incompatible attribute type",
+							"Unsupported operand",
+							"Call error"
+						]
+					}
+				},
+				"pytypewizard.geminiApiKey": {
+					"type": "string",
+					"default": "",
+					"description": "API Key for Google Gemini"
+				}
+			}
+		}
 	},
 	"scripts": {
 		"vscode:prepublish": "npm run compile",
-		"compile": "tsc -p ./",
+		"compile": "tsc -p ./ && npm run copy-styles",
+		"copy-styles": "mkdir -p out/styles && cp src/styles/*.css out/styles/",
 		"watch": "tsc -watch -p ./",
 		"test": "npm run compile && node ./node_modules/vscode/bin/test",
 		"lint": "tslint --force -p ."
 	},
 	"dependencies": {
+		"@google/generative-ai": "^0.21.0",
+		"@vscode-elements/elements": "^1.9.0",
 		"@vscode/python-extension": "^1.0.5",
 		"axios": "^1.7.7",
-		"vscode-languageclient": "^3.5.0",
+		"vscode-languageclient": "^9.0.1",
 		"which": "^4.0.0"
 	},
 	"devDependencies": {
@@ -47,5 +104,10 @@
 		"tslint": "^5.8.0",
 		"tslint-microsoft-contrib": "^5.2.1",
 		"typescript": "^5.5.4"
-	}
+	},
+	"files": [
+		"out/**/*",
+		"src/styles/**/*",
+		"asset/**/*"
+	]
 }
