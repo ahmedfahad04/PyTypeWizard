@@ -3,6 +3,7 @@ import { dirname, join } from 'path';
 import * as vscode from 'vscode';
 import { ErrorObjectType } from './types/errorObjType';
 
+
 export let outputChannel = vscode.window.createOutputChannel("PyTypeWizard");
 
 export function getStylesheet(context: vscode.ExtensionContext): string {

@@ -150,22 +150,6 @@ export async function activate(context: vscode.ExtensionContext) {
 		listenForEnvChanges(pythonExtension, state);
 	}
 
-	// Using VSCode's built-in progress API
-	// const response = await vscode.window.withProgress({
-	// 	location: vscode.ProgressLocation.Notification,
-	// 	title: "Generating AI response...",
-	// 	cancellable: false
-	// }, async (progress) => {
-	// 	progress.report({ increment: 50 });
-	// 	const gemini = getGeminiService();
-	// 	const result = await gemini.generateResponse("Answer what is Python type hint in one line");
-	// 	progress.report({ increment: 50 });
-	// 	return result;
-	// });
-
-	// vscode.window.showInformationMessage(`AI: ${response}`);
-
-
 	// register all commands for the extension
 	registerCommands(context, activePythonPath.path);
 }

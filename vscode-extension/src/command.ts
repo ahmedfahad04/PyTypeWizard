@@ -122,52 +122,70 @@ export function registerCommands(context: vscode.ExtensionContext, pyrePath: str
             const errType = errMessage.split(':', 2);
             const warningLine = document.lineAt(diagnostic.range.start.line).text.trim();
 
-            if (panelManager) {
+            const prompt = `
+                Explain the following error in given instructions:
 
-                panelManager.setSolutions([]);
+                # Error Details
+                Error Type: ${errType[0]}
+                Error Message: ${errType[1]}
+                Code: ${warningLine}
 
-                const prompt = `
-                    Explain the following error in given instructions:
+                # Instruction
+                Explain the given Python type error in simple and clear language in bullet point. The explanation should include the following section:
+                1. What this error means.
+                2. Why it occurs in the provided code.
+                3. A short and practical hint (not the solution) to fix the error.
 
-                    # Error Details
-                    Error Type: ${errType[0]}
-                    Error Message: ${errType[1]}
-                    Code: ${warningLine}
-    
-                    # Instruction
-                    Explain the given Python type error in simple and clear language in bullet point. The explanation should include the following section:
-                    1. What this error means.
-                    2. Why it occurs in the provided code.
-                    3. A short and practical hint (not the solution) to fix the error.
-    
-                    Keep the explanation in details and focused so that developers can quickly understand and resolve the issue. Answer in markdown format.
-                    `;
+                Keep the explanation in details and focused so that developers can quickly understand and resolve the issue. Answer in markdown format.
+                `;
 
-                vscode.window.showWarningMessage(`PROMPT:>> ${prompt}`)
+            // const prompt = `
+            //     Explain the following error in given instructions:
 
-                const response = await vscode.window.withProgress({
-                    location: vscode.ProgressLocation.Notification,
-                    title: "Generating error explanation...",
-                    cancellable: false
-                }, async (progress) => {
-                    progress.report({ increment: 50 });
-                    const gemini = getGeminiService();
-                    const result = await gemini.generateResponse(prompt);
-                    progress.report({ increment: 50 });
-                    return result;
-                });
+            //     # Error Details
+            //     Error Type: ${errType[0]}
+            //     Error Message: ${errType[1]}
+            //     Code: ${warningLine}
 
-                panelManager.setSolutions([response]);
-                panelManager.showPanel(context, errors);
+            //     # Instruction
+            //     put the solution only as python code snippet. no explanation needed.
+            //     `;
 
-            }
+            vscode.window.showWarningMessage(`PROMPT:>> ${prompt}`)
+
+            const response = await vscode.window.withProgress({
+                location: vscode.ProgressLocation.Notification,
+                title: "Generating error explanation...",
+                cancellable: false
+            }, async (progress) => {
+                progress.report({ increment: 50 });
+                const gemini = getGeminiService();
+                const result = await gemini.generateResponse(prompt);
+                progress.report({ increment: 50 });
+                return result;
+            });
+
+            panelManager.setSolutions([response]);
+            panelManager.showPanel(context, errors);
 
         })
     );
 
-
     // command 4 (register the Tree view)
     vscode.window.registerTreeDataProvider('package-outline', new OutlineProvider());
+
+    // command 5 (Create a chat participant)
+    vscode.chat.createChatParticipant('pytypewizard-chat', async (request, context, response, token) => {
+        const userQuery = request.prompt;
+        const chatModels = await vscode.lm.selectChatModels({ family: 'gpt-4' });
+        const messages = [
+            vscode.LanguageModelChatMessage.User(userQuery)
+        ]
+        const chatRequest = await chatModels[0].sendRequest(messages, undefined, token);
+        for await (const token of chatRequest.text) {
+            response.markdown(token);
+        }
+    })
 
 }
 

@@ -7,9 +7,9 @@ import subprocess
 import sys
 import tempfile
 import time
-import autopep8
 from typing import Dict, Final, List
 
+import autopep8
 import coloredlogs
 import torch
 from tqdm import tqdm
@@ -52,7 +52,7 @@ def validate_predictions(predictions: Dict[str, str]) -> List[str]:
             config_file.write('{"source_directories": ["."]}\n')
 
         script_path = os.path.join(temp_dir, "all_predictions.py")
-\
+
         for pred_id, code in tqdm(predictions.items(), desc="Validating predictions"):
             processed_code = (
                 code.replace("<IND>", " ").replace("<DED>", " ").lstrip("\n").rstrip()
@@ -68,7 +68,7 @@ def validate_predictions(predictions: Dict[str, str]) -> List[str]:
                 )
                 # logger.error(f"Pyre output: {pred_id} => \n{len(result.stdout)}")
 
-                if  len(result.stdout) == 0:
+                if len(result.stdout) == 0:
                     logger.info(f"Prediction {pred_id} is valid.")
                     valid_predictions.append(pred_id)
 
@@ -163,6 +163,9 @@ def get_final_predictions(
     load_model_path: str = MODEL_PATH,
 ):
     set_seed(42)
+
+    logger.warn(f"INPUT: {data}")
+
     logger.info(f"Start time: {get_current_time()}")
 
     model, tokenizer = load_model_and_tokenizer(model_name, load_model_path)
