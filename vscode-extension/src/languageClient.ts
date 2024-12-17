@@ -16,7 +16,7 @@ export function createLanguageClient(pyrePath: string): LanguageClientState {
     };
 
     function getSelectedErrorTypes(): string[] {
-        const config = vscode.workspace.getConfiguration('pyre');
+        const config = vscode.workspace.getConfiguration('pytypewizard');
         return config.get<string[]>('enabledErrorTypes', []);
     }
 
@@ -52,7 +52,7 @@ export function createLanguageClient(pyrePath: string): LanguageClientState {
 
     const configListener = languageClient.start().then(() => {
         return vscode.workspace.onDidChangeConfiguration(event => {
-            if (event.affectsConfiguration('pyre.enabledErrorTypes')) {
+            if (event.affectsConfiguration('pytypewizard.enabledErrorTypes')) {
                 languageClient.stop().then(() => {
                     languageClient.start();
                 });

@@ -49,7 +49,7 @@
 		"configuration": {
 			"title": "PyTypeWizard Settings",
 			"properties": {
-				"pyre.enabledErrorTypes": {
+				"pytypewizard.enabledErrorTypes": {
 					"type": "array",
 					"default": [
 						"Incompatible variable type",
