@@ -175,7 +175,7 @@ export function registerCommands(context: vscode.ExtensionContext, pyrePath: str
     vscode.window.registerTreeDataProvider('package-outline', new OutlineProvider());
 
     // command 5 (Create a chat participant)
-    vscode.chat.createChatParticipant('pytypewizard-chat', async (request, context, response, token) => {
+    vscode.chat.createChatParticipant('pytypewizard-chat', async (request, _context, response, token) => {
         const userQuery = request.prompt;
         const chatModels = await vscode.lm.selectChatModels({ family: 'gpt-4' });
         const messages = [
@@ -233,7 +233,7 @@ export async function runErrorExtractor(context: vscode.ExtensionContext, filePa
         process.on('close', async (code) => {
             if (code === 0 && output) {
                 try {
-                    const jsonOutput = JSON.parse(output);
+                    // const jsonOutput = JSON.parse(output);
 
 
                     const apiResponse = await sendApiRequest(_inputobj);
