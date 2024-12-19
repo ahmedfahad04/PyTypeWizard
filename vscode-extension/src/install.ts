@@ -5,8 +5,16 @@ import * as vscode from 'vscode';
 import { outputChannel } from './utils';
 
 export async function isPyreCheckInstalled(): Promise<boolean> {
+    // const pythonExecutable = vscode.env.shell; // Get the shell used by VSCode
+    const pythonCommand = `pip show pyre-check`; // Use python from the shell
+
     return new Promise((resolve) => {
-        exec('pip show pyre-check', (error) => {
+        exec(pythonCommand, (error, stdout, stderr) => {
+            if (error) {
+                vscode.window.showErrorMessage(`Pyre Check Installed: ${error.message}`);
+                vscode.window.showErrorMessage(`Pyre Check Output: ${stdout}`);
+                resolve(false);
+            }
             resolve(!error);
         });
     });

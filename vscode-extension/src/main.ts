@@ -53,9 +53,9 @@ export async function activate(context: vscode.ExtensionContext) {
 		}, async (progress) => {
 			progress.report({ message: "Installing..." });
 			return new Promise<void>((resolve, reject) => {
-				exec('pip install pyre-check', (error) => {
+				exec('python -m pip install pyre-check', (error) => {  //!install watchman dynamically if not installed
 					if (error) {
-						vscode.window.showErrorMessage('Failed to install pyre-check. Please install it manually.');
+						vscode.window.showErrorMessage('Failed to install pyre-check. Please install it manually.\nRun `pip install pyre-check`');
 						reject(error);
 					} else {
 						vscode.window.showInformationMessage('Packages installed successfully!');
@@ -95,9 +95,15 @@ export async function activate(context: vscode.ExtensionContext) {
 
 		// Single start() call with proper initialization
 		await state.languageClient.start().then(() => {
+			vscode.window.showInformationMessage(`Inside start()`)
+
 			// Listen for diagnostic changes
 			const diagnosticsListener = vscode.languages.onDidChangeDiagnostics((_e) => {
-				const diagnostics = vscode.languages.getDiagnostics();
+				//! need to filter for only pyre diagnostics
+				const diagnostics = vscode.languages.getDiagnostics().filter(([_, diags]) =>
+					vscode.window.showWarningMessage(`inside diagnosticsListener ${diags.length}, value: ${diags.map(i => i.source)}`) ||
+					diags.some(d => d.message.includes('Pyre'))
+				);
 				const workspaceFolder = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
 
 				errors = diagnostics.flatMap(([uri, diagnostics]) =>
