@@ -95,38 +95,49 @@ export async function activate(context: vscode.ExtensionContext) {
 
 		// Single start() call with proper initialization
 		await state.languageClient.start().then(() => {
-			vscode.window.showInformationMessage(`Inside start()`)
-
-			// Listen for diagnostic changes
+		
 			const diagnosticsListener = vscode.languages.onDidChangeDiagnostics((_e) => {
-				//! need to filter for only pyre diagnostics
-				const diagnostics = vscode.languages.getDiagnostics().filter(([_, diags]) =>
-					vscode.window.showWarningMessage(`inside diagnosticsListener ${diags.length}, value: ${diags.map(i => i.source)}`) ||
-					diags.some(d => d.message.includes('Pyre'))
-				);
+				const diagnostics = vscode.languages.getDiagnostics();
 				const workspaceFolder = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+				let typeErrors: ErrorObjectType[] = [];
+				const filteredDiagnostics: any[] = [];
 
-				errors = diagnostics.flatMap(([uri, diagnostics]) =>
-					diagnostics.map(diagnostic => ({
-						file_name: uri.fsPath, // Keep the full path
-						display_name: uri.fsPath.replace(workspaceFolder + '/', ''), // For display only
-						rule_id: diagnostic.message.split(':', 2)[0],
-						message: diagnostic.message.split(':', 2)[1],
-						line_num: diagnostic.range.start.line + 1,
-						col_num: diagnostic.range.start.character + 1,
-						length: diagnostics.length
-					}))
-				);
+				diagnostics.forEach(([uri, diagnosticArray]) => {
+					diagnosticArray.forEach((diag) => {
+						if (
+							diag.source === 'Pyre' && // Replace with your specific extension source
+							diag.severity === vscode.DiagnosticSeverity.Error // Filter warnings
+						) {
+							filteredDiagnostics.push({ uri, diagnostic: diag });
+						}
+					});
+				});
 
-				// Single output channel message
-				if (errors.length > 0) {
-					outputChannel.clear(); // Clear previous messages
-					outputChannel.appendLine(`Found ${errors.length} type checking errors`);
-					outputChannel.appendLine(`Files; ${errors.map((i) => i.file_name)}`)
+				// Print filtered diagnostics to console
+				if (filteredDiagnostics.length > 0) {
+					console.log('Filtered Diagnostics:');
+					outputChannel.clear();
+					filteredDiagnostics.forEach(({ uri, diagnostic }) => {
+						outputChannel.appendLine(`File: ${uri.fsPath}`);
+						outputChannel.appendLine(`Message: ${diagnostic.message}`);
+						outputChannel.appendLine(`Range: ${diagnostic.range.start.line}:${diagnostic.range.start.character}`);
+						outputChannel.appendLine('--------------------------------');
+						typeErrors.push({
+							file_name: uri.fsPath,
+							display_name: uri.fsPath.replace(workspaceFolder + '/', ''),
+							rule_id: diagnostic.message.split(':', 2)[0],
+							message: diagnostic.message.split(':', 2)[1],
+							line_num: diagnostic.range.start.line + 1,
+							col_num: diagnostic.range.start.character + 1,
+							length: diagnostics.length
+						});
+					});
+				} else {
+					outputChannel.appendLine('No matching diagnostics found.')
 				}
 
 				if (panelManager) {
-					panelManager.updateContent(context, errors);
+					panelManager.updateContent(context, typeErrors);
 
 					// view file handler
 					panelManager.addMessageHandler('viewFile', (message) => {

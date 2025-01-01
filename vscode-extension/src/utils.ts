@@ -51,6 +51,8 @@ export function extractSolutionCode(response: any): any {
 }
 
 export function getWebviewContent(solutions: any[], context: vscode.ExtensionContext, errorObject: ErrorObjectType[]): string {
+    outputChannel.appendLine(`Generating Webview Content ${errorObject.length}`);
+    
     const styleSheet = getStylesheet(context);
 
     // Generate error detail cards
