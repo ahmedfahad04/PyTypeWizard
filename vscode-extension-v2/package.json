@@ -16,6 +16,10 @@
 			{
 				"command": "pytypewizard.openDashboard",
 				"title": "Open PyTypeWizard Dashboard"
+			},
+			{
+				"command": "pytypewizard.refresh",
+				"title": "Refresh PyTypeWizard"
 			}
 		],
 		"viewsContainers": {
@@ -23,7 +27,7 @@
 				{
 					"id": "pytypewizard-sidebar",
 					"title": "PyTypeWizard Sidebar",
-					"icon": "asset/magic_wand.svg"
+					"icon": "media/magic_wand.svg"
 				}
 			]
 		},

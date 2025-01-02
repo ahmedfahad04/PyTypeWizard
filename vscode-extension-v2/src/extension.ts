@@ -10,23 +10,6 @@ export function activate(context: vscode.ExtensionContext) {
 			sidebarProvider
 		)
 	);
-
-	// const item = vscode.window.createStatusBarItem(
-	// 	vscode.StatusBarAlignment.Right
-	// );
-	// item.text = "$(beaker) Open PyTypeWizard";
-	// item.command = "pytypewizard.openDashboard";
-	// item.show();
-
-	// context.subscriptions.push(
-	// 	vscode.commands.registerCommand("pytypewizard.openDashboard", () => {
-	// 		if (sidebarProvider._view) {
-	// 			sidebarProvider._view.show(true);
-	// 		}
-	// 	})
-	// );
-
-
 }
 
 // This method is called when your extension is deactivated
