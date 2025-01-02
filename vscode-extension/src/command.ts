@@ -9,13 +9,14 @@ import { PyreCodeActionProvider } from "./codeActionProvider";
 import { getGeminiService } from "./llm";
 import { errors } from "./main";
 import { PanelManager } from "./model/panelManager";
-import { OutlineProvider } from "./outlineProvider";
+import { SideBarProvider } from "./sideBarProvider";
 import { getSimplifiedSmartSelection } from "./smartSelection";
 import { getPyRePath, outputChannel } from './utils';
 
 export function registerCommands(context: vscode.ExtensionContext, pyrePath: string): void {
 
     const panelManager = PanelManager.getInstance();
+    const sideBarProvider = new SideBarProvider(context.extensionUri);
 
     // command 1 (for webview)
     context.subscriptions.push(
@@ -172,7 +173,10 @@ export function registerCommands(context: vscode.ExtensionContext, pyrePath: str
     );
 
     // command 4 (register the Tree view)
-    vscode.window.registerTreeDataProvider('package-outline', new OutlineProvider());
+    // vscode.window.registerTreeDataProvider('package-outline', new OutlineProvider());
+    context.subscriptions.push(
+        vscode.window.registerWebviewViewProvider('pytypewizard-vscode-sidebar', sideBarProvider)
+    )
 
     // command 5 (Create a chat participant)
     vscode.chat.createChatParticipant('pytypewizard-chat', async (request, _context, response, token) => {
