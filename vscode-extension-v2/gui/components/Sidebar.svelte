@@ -8,9 +8,6 @@
 </script>
 
 <style>
-    h1 {
-        color: yellow;
-    }
     .error {
         /* background-color: red; */
         border: 1px solid gray;

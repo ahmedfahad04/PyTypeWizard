@@ -9,7 +9,9 @@
 	"categories": [
 		"Other"
 	],
-	"activationEvents": [],
+	"activationEvents": [
+		"*"
+	],
 	"main": "./dist/extension.js",
 	"contributes": {
 		"commands": [
@@ -41,12 +43,47 @@
 					"contextualTitle": "Dashboard"
 				}
 			]
+		},
+		"configuration": {
+			"title": "PyTypeWizard Settings",
+			"properties": {
+				"pytypewizard.enabledErrorTypes": {
+					"type": "array",
+					"default": [
+						"Incompatible variable type",
+						"Incompatible parameter type",
+						"Incompatible return type",
+						"Invalid type",
+						"Unbound name",
+						"Incompatible attribute type"
+					],
+					"description": "Select the error types to enable in PyTypeWizard diagnostics.",
+					"items": {
+						"type": "string",
+						"enum": [
+							"Incompatible variable type",
+							"Incompatible parameter type",
+							"Incompatible return type",
+							"Invalid type",
+							"Unbound name",
+							"Incompatible attribute type",
+							"Unsupported operand",
+							"Call error"
+						]
+					}
+				},
+				"pytypewizard.geminiApiKey": {
+					"type": "string",
+					"default": "",
+					"description": "API Key for Google Gemini"
+				}
+			}
 		}
 	},
 	"scripts": {
 		"vscode:prepublish": "npm run package",
-		"compile": "webpack",
-		"watch": "concurrently \"rollup -c -w\" \"webpack --watch\"",
+		"compile": "tsc -p ./ && webpack",
+		"watch": "concurrently \"rollup -c -w\" \"webpack --watch\" \"tsc -watch -p ./\"",
 		"package": "webpack --mode production --devtool hidden-source-map",
 		"compile-tests": "tsc -p . --outDir out",
 		"watch-tests": "tsc -p . -w --outDir out",
@@ -54,25 +91,36 @@
 		"lint": "eslint src --ext ts",
 		"test": "vscode-test"
 	},
+	"dependencies": {
+		"@google/generative-ai": "^0.21.0",
+		"@vscode-elements/elements": "^1.9.0",
+		"@vscode/python-extension": "^1.0.5",
+		"axios": "^1.7.7",
+		"vscode-languageclient": "^9.0.1",
+		"which": "^4.0.0"
+	},
 	"devDependencies": {
 		"@rollup/plugin-commonjs": "^17.0.0",
 		"@rollup/plugin-node-resolve": "^11.0.1",
 		"@rollup/plugin-typescript": "^8.1.0",
 		"@tsconfig/svelte": "^1.0.10",
-		"@types/glob": "^7.1.3",
+		"@types/glob": "^8.1.0",
 		"@types/mocha": "^8.0.4",
 		"@types/node": "^12.11.7",
 		"@types/polka": "^0.5.1",
 		"@types/vscode": "^1.52.0",
-		"concurrently": "^5.3.0",
+		"@types/which": "^3.0.4",
 		"@typescript-eslint/eslint-plugin": "^7.18.0",
 		"@typescript-eslint/parser": "^7.18.0",
+		"concurrently": "^5.3.0",
 		"eslint": "^8.0.0",
 		"glob": "^7.1.6",
+		"minimatch": "^10.0.1",
 		"mocha": "^8.1.3",
 		"rollup": "^2.3.4",
 		"rollup-plugin-svelte": "^6.0.0",
 		"rollup-plugin-terser": "^7.0.2",
+		"supports-color": "^10.0.0",
 		"svelte": "^3.31.0",
 		"svelte-check": "^1.1.23",
 		"svelte-preprocess": "^4.6.1",
@@ -81,5 +129,10 @@
 		"vscode-test": "^1.4.1",
 		"webpack": "^5.10.0",
 		"webpack-cli": "^4.2.0"
-	}
+	},
+	"files": [
+		"out/**/*",
+		"media/**/*",
+		"gui/**/*"
+	]
 }

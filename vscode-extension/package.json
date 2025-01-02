@@ -79,9 +79,9 @@
 	},
 	"scripts": {
 		"vscode:prepublish": "npm run compile",
-		"compile": "rollup -c && npm run copy-styles",
+		"compile": "npm run copy-styles",
 		"copy-styles": "mkdir -p out/styles && cp src/styles/*.css out/styles/",
-		"watch": "concurrently \"rollup -c -w\" \"tsc -watch -p ./\"",
+		"watch": "tsc -watch -p ./",
 		"test": "npm run compile && node ./node_modules/vscode/bin/test",
 		"lint": "tslint --force -p ."
 	},
