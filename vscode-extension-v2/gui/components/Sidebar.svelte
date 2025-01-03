@@ -21,18 +21,13 @@
 </script>
 
 <style>
-
-    .btn1 {
-        margin-top: 5px;
-    }
-
     .error {
-    border: 1px solid gray;
-    color: white;
-    padding: 10px;
-    margin-top: 5px;
-    cursor: pointer;
-}
+        border: 1px solid gray;
+        color: white;
+        padding: 10px;
+        margin-top: 5px;
+        cursor: pointer;
+    }
 
     .error:hover {
         background-color: rgba(255, 255, 255, 0.1);
@@ -44,7 +39,6 @@
 </style>
 
 <div>
-
     <!-- Send what ever you want to send (from) -->
     {#each errors as error}
     <button class="error" 
@@ -72,6 +66,5 @@
         <p class="warning">{error.message}</p>
     </button>
     {/each}
-
 
 </div>
