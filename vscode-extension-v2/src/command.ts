@@ -7,14 +7,12 @@ import which from "which";
 import { sendApiRequest } from "./api";
 import { PyreCodeActionProvider } from "./codeActionProvider";
 import { getGeminiService } from "./llm";
-import { SidebarProvider } from "./SideBarProvider";
 import { getSimplifiedSmartSelection } from "./smartSelection";
 import { getPyRePath, outputChannel } from './utils';
 
 export function registerCommands(context: vscode.ExtensionContext, pyrePath: string): void {
 
     // const panelManager = PanelManager.getInstance();
-    // const sideBarProvider = new SideBarProvider(context.extensionUri);
 
     // command 1 (for webview)
     context.subscriptions.push(
@@ -51,8 +49,8 @@ export function registerCommands(context: vscode.ExtensionContext, pyrePath: str
                 sourceCode = document.getText(expandedRange);
             }
 
-            vscode.window.showInformationMessage(`SOURCE: ${selection?.start} - ${selection?.end}`)
-            vscode.window.showInformationMessage(`SOURCE: ${sourceCode}`)
+            vscode.window.showInformationMessage(`SOURCE: ${selection?.start} - ${selection?.end}`);
+            vscode.window.showInformationMessage(`SOURCE: ${sourceCode}`);
 
 
             const errorObject = {
@@ -65,7 +63,7 @@ export function registerCommands(context: vscode.ExtensionContext, pyrePath: str
                 // col_num: colNum
             };
 
-            console.log(`DATA: \n${errorObject.source_code}`)
+            console.log(`DATA: \n${errorObject.source_code}`);
 
             // if (panelManager) {
 
@@ -138,7 +136,7 @@ export function registerCommands(context: vscode.ExtensionContext, pyrePath: str
             //     put the solution only as python code snippet. no explanation needed.
             //     `;
 
-            vscode.window.showWarningMessage(`PROMPT:>> ${prompt}`)
+            vscode.window.showWarningMessage(`PROMPT:>> ${prompt}`);
 
             const response = await vscode.window.withProgress({
                 location: vscode.ProgressLocation.Notification,
@@ -164,15 +162,12 @@ export function registerCommands(context: vscode.ExtensionContext, pyrePath: str
         const chatModels = await vscode.lm.selectChatModels({ family: 'gpt-4' });
         const messages = [
             vscode.LanguageModelChatMessage.User(userQuery)
-        ]
+        ];
         const chatRequest = await chatModels[0].sendRequest(messages, undefined, token);
         for await (const token of chatRequest.text) {
             response.markdown(token);
         }
-    })
-
-    
-
+    });
 }
 
 export async function findPyreCommand(envPath: EnvironmentPath): Promise<string | undefined> {
@@ -182,7 +177,7 @@ export async function findPyreCommand(envPath: EnvironmentPath): Promise<string 
         vscode.window.showInformationMessage(`Using the default python environment`);
     }
 
-    const pyreCheckPath = getPyRePath(envPath.path)
+    const pyreCheckPath = getPyRePath(envPath.path);
 
     if (pyreCheckPath && existsSync(pyreCheckPath) && statSync(pyreCheckPath).isFile()) {
         vscode.window.showInformationMessage(`Using pyre path: ${pyreCheckPath} from python environment: ${envPath.id} at ${envPath.path}`);
@@ -223,7 +218,7 @@ export async function runErrorExtractor(context: vscode.ExtensionContext, filePa
 
 
                     const apiResponse = await sendApiRequest(_inputobj);
-                    outputChannel.appendLine(`DATA: ${apiResponse[9]}`)
+                    outputChannel.appendLine(`DATA: ${apiResponse[9]}`);
 
                     resolve(Object.values(apiResponse));
                 } catch (error) {
@@ -234,5 +229,5 @@ export async function runErrorExtractor(context: vscode.ExtensionContext, filePa
                 reject(new Error('Error extractor failed'));
             }
         });
-    })
+    });
 }

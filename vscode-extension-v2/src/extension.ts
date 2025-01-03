@@ -14,12 +14,12 @@ type LanguageClientState = {
 	configListener: Promise<vscode.Disposable>
 };
 
-let envListener: vscode.Disposable | undefined;
 let state: LanguageClientState | undefined;
 export let solutionPanel: vscode.WebviewPanel | undefined;
 export let errors: ErrorObjectType[];
 
 export async function activate(context: vscode.ExtensionContext) {
+
 	let pythonExtension = vscode.extensions.getExtension<PythonExtension>(PVSC_EXTENSION_ID);
 	const sideBarProvider = new SidebarProvider(context.extensionUri);
 
@@ -29,7 +29,7 @@ export async function activate(context: vscode.ExtensionContext) {
 		vscode.window.showErrorMessage('Failed to load Python extension. Pyre cannot function.');
 		return;
 	} else {
-		vscode.window.showInformationMessage('Python extension started')
+		vscode.window.showInformationMessage('Python extension started');
 	}
 
 	if (!pythonExtension.isActive) {
@@ -72,7 +72,7 @@ export async function activate(context: vscode.ExtensionContext) {
 	const pyrePath = getPyRePath(activePythonPath.path);
 
 	// check if PyRe Configuration file is installed or not; if not then install it
-	const isPyreConfigInstalled = checkPyreConfigFiles()
+	const isPyreConfigInstalled = checkPyreConfigFiles();
 	if (pyreExePath && pyreExePath.length > 0 && !isPyreConfigInstalled) {
 		await setupPyreConfig(pyrePath);
 		pyreExePath = await findPyreCommand(activePythonPath);
@@ -81,7 +81,6 @@ export async function activate(context: vscode.ExtensionContext) {
 	// Create or reuse webview
 	if (pyreExePath) {
 		state = createLanguageClient(pyreExePath);
-
 
 		// Create status bar item
 		const loadingStatus = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left);
@@ -93,47 +92,47 @@ export async function activate(context: vscode.ExtensionContext) {
 			const diagnosticsListener = vscode.languages.onDidChangeDiagnostics((_e) => {
 				const diagnostics = vscode.languages.getDiagnostics();
 				const workspaceFolder = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+				let typeErrors: ErrorObjectType[] = [];
+				const filteredDiagnostics: any[] = [];
 
-				errors = diagnostics.flatMap(([uri, diagnostics]) =>
-					diagnostics.map(diagnostic => ({
-						file_name: uri.fsPath, // Keep the full path
-						display_name: uri.fsPath.replace(workspaceFolder + '/', ''), // For display only
-						rule_id: diagnostic.message.split(':', 2)[0],
-						message: diagnostic.message.split(':', 2)[1],
-						line_num: diagnostic.range.start.line + 1,
-						col_num: diagnostic.range.start.character + 1,
-						length: diagnostics.length
-					}))
-				);
+				diagnostics.forEach(([uri, diagnosticArray]) => {
+					diagnosticArray.forEach((diag) => {
+						if (
+							diag.source === 'Pyre' && // Replace with your specific extension source
+							diag.severity === vscode.DiagnosticSeverity.Error // Filter warnings
+						) {
+							filteredDiagnostics.push({ uri, diagnostic: diag });
+						}
+					});
+				});
 
-				outputChannel.appendLine(`Found ${errors.length} type checking errors`);
-
-				// Single output channel message
-				if (errors.length > 0) {
-					outputChannel.clear(); // Clear previous messages
-					outputChannel.appendLine(`Found ${errors.length} type checking errors`);
-					outputChannel.appendLine(`Files; ${errors.map((i) => i.file_name)}`)
+				if (filteredDiagnostics.length > 0) {
+					console.log('Filtered Diagnostics:');
+					outputChannel.clear();
+					filteredDiagnostics.forEach(({ uri, diagnostic }) => {
+						outputChannel.appendLine(`File: ${uri.fsPath}`);
+						outputChannel.appendLine(`Message: ${diagnostic.message}`);
+						outputChannel.appendLine(`Range: ${diagnostic.range.start.line}:${diagnostic.range.start.character}`);
+						outputChannel.appendLine('--------------------------------');
+						typeErrors.push({
+							file_name: uri.fsPath,
+							display_name: uri.fsPath.replace(workspaceFolder + '/', ''),
+							rule_id: diagnostic.message.split(':', 2)[0],
+							message: diagnostic.message.split(':', 2)[1],
+							line_num: diagnostic.range.start.line + 1,
+							col_num: diagnostic.range.start.character + 1,
+							length: diagnostics.length
+						});
+					});
+				} else {
+					outputChannel.appendLine('No matching diagnostics found.');
 				}
 
-				// if (panelManager) {
-				// 	panelManager.updateContent(context, errors);
 
-				// 	// view file handler
-				// 	panelManager.addMessageHandler('viewFile', (message) => {
-				// 		vscode.workspace.openTextDocument(message.filePath).then(doc => {
-				// 			vscode.window.showTextDocument(doc).then(editor => {
-				// 				const position = new vscode.Position(message.line - 1, message.column - 1);
-				// 				editor.selection = new vscode.Selection(position, position);
-				// 				editor.revealRange(new vscode.Range(position, position));
-				// 			});
-				// 		});
-				// 	});
-
-				// 	// Add quickFix handler
-				// 	panelManager.addMessageHandler('quickFix', (message) => {
-				// 		vscode.window.showWarningMessage(`Inside Fix, ${message.index}, ${message.command}`);
-				// 	});
-				// }
+				sideBarProvider._view?.webview.postMessage({
+					type: 'typeErrors',
+					errors: typeErrors
+				});
 			});
 
 			context.subscriptions.push(diagnosticsListener);
@@ -148,7 +147,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
 	context.subscriptions.push(
 		vscode.window.registerWebviewViewProvider('pytypewizard-sidebar', sideBarProvider)
-	)
+	);
 
 	// register all commands for the extension
 	registerCommands(context, activePythonPath.path);

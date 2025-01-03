@@ -1,4 +1,5 @@
 import * as vscode from "vscode";
+import { outputChannel } from "./utils";
 
 export class SidebarProvider implements vscode.WebviewViewProvider {
     _view?: vscode.WebviewView;
@@ -18,6 +19,7 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
 
         webviewView.webview.html = this._getHtmlForWebview(webviewView.webview);
 
+        // functionality to handle messages from the webview (to)
         webviewView.webview.onDidReceiveMessage(async (data) => {
             switch (data.type) {
                 case "onInfo": {
@@ -32,8 +34,22 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
                         return;
                     }
                     vscode.window.showErrorMessage(data.value);
+                    // show description  below the error message
+                    if (data.description) {
+                        outputChannel.appendLine(data.description);
+                    }
                     break;
                 }
+                case "openFile": {
+                    const document = await vscode.workspace.openTextDocument(data.file);
+                    const editor = await vscode.window.showTextDocument(document);
+                    const position = new vscode.Position(data.line - 1, data.column);
+                    editor.selection = new vscode.Selection(position, position);
+                    editor.revealRange(new vscode.Range(position, position));
+                    break;
+                }
+
+
             }
         });
     }
