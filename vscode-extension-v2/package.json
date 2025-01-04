@@ -22,6 +22,11 @@
 			{
 				"command": "pytypewizard.refresh",
 				"title": "Refresh PyTypeWizard"
+			},
+			{
+				"command": "pytypewizard.openSettings",
+				"title": "Open PyTypeWizard Settings",
+				"icon": "$(gear)"
 			}
 		],
 		"viewsContainers": {
@@ -41,6 +46,16 @@
 					"name": "Dashboard",
 					"icon": "asset/magic_wand.svg",
 					"contextualTitle": "Dashboard"
+				}
+			]
+		},
+		"menus": {
+			"view/title": [
+				{
+					"command": "pytypewizard.openSettings",
+					"when": "view == pytypewizard-sidebar",
+					"group": "navigation",
+					"icon": "$(gear)"
 				}
 			]
 		},

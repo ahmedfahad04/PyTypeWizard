@@ -168,6 +168,12 @@ export function registerCommands(context: vscode.ExtensionContext, pyrePath: str
             response.markdown(token);
         }
     });
+
+    context.subscriptions.push(
+        vscode.commands.registerCommand('pytypewizard.openSettings', () => {
+            vscode.commands.executeCommand('workbench.action.openSettings', 'pytypewizard settings');
+        })
+    );
 }
 
 export async function findPyreCommand(envPath: EnvironmentPath): Promise<string | undefined> {

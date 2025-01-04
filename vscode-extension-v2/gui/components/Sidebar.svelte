@@ -2,7 +2,7 @@
     import { onMount } from 'svelte';
 
     let errors = [];
-    let loading = true;  // Add loading state
+    let loading = true; 
 
     onMount(() => {
         window.addEventListener('message', event => {
@@ -11,7 +11,7 @@
             switch (message.type) {
                 case 'typeErrors':
                     errors = message.errors;
-                    loading = false;  // Set loading to false when errors are received
+                    loading = false; 
                     break;
             }
         });
