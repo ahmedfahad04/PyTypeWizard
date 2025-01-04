@@ -18,7 +18,6 @@
             switch (message.type) {
                 case 'typeErrors':
                     errors = message.errors;
-                    // Initialize expanded state as false for all errors
                     expandedErrors = Array(errors.length).fill(false);
                     loading = false;
                     break;
@@ -129,13 +128,14 @@
     {:else}
         <!-- Errors Section -->
         <div>
-            <p class="section-header">
+            <p class="section-header" style="margin-top: 10px;">
                 Detected Type Errors: <span class="error-count">{errors.length}</span>
             </p>
             <div class="error-list">
                 {#each errors as error, index}
                 <div class="error-container">
                     <!-- Error Header -->
+                    <!-- svelte-ignore a11y-click-events-have-key-events -->
                     <div
                         class="error-header"
                         on:click={() => toggleExpansion(index)}
@@ -144,15 +144,15 @@
                         tabindex="0"
                     >
                         <span>{error.rule_id}</span>
-                        <span>Line {error.line_num}</span>
+                        <span>Line {error.line_num}, Col {error.col_num}</span>
                     </div>
 
                     <!-- Expanded Details -->
                     {#if expandedErrors[index]}
                     <div class="error-details">
-                        <p><strong>File:</strong> {error.file_name}</p>
-                        <p><strong>Location:</strong> Line {error.line_num}, Column {error.col_num}</p>
-                        <p class="warning"><strong>Message:</strong> {error.message}</p>
+                        <p><strong>File:</strong> {error.display_name}</p>
+                        <p style="margin-top: 10px;"><strong>Location:</strong> Line {error.line_num}, Column {error.col_num}</p>
+                        <p style="margin-top: 10px;"><strong>Message:</strong> {error.message}</p>
                         <button
                             class="goto-button"
                             on:click={() => {
