@@ -7,7 +7,7 @@
 3. Try to add any options to Extension (like which error type should be ignored) \*\* ✅
 4. Search on how to solve undefined-import issues ✅
 5. Fixed auto install pyre-check issue ✅
-6. Show loading state while generating solutions & show the generated solutions.⌛
+6. Show loading state while generating solutions & show the generated solutions. ✅
 7. Add enable/disable option in vscode 'panel'.⌛
 8. Add activity icon in the bottom panel like cody/copilot instead of sidebar.⌛
 
