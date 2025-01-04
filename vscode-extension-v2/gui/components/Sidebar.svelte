@@ -1,30 +1,59 @@
 <script>
-    import { onMount } from 'svelte';
+    import { onDestroy, onMount } from 'svelte';
+    
 
     let errors = [];
     let loading = true;
-
+    let solution = '';
     let expandedErrors = [];
+    let solutionLoading = false;
 
     const toggleExpansion = (index) => {
         expandedErrors[index] = !expandedErrors[index];
-        expandedErrors = [...expandedErrors]; // Ensure Svelte detects the change
+        expandedErrors = [...expandedErrors]; // Trigger reactivity
+    };
+
+    const handleMessage = (event) => {
+        const message = event.data;
+        console.log(">> MESSAGE", {message});
+
+        switch (message.type) {
+            case 'typeErrors':
+                console.log('Received type errors:', message);
+                errors = message.errors;
+                expandedErrors = Array(errors.length).fill(false);
+                loading = false;
+                break;
+
+            case 'solutionLoading':
+                console.log('Solution loading:', message);
+                solutionLoading = message.loading;
+                break;
+
+            case 'solutionGenerated':
+                console.log('Solution generated:', message);
+                solution = message.solution;
+                solutionLoading = false;
+                break;
+
+            default:
+                console.warn('Unhandled message type:', message.type);
+                break;
+        }
     };
 
     onMount(() => {
-        window.addEventListener('message', event => {
-            const message = event.data;
+        window.addEventListener('message', handleMessage);
+        console.log('Event listener added');
 
-            switch (message.type) {
-                case 'typeErrors':
-                    errors = message.errors;
-                    expandedErrors = Array(errors.length).fill(false);
-                    loading = false;
-                    break;
-            }
+        // Cleanup when component is destroyed
+        onDestroy(() => {
+            window.removeEventListener('message', handleMessage);
+            console.log('Event listener removed');
         });
     });
 </script>
+
 
 <style>
     :root {
@@ -37,51 +66,10 @@
         --button-hover-color: var(--vscode-button-hoverBackground);
     }
 
-    .error-container {
-        margin-top: 10px;
-        border: 1px solid var(--border-color);
-        border-radius: 4px;
-        overflow: hidden;
-        background-color: var(--error-background);
-        color: var(--text-color);
-    }
-
-    .error-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 10px;
-        cursor: pointer;
-        background-color: var(--error-hover-background);
-        transition: background-color 0.3s;
-    }
-
-    .error-header:hover {
-        background-color: var(--button-hover-color);
-        color: var(--vscode-button-foreground);
-    }
-
     .error-details {
         padding: 10px;
         background-color: var(--error-background);
         border-top: 1px solid var(--border-color);
-    }
-
-    .goto-button {
-        display: inline-block;
-        margin-top: 10px;
-        padding: 5px 10px;
-        background-color: var(--button-color);
-        /* color: var(--vscode-button-foreground); */
-        border: none;
-        border-radius: 4px;
-        cursor: pointer;
-        text-align: center;
-    }
-
-    .goto-button:hover {
-        background-color: var(--button-hover-color);
-        color: var(--vscode-button-foreground);
     }
 
     .error-list {
@@ -120,39 +108,103 @@
         font-weight: bold;
         color: var(--warning-color);
     }
+
+     /* Add Markdown-specific styling */
+     .markdown-content {
+        font-family: 'Fira Code', monospace;
+        font-size: 14px;
+        line-height: 1.5;
+        color: var(--vscode-foreground);
+        background-color: var(--vscode-editor-background);
+        padding: 15px;
+        border-radius: 6px;
+        border: 1px solid var(--vscode-editorGroup-border);
+        overflow-x: auto;
+    }
+
+    .error-container {
+        margin: 10px 0;
+        padding: 10px;
+        background: var(--vscode-editorHoverWidget-background);
+        border-radius: 4px;
+        border: 1px solid var(--vscode-editorGroup-border);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    }
+
+    .error-header {
+        font-weight: bold;
+        cursor: pointer;
+        display: flex;
+        justify-content: space-between;
+    }
+
+    .error-header:hover {
+        background-color: var(--vscode-editor-selectionBackground);
+    }
+
+    .goto-button {
+        background: var(--vscode-button-background);
+        color: var(--vscode-button-foreground);
+        padding: 5px 10px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+
+    .goto-button:hover {
+        background: var(--vscode-button-hoverBackground);
+    }
+
+    pre {
+        background: var(--vscode-editor-background);
+        padding: 10px;
+        border-radius: 6px;
+        overflow-x: auto;
+    }
+
+    code {
+        background: var(--vscode-editor-hoverHighlight-background);
+        padding: 2px 4px;
+        border-radius: 4px;
+    }
+
+    .loading-container {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .empty-state {
+        text-align: center;
+        font-style: italic;
+        color: var(--vscode-disabledForeground);
+    }
 </style>
 
 <div>
     {#if loading}
         <p>Loading errors...</p>
     {:else}
-        <!-- Errors Section -->
         <div>
-            <p class="section-header" style="margin-top: 10px;">
-                Detected Type Errors: <span class="error-count">{errors.length}</span>
-            </p>
+            <p class="section-header">Detected Type Errors: {errors.length}</p>
             <div class="error-list">
                 {#each errors as error, index}
                 <div class="error-container">
-                    <!-- Error Header -->
                     <!-- svelte-ignore a11y-click-events-have-key-events -->
+                    <!-- svelte-ignore a11y-interactive-supports-focus -->
                     <div
                         class="error-header"
                         on:click={() => toggleExpansion(index)}
                         role="button"
                         aria-expanded={expandedErrors[index]}
-                        tabindex="0"
                     >
                         <span>{error.rule_id}</span>
                         <span>Line {error.line_num}, Col {error.col_num}</span>
                     </div>
-
-                    <!-- Expanded Details -->
                     {#if expandedErrors[index]}
                     <div class="error-details">
                         <p><strong>File:</strong> {error.display_name}</p>
-                        <p style="margin-top: 10px;"><strong>Location:</strong> Line {error.line_num}, Column {error.col_num}</p>
-                        <p style="margin-top: 10px;"><strong>Message:</strong> {error.message}</p>
+                        <p><strong>Message:</strong> {error.message}</p>
                         <button
                             class="goto-button"
                             on:click={() => {
@@ -173,14 +225,19 @@
             </div>
         </div>
 
-        <!-- Divider -->
         <hr />
 
-        <!-- Potential Solutions Section -->
         <div>
             <p class="section-header">Potential Solutions</p>
-            <!-- Placeholder for solutions -->
-            <p>No solutions available yet. Stay tuned!</p>
+            {#if solutionLoading}
+                <div class="loading-container">
+                    <p>Generating solution...</p>
+                </div>
+            {:else if solution}
+                <div class="markdown-content" innerHTML={solution}></div>
+            {:else}
+                <p class="empty-state">Click on an error to generate a solution</p>
+            {/if}
         </div>
     {/if}
 </div>
