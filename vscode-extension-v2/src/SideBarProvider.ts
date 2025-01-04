@@ -34,7 +34,6 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
                         return;
                     }
                     vscode.window.showErrorMessage(data.value);
-                    // show description  below the error message
                     if (data.description) {
                         outputChannel.appendLine(data.description);
                     }
@@ -48,8 +47,6 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
                     editor.revealRange(new vscode.Range(position, position));
                     break;
                 }
-
-
             }
         });
     }

@@ -10,9 +10,8 @@ import { getGeminiService } from "./llm";
 import { getSimplifiedSmartSelection } from "./smartSelection";
 import { getPyRePath, outputChannel } from './utils';
 
-export function registerCommands(context: vscode.ExtensionContext, pyrePath: string): void {
 
-    // const panelManager = PanelManager.getInstance();
+export function registerCommands(context: vscode.ExtensionContext, pyrePath: string, sidebarProvider: any): void {
 
     // command 1 (for webview)
     context.subscriptions.push(
@@ -63,7 +62,9 @@ export function registerCommands(context: vscode.ExtensionContext, pyrePath: str
                 // col_num: colNum
             };
 
-            console.log(`DATA: \n${errorObject.source_code}`);
+            // console.log(`DATA: \n${errorObject.source_code}`);
+
+            const response = await runErrorExtractor(context, filePath, errType[0], errType[1], lineNum, colNum, outputDir, pyrePath, errorObject);
 
             // if (panelManager) {
 
@@ -91,7 +92,7 @@ export function registerCommands(context: vscode.ExtensionContext, pyrePath: str
             // }
         }));
 
-    // command 3 (for Quick Fix option)
+    // command 2 (for Quick Fix option)
     context.subscriptions.push(
         vscode.languages.registerCodeActionsProvider(
             { scheme: 'file', language: 'python' },
@@ -100,29 +101,18 @@ export function registerCommands(context: vscode.ExtensionContext, pyrePath: str
         )
     );
 
-    // Add this to registerCommands function
+    // command 3 (for explain error)
     context.subscriptions.push(
-        vscode.commands.registerCommand('pytypewizard.explainError', async (document: vscode.TextDocument, diagnostic: vscode.Diagnostic) => {
+        vscode.commands.registerCommand('pytypewizard.explainAndSolve', async (document: vscode.TextDocument, diagnostic: vscode.Diagnostic) => {
+
+            sidebarProvider._view?.webview.postMessage({
+                type: 'solutionLoading',
+                loading: true
+            });
+
             const errMessage = diagnostic.message;
             const errType = errMessage.split(':', 2);
             const warningLine = document.lineAt(diagnostic.range.start.line).text.trim();
-
-            const prompt = `
-                Explain the following error in given instructions:
-
-                # Error Details
-                Error Type: ${errType[0]}
-                Error Message: ${errType[1]}
-                Code: ${warningLine}
-
-                # Instruction
-                Explain the given Python type error in simple and clear language in bullet point. The explanation should include the following section:
-                1. What this error means.
-                2. Why it occurs in the provided code.
-                3. A short and practical hint (not the solution) to fix the error.
-
-                Keep the explanation in details and focused so that developers can quickly understand and resolve the issue. Answer in markdown format.
-                `;
 
             // const prompt = `
             //     Explain the following error in given instructions:
@@ -133,8 +123,25 @@ export function registerCommands(context: vscode.ExtensionContext, pyrePath: str
             //     Code: ${warningLine}
 
             //     # Instruction
-            //     put the solution only as python code snippet. no explanation needed.
+            //     Explain the given Python type error in simple and clear language in bullet point. The explanation should include the following section:
+            //     1. What this error means.
+            //     2. Why it occurs in the provided code.
+            //     3. A short and practical hint (not the solution) to fix the error.
+
+            //     Keep the explanation in details and focused so that developers can quickly understand and resolve the issue. Answer in markdown format.
             //     `;
+
+            const prompt = `
+                Explain the following error in given instructions:
+
+                # Error Details
+                Error Type: ${errType[0]}
+                Error Message: ${errType[1]}
+                Code: ${warningLine}
+
+                # Instruction
+                put the solution only as python code snippet. Add necessary explanation in easy words.
+                `;
 
             vscode.window.showWarningMessage(`PROMPT:>> ${prompt}`);
 
@@ -146,17 +153,24 @@ export function registerCommands(context: vscode.ExtensionContext, pyrePath: str
                 progress.report({ increment: 50 });
                 const gemini = getGeminiService();
                 const result = await gemini.generateResponse(prompt);
-                progress.report({ increment: 50 });
+                progress.report({ increment: 100 });
                 return result;
             });
 
-            // panelManager.setSolutions([response]);
-            // panelManager.showPanel(context, errors);
+            outputChannel.appendLine(`Explanation: ${response}`);
+
+            //! Send type errors to the sidebar
+            if (response.length > 0) {
+                sidebarProvider._view?.webview.postMessage({
+                    type: 'solutionGenerated',
+                    solution: response
+                });
+            }
 
         })
     );
 
-    // command 5 (Create a chat participant)
+    // command 4 (Create a chat participant)
     vscode.chat.createChatParticipant('pytypewizard-chat', async (request, _context, response, token) => {
         const userQuery = request.prompt;
         const chatModels = await vscode.lm.selectChatModels({ family: 'gpt-4' });
@@ -169,6 +183,7 @@ export function registerCommands(context: vscode.ExtensionContext, pyrePath: str
         }
     });
 
+    // command 5 (Open Settings Page)
     context.subscriptions.push(
         vscode.commands.registerCommand('pytypewizard.openSettings', () => {
             vscode.commands.executeCommand('workbench.action.openSettings', 'pytypewizard settings');
@@ -221,10 +236,11 @@ export async function runErrorExtractor(context: vscode.ExtensionContext, filePa
             if (code === 0 && output) {
                 try {
                     // const jsonOutput = JSON.parse(output);
-
-
                     const apiResponse = await sendApiRequest(_inputobj);
-                    outputChannel.appendLine(`DATA: ${apiResponse[9]}`);
+                    // print all of the generated solutions one by one in outputChannel
+                    apiResponse.forEach((solution: string, index: number) => {
+                        outputChannel.appendLine(`Solution ${index + 1}: ${solution}`);
+                    });
 
                     resolve(Object.values(apiResponse));
                 } catch (error) {

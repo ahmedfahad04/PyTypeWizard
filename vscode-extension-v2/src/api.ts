@@ -1,8 +1,11 @@
 import axios from 'axios';
 import * as vscode from 'vscode';
+import { outputChannel } from './utils';
 
 
 export async function sendApiRequest(payload: any) {
+    outputChannel.appendLine('Sending data to API...');
+    
     const apiUrl = 'http://127.0.0.1:8000/get-fixes';
     const loadingMessage = vscode.window.setStatusBarMessage('Processing data...');
 

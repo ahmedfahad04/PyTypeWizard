@@ -110,10 +110,6 @@ export async function activate(context: vscode.ExtensionContext) {
 					console.log('Filtered Diagnostics:');
 					outputChannel.clear();
 					filteredDiagnostics.forEach(({ uri, diagnostic }) => {
-						outputChannel.appendLine(`File: ${uri.fsPath}`);
-						outputChannel.appendLine(`Message: ${diagnostic.message}`);
-						outputChannel.appendLine(`Range: ${diagnostic.range.start.line}:${diagnostic.range.start.character}`);
-						outputChannel.appendLine('--------------------------------');
 						typeErrors.push({
 							file_name: uri.fsPath,
 							display_name: uri.fsPath.replace(workspaceFolder + '/', ''),
@@ -128,7 +124,7 @@ export async function activate(context: vscode.ExtensionContext) {
 					outputChannel.appendLine('No matching diagnostics found.');
 				}
 
-
+				//! Send type errors to the sidebar
 				sideBarProvider._view?.webview.postMessage({
 					type: 'typeErrors',
 					errors: typeErrors
@@ -150,7 +146,7 @@ export async function activate(context: vscode.ExtensionContext) {
 	);
 
 	// register all commands for the extension
-	registerCommands(context, activePythonPath.path);
+	registerCommands(context, activePythonPath.path, sideBarProvider);
 }
 
 // This method is called when your extension is deactivated
