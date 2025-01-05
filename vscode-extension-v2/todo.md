@@ -10,10 +10,16 @@
 6. Show loading state while generating solutions & show the generated solutions. ✅
 7. Add enable/disable option in vscode 'panel'.⌛
 8. Add activity icon in the bottom panel like cody/copilot instead of sidebar.⌛
+9. Added chat participant to fix, explain, learn and generate type hints for specific problem.
+
+## Chat Interface
+
+1. Implemented Basic Chat UI with Base Prompt. ✅
+2. Follow this Tutorial [Chat Interface](https://code.visualstudio.com/api/extension-guides/chat) to add intuitive feature.
 
 ### Extra
 
-- Add command in Copilot Chat Interface (like specific command to explain, debug etc... think more!!)
+- Add command in Copilot Chat Interface (like specific command to explain, debug etc... think more!!) ✅
 - Add Walkthrough window if time demands about how to use this application [lowest priority]
 - Add project readability or cognitive complexity due to usage of type hints
 
