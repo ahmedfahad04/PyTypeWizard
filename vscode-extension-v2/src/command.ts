@@ -7,6 +7,7 @@ import which from "which";
 import { sendApiRequest } from "./api";
 import { PyreCodeActionProvider } from "./codeActionProvider";
 import { getGeminiService } from "./llm";
+import { chatRequestHandler } from "./prompt";
 import { getSimplifiedSmartSelection } from "./smartSelection";
 import { getPyRePath, outputChannel } from './utils';
 
@@ -171,17 +172,8 @@ export function registerCommands(context: vscode.ExtensionContext, pyrePath: str
     );
 
     // command 4 (Create a chat participant)
-    vscode.chat.createChatParticipant('pytypewizard-chat', async (request, _context, response, token) => {
-        const userQuery = request.prompt;
-        const chatModels = await vscode.lm.selectChatModels({ family: 'gpt-4' });
-        const messages = [
-            vscode.LanguageModelChatMessage.User(userQuery)
-        ];
-        const chatRequest = await chatModels[0].sendRequest(messages, undefined, token);
-        for await (const token of chatRequest.text) {
-            response.markdown(token);
-        }
-    });
+    const ptTutor = vscode.chat.createChatParticipant('pytypewizard.type-tutor', chatRequestHandler);
+    ptTutor.iconPath = vscode.Uri.joinPath(context.extensionUri, '../media/ptTutor.png');
 
     // command 5 (Open Settings Page)
     context.subscriptions.push(

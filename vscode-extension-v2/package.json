@@ -93,7 +93,16 @@
 					"description": "API Key for Google Gemini"
 				}
 			}
-		}
+		},
+		"chatParticipants": [
+			{
+				"id": "pytypewizard.type-tutor",
+				"fullName": "Python Type Tutor",
+				"name": "PyTypeWizard",
+				"description": "What to learn about Python Type Hints?",
+				"isSticky": true
+			}
+		]
 	},
 	"scripts": {
 		"vscode:prepublish": "npm run package",
