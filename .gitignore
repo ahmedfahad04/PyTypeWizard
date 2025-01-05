@@ -8,8 +8,10 @@ pytypefix/out/
 others/RAG Testing/Testing RAG Implementations/test_repo
 others/Extension Testing/Complete_Extension_v1_Test/vscode-extension/node_modules
 others/Extension Testing/**/**/node_modules
-others/test/**/node_modules
 vscode-extension-v2/node_modules
+others/**/**/node_modules
+others/**/**/out
+others/**/**/dist
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
