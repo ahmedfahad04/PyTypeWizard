@@ -66,10 +66,51 @@
         --button-hover-color: var(--vscode-button-hoverBackground);
     }
 
+    .error-container {
+        margin-top: 10px;
+        border: 1px solid var(--border-color);
+        border-radius: 4px;
+        overflow: hidden;
+        background-color: var(--error-background);
+        color: var(--text-color);
+    }
+
+    .error-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px;
+        cursor: pointer;
+        background-color: var(--error-hover-background);
+        transition: background-color 0.3s;
+    }
+
+    .error-header:hover {
+        background-color: var(--button-hover-color);
+        color: var(--vscode-button-foreground);
+    }
+
     .error-details {
         padding: 10px;
         background-color: var(--error-background);
         border-top: 1px solid var(--border-color);
+    }
+
+    .goto-button {
+        display: inline-block;
+        margin-top: 10px;
+        padding: 5px 10px;
+        background-color: var(--button-color);
+        /* color: var(--vscode-button-foreground); */
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        text-align: center;
+    }
+
+    .goto-button:hover {
+        background-color: var(--button-hover-color);
+        color: var(--vscode-button-foreground);
     }
 
     .error-list {
@@ -109,65 +150,6 @@
         color: var(--warning-color);
     }
 
-     /* Add Markdown-specific styling */
-     .markdown-content {
-        font-family: 'Fira Code', monospace;
-        font-size: 14px;
-        line-height: 1.5;
-        color: var(--vscode-foreground);
-        background-color: var(--vscode-editor-background);
-        padding: 15px;
-        border-radius: 6px;
-        border: 1px solid var(--vscode-editorGroup-border);
-        overflow-x: auto;
-    }
-
-    .error-container {
-        margin: 10px 0;
-        padding: 10px;
-        background: var(--vscode-editorHoverWidget-background);
-        border-radius: 4px;
-        border: 1px solid var(--vscode-editorGroup-border);
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-    }
-
-    .error-header {
-        font-weight: bold;
-        cursor: pointer;
-        display: flex;
-        justify-content: space-between;
-    }
-
-    .error-header:hover {
-        background-color: var(--vscode-editor-selectionBackground);
-    }
-
-    .goto-button {
-        background: var(--vscode-button-background);
-        color: var(--vscode-button-foreground);
-        padding: 5px 10px;
-        border: none;
-        border-radius: 4px;
-        cursor: pointer;
-    }
-
-    .goto-button:hover {
-        background: var(--vscode-button-hoverBackground);
-    }
-
-    pre {
-        background: var(--vscode-editor-background);
-        padding: 10px;
-        border-radius: 6px;
-        overflow-x: auto;
-    }
-
-    code {
-        background: var(--vscode-editor-hoverHighlight-background);
-        padding: 2px 4px;
-        border-radius: 4px;
-    }
-
     .loading-container {
         display: flex;
         align-items: center;
@@ -186,7 +168,7 @@
         <p>Loading errors...</p>
     {:else}
         <div>
-            <p class="section-header">Detected Type Errors: {errors.length}</p>
+            <p class="section-header">Detected Type Errors: <span class="error-count">{errors.length}</span></p>
             <div class="error-list">
                 {#each errors as error, index}
                 <div class="error-container">
@@ -234,7 +216,8 @@
                     <p>Generating solution...</p>
                 </div>
             {:else if solution}
-                <div class="markdown-content" innerHTML={solution}></div>
+                <!-- <div class="markdown-content" innerHTML={solution}></div> -->
+                <pre><code>{solution}</code></pre>
             {:else}
                 <p class="empty-state">Click on an error to generate a solution</p>
             {/if}
