@@ -173,7 +173,8 @@ export function registerCommands(context: vscode.ExtensionContext, pyrePath: str
 
     // command 4 (Create a chat participant)
     const ptTutor = vscode.chat.createChatParticipant('pytypewizard.type-tutor', chatRequestHandler);
-    ptTutor.iconPath = vscode.Uri.joinPath(context.extensionUri, '../media/ptTutor.png');
+    ptTutor.iconPath = vscode.Uri.joinPath(context.extensionUri, 'media', 'ptTutor.svg');
+    ;
 
     // command 5 (Open Settings Page)
     context.subscriptions.push(

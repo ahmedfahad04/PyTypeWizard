@@ -100,7 +100,25 @@
 				"fullName": "Python Type Tutor",
 				"name": "PyTypeWizard",
 				"description": "What to learn about Python Type Hints?",
-				"isSticky": true
+				"isSticky": true,
+				"commands": [
+					{
+						"name": "fixTypeError",
+						"description": "Fix Type Error"
+					},
+					{
+						"name": "explainError",
+						"description": "Explain Type Error & Suggest best practices"
+					},
+					{
+						"name": "learn",
+						"description": "Learn about Python Type Hints"
+					},
+					{
+						"name": "generate",
+						"description": "Generate Type Hints"
+					}
+				]
 			}
 		]
 	},
