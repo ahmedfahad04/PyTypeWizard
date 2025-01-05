@@ -16,17 +16,30 @@
 	"contributes": {
 		"commands": [
 			{
+				"category": "PyTypeWizard",
 				"command": "pytypewizard.openDashboard",
-				"title": "Open PyTypeWizard Dashboard"
+				"title": "Open Dashboard"
 			},
 			{
+				"category": "PyTypeWizard",
 				"command": "pytypewizard.refresh",
 				"title": "Refresh PyTypeWizard"
 			},
 			{
+				"category": "PyTypeWizard",
 				"command": "pytypewizard.openSettings",
-				"title": "Open PyTypeWizard Settings",
+				"title": "Open Settings",
 				"icon": "$(gear)"
+			},
+			{
+				"category": "PyTypeWizard",
+				"command": "pytypewizard.indexProject",
+				"title": "Index Project"
+			},
+			{
+				"category": "PyTypeWizard",
+				"command": "pytypewizard.searchCode",
+				"title": "Search Code"
 			}
 		],
 		"viewsContainers": {
@@ -110,7 +123,7 @@
 		"@google/generative-ai": "^0.21.0",
 		"@vscode-elements/elements": "^1.9.0",
 		"@vscode/python-extension": "^1.0.5",
-		"axios": "^1.7.7",
+		"axios": "^1.7.9",
 		"vscode-languageclient": "^9.0.1",
 		"which": "^4.0.0"
 	},

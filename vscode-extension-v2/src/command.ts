@@ -1,4 +1,5 @@
 import { EnvironmentPath } from "@vscode/python-extension";
+import axios from 'axios';
 import { spawn } from "child_process";
 import { existsSync, statSync } from 'fs';
 import path from 'path';
@@ -187,6 +188,59 @@ export function registerCommands(context: vscode.ExtensionContext, pyrePath: str
     context.subscriptions.push(
         vscode.commands.registerCommand('pytypewizard.openSettings', () => {
             vscode.commands.executeCommand('workbench.action.openSettings', 'pytypewizard settings');
+        })
+    );
+
+    // Command 6 (Index Project)
+    context.subscriptions.push(
+        vscode.commands.registerCommand('pytypewizard.indexProject', async () => {
+            const projectPath = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+            if (!projectPath) {
+                vscode.window.showErrorMessage('No project folder found!');
+                return;
+            }
+
+            try {
+                const response = await axios.post('http://localhost:8000/index', { project_path: projectPath });
+                vscode.window.showInformationMessage(response.data.message);
+            } catch (error) {
+                vscode.window.showErrorMessage(`Indexing failed: ${error.message}`);
+            }
+        })
+    );
+
+    // command 7 (Search Code)
+    context.subscriptions.push(
+        vscode.commands.registerCommand('pytypewizard.searchCode', async () => {
+            const query = await vscode.window.showInputBox({ placeHolder: 'Enter search query' });
+            if (!query) return;
+
+            try {
+                const response = await axios.post('http://localhost:8000/search', { query });
+                const results = response.data.results;
+
+                if (results.length > 0) {
+                    const items = results.map((result: any) => ({
+                        label: `${result.file}:${result.line}`,
+                        detail: result.snippet,
+                    }));
+
+                    const selection = await vscode.window.showQuickPick(items, { placeHolder: 'Search Results' });
+                    if (selection) {
+                        vscode.window.showInformationMessage(`Selected: ${selection}`);
+                        // const [file, line] = selection.label.split(':');
+                        // const doc = await vscode.workspace.openTextDocument(vscode.Uri.file(file));
+                        // const editor = await vscode.window.showTextDocument(doc);
+                        // const position = new vscode.Position(Number(line) - 1, 0);
+                        // editor.selection = new vscode.Selection(position, position);
+                        // editor.revealRange(new vscode.Range(position, position));
+                    }
+                } else {
+                    vscode.window.showInformationMessage('No results found!');
+                }
+            } catch (error) {
+                vscode.window.showErrorMessage(`Search failed: ${error.message}`);
+            }
         })
     );
 }

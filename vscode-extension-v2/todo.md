@@ -10,6 +10,7 @@
 6. Show loading state while generating solutions & show the generated solutions. ✅
 7. Add enable/disable option in vscode 'panel'.⌛
 8. Add activity icon in the bottom panel like cody/copilot instead of sidebar.⌛
+9. Show count of total detected error in the sidebar Icon ⌛
 
 ### Extra
 
