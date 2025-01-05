@@ -7,16 +7,11 @@ import which from "which";
 import { sendApiRequest } from "./api";
 import { PyreCodeActionProvider } from "./codeActionProvider";
 import { getGeminiService } from "./llm";
-import { errors } from "./main";
-import { PanelManager } from "./model/panelManager";
-import { SideBarProvider } from "./sideBarProvider";
 import { getSimplifiedSmartSelection } from "./smartSelection";
 import { getPyRePath, outputChannel } from './utils';
 
-export function registerCommands(context: vscode.ExtensionContext, pyrePath: string): void {
 
-    const panelManager = PanelManager.getInstance();
-    const sideBarProvider = new SideBarProvider(context.extensionUri);
+export function registerCommands(context: vscode.ExtensionContext, pyrePath: string, sidebarProvider: any): void {
 
     // command 1 (for webview)
     context.subscriptions.push(
@@ -53,8 +48,8 @@ export function registerCommands(context: vscode.ExtensionContext, pyrePath: str
                 sourceCode = document.getText(expandedRange);
             }
 
-            vscode.window.showInformationMessage(`SOURCE: ${selection?.start} - ${selection?.end}`)
-            vscode.window.showInformationMessage(`SOURCE: ${sourceCode}`)
+            vscode.window.showInformationMessage(`SOURCE: ${selection?.start} - ${selection?.end}`);
+            vscode.window.showInformationMessage(`SOURCE: ${sourceCode}`);
 
 
             const errorObject = {
@@ -67,47 +62,37 @@ export function registerCommands(context: vscode.ExtensionContext, pyrePath: str
                 // col_num: colNum
             };
 
-            console.log(`DATA: \n${errorObject.source_code}`)
+            // console.log(`DATA: \n${errorObject.source_code}`);
 
-            if (panelManager) {
+            const response = await runErrorExtractor(context, filePath, errType[0], errType[1], lineNum, colNum, outputDir, pyrePath, errorObject);
 
-                // Show loading message
-                panelManager.setSolutions([])
+            // if (panelManager) {
 
-                // Run error extractor and get solution
-                const response = await runErrorExtractor(context, filePath, errType[0], errType[1], lineNum, colNum, outputDir, pyrePath, errorObject);
+            //     // Show loading message
+            //     panelManager.setSolutions([])
 
-                // Update webview with solutions
-                panelManager.setSolutions(Array.isArray(response) ? response : []);
-                panelManager.showPanel(context, errors)
+            //     // Run error extractor and get solution
+            //     const response = await runErrorExtractor(context, filePath, errType[0], errType[1], lineNum, colNum, outputDir, pyrePath, errorObject);
 
-                // copy to clipboard handler
-                panelManager.addMessageHandler('copyToClipboard', (message) => {
-                    if (Array.isArray(response) && response.length > message.index) {
-                        const data = response[message.index];
-                        vscode.env.clipboard.writeText(data).then(() => {
-                            vscode.window.showInformationMessage('Copied to clipboard!');
-                        });
-                    } else {
-                        vscode.window.showErrorMessage('Invalid response or index');
-                    }
-                });
-            }
+            //     // Update webview with solutions
+            //     panelManager.setSolutions(Array.isArray(response) ? response : []);
+            //     panelManager.showPanel(context, errors)
+
+            //     // copy to clipboard handler
+            //     panelManager.addMessageHandler('copyToClipboard', (message) => {
+            //         if (Array.isArray(response) && response.length > message.index) {
+            //             const data = response[message.index];
+            //             vscode.env.clipboard.writeText(data).then(() => {
+            //                 vscode.window.showInformationMessage('Copied to clipboard!');
+            //             });
+            //         } else {
+            //             vscode.window.showErrorMessage('Invalid response or index');
+            //         }
+            //     });
+            // }
         }));
 
-    //! TODO: Not working as expected
-    // command 2 (for Toogle PyTypeWizard View)
-    context.subscriptions.push(
-        vscode.commands.registerCommand('pytypewizard.toggleDashboard', () => {
-            if (!panelManager.getPanel()) {
-                panelManager.createPanel(context, errors);
-            } else {
-                panelManager.togglePanel();
-            }
-        })
-    );
-
-    // command 3 (for Quick Fix option)
+    // command 2 (for Quick Fix option)
     context.subscriptions.push(
         vscode.languages.registerCodeActionsProvider(
             { scheme: 'file', language: 'python' },
@@ -116,29 +101,18 @@ export function registerCommands(context: vscode.ExtensionContext, pyrePath: str
         )
     );
 
-    // Add this to registerCommands function
+    // command 3 (for explain error)
     context.subscriptions.push(
-        vscode.commands.registerCommand('pytypewizard.explainError', async (document: vscode.TextDocument, diagnostic: vscode.Diagnostic) => {
+        vscode.commands.registerCommand('pytypewizard.explainAndSolve', async (document: vscode.TextDocument, diagnostic: vscode.Diagnostic) => {
+
+            sidebarProvider._view?.webview.postMessage({
+                type: 'solutionLoading',
+                loading: true
+            });
+
             const errMessage = diagnostic.message;
             const errType = errMessage.split(':', 2);
             const warningLine = document.lineAt(diagnostic.range.start.line).text.trim();
-
-            const prompt = `
-                Explain the following error in given instructions:
-
-                # Error Details
-                Error Type: ${errType[0]}
-                Error Message: ${errType[1]}
-                Code: ${warningLine}
-
-                # Instruction
-                Explain the given Python type error in simple and clear language in bullet point. The explanation should include the following section:
-                1. What this error means.
-                2. Why it occurs in the provided code.
-                3. A short and practical hint (not the solution) to fix the error.
-
-                Keep the explanation in details and focused so that developers can quickly understand and resolve the issue. Answer in markdown format.
-                `;
 
             // const prompt = `
             //     Explain the following error in given instructions:
@@ -149,10 +123,27 @@ export function registerCommands(context: vscode.ExtensionContext, pyrePath: str
             //     Code: ${warningLine}
 
             //     # Instruction
-            //     put the solution only as python code snippet. no explanation needed.
+            //     Explain the given Python type error in simple and clear language in bullet point. The explanation should include the following section:
+            //     1. What this error means.
+            //     2. Why it occurs in the provided code.
+            //     3. A short and practical hint (not the solution) to fix the error.
+
+            //     Keep the explanation in details and focused so that developers can quickly understand and resolve the issue. Answer in markdown format.
             //     `;
 
-            vscode.window.showWarningMessage(`PROMPT:>> ${prompt}`)
+            const prompt = `
+                Explain the following error in given instructions:
+
+                # Error Details
+                Error Type: ${errType[0]}
+                Error Message: ${errType[1]}
+                Code: ${warningLine}
+
+                # Instruction
+                put the solution only as python code snippet. Add necessary explanation in easy words.
+                `;
+
+            vscode.window.showWarningMessage(`PROMPT:>> ${prompt}`);
 
             const response = await vscode.window.withProgress({
                 location: vscode.ProgressLocation.Notification,
@@ -162,35 +153,42 @@ export function registerCommands(context: vscode.ExtensionContext, pyrePath: str
                 progress.report({ increment: 50 });
                 const gemini = getGeminiService();
                 const result = await gemini.generateResponse(prompt);
-                progress.report({ increment: 50 });
+                progress.report({ increment: 100 });
                 return result;
             });
 
-            panelManager.setSolutions([response]);
-            panelManager.showPanel(context, errors);
+            outputChannel.appendLine(`Explanation: ${response}`);
+
+            //! Send type errors to the sidebar
+            if (response.length > 0) {
+                sidebarProvider._view?.webview.postMessage({
+                    type: 'solutionGenerated',
+                    solution: response
+                });
+            }
 
         })
     );
 
-    // command 4 (register the Tree view)
-    // vscode.window.registerTreeDataProvider('package-outline', new OutlineProvider());
-    context.subscriptions.push(
-        vscode.window.registerWebviewViewProvider('pytypewizard-vscode-sidebar', sideBarProvider)
-    )
-
-    // command 5 (Create a chat participant)
+    // command 4 (Create a chat participant)
     vscode.chat.createChatParticipant('pytypewizard-chat', async (request, _context, response, token) => {
         const userQuery = request.prompt;
         const chatModels = await vscode.lm.selectChatModels({ family: 'gpt-4' });
         const messages = [
             vscode.LanguageModelChatMessage.User(userQuery)
-        ]
+        ];
         const chatRequest = await chatModels[0].sendRequest(messages, undefined, token);
         for await (const token of chatRequest.text) {
             response.markdown(token);
         }
-    })
+    });
 
+    // command 5 (Open Settings Page)
+    context.subscriptions.push(
+        vscode.commands.registerCommand('pytypewizard.openSettings', () => {
+            vscode.commands.executeCommand('workbench.action.openSettings', 'pytypewizard settings');
+        })
+    );
 }
 
 export async function findPyreCommand(envPath: EnvironmentPath): Promise<string | undefined> {
@@ -200,7 +198,7 @@ export async function findPyreCommand(envPath: EnvironmentPath): Promise<string 
         vscode.window.showInformationMessage(`Using the default python environment`);
     }
 
-    const pyreCheckPath = getPyRePath(envPath.path)
+    const pyreCheckPath = getPyRePath(envPath.path);
 
     if (pyreCheckPath && existsSync(pyreCheckPath) && statSync(pyreCheckPath).isFile()) {
         vscode.window.showInformationMessage(`Using pyre path: ${pyreCheckPath} from python environment: ${envPath.id} at ${envPath.path}`);
@@ -238,10 +236,11 @@ export async function runErrorExtractor(context: vscode.ExtensionContext, filePa
             if (code === 0 && output) {
                 try {
                     // const jsonOutput = JSON.parse(output);
-
-
                     const apiResponse = await sendApiRequest(_inputobj);
-                    outputChannel.appendLine(`DATA: ${apiResponse[9]}`)
+                    // print all of the generated solutions one by one in outputChannel
+                    apiResponse.forEach((solution: string, index: number) => {
+                        outputChannel.appendLine(`Solution ${index + 1}: ${solution}`);
+                    });
 
                     resolve(Object.values(apiResponse));
                 } catch (error) {
@@ -252,5 +251,5 @@ export async function runErrorExtractor(context: vscode.ExtensionContext, filePa
                 reject(new Error('Error extractor failed'));
             }
         });
-    })
+    });
 }
