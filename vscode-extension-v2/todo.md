@@ -14,9 +14,11 @@
 
 ### Extra
 
-- Add command in Copilot Chat Interface (like specific command to explain, debug etc... think more!!)
+- Add command in Copilot Chat Interface (like specific command to explain, debug etc... think more!!) ✅
 - Add Walkthrough window if time demands about how to use this application [lowest priority]
 - Add project readability or cognitive complexity due to usage of type hints
+- We should have the option to ignore some errors
+- Show the generated solution above the error-generated code snippet.
 
 ## RAG
 
@@ -31,4 +33,6 @@
 
 1. Whenever editor loads for the first time it takes a good amount of time to show the error list in sidebar.
    Then when I switch tab and get back to the pytypewizard tab it again start to load BUT it keeps on going. However if
-   we press ctrl+s then it saves and the errors are visible. Need to fix it
+   we press ctrl+s then it saves and the errors are visible. Need to fix it.
+
+2. Only activate if the current project is in python.
