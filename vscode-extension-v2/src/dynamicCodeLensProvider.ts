@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import { GeminiService } from './llm';
 
 
 export class DynamicCodeLensProvider implements vscode.CodeLensProvider {
@@ -10,6 +11,7 @@ export class DynamicCodeLensProvider implements vscode.CodeLensProvider {
         // Listen to text selection changes
         vscode.window.onDidChangeTextEditorSelection((event) => {
             const isEnabled = vscode.workspace.getConfiguration('pytypewizard').get('enableCodeLens');
+
             if (!isEnabled) {
                 this.codeLensRange = undefined;
                 this._onDidChangeCodeLenses.fire();
@@ -46,22 +48,16 @@ export class DynamicCodeLensProvider implements vscode.CodeLensProvider {
                 title: "Ask PyTypeWizard",
                 command: "pytypewizard.addToChat",
                 tooltip: "Click to add this value to the chat",
-                arguments: [() => {
-                    this.codeLensRange = undefined;
-                    this._onDidChangeCodeLenses.fire();
-                }]
+                arguments: [
+                    _document.getText(this.codeLensRange),
+                    () => {
+                        this.codeLensRange = undefined;
+                        this._onDidChangeCodeLenses.fire();
+                    }
+                ]
             };
             return [codeLens];
         }
         return [];
     }
 }
-
-
-// Register the "Add to Chat" command
-export const addToChatCommand = vscode.commands.registerCommand('pytypewizard.addToChat', (callback?: () => void) => {
-    vscode.window.showInformationMessage('Value added to chat!');
-    if (callback) {
-        callback();
-    }
-});

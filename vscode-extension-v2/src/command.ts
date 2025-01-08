@@ -7,8 +7,8 @@ import * as vscode from 'vscode';
 import which from "which";
 import { sendApiRequest } from "./api";
 import { PyreCodeActionProvider } from "./codeActionProvider";
-import { addToChatCommand, DynamicCodeLensProvider } from "./dynamicCodeLensProvider";
-import { getGeminiService } from "./llm";
+import { DynamicCodeLensProvider } from "./dynamicCodeLensProvider";
+import { GeminiService, getGeminiService } from "./llm";
 import { getSimplifiedSmartSelection } from "./smartSelection";
 import { getPyRePath, outputChannel } from './utils';
 
@@ -197,16 +197,6 @@ export function registerCommands(context: vscode.ExtensionContext, pyrePath: str
         })
     );
 
-    function extractSinglePythonSnippet(content) {
-        const regex = /```python([\s\S]*?)```/;
-        const match = regex.exec(content);
-
-        if (match) {
-            return match[1].trim(); // Extract and trim the snippet
-        }
-        return null; // Return null if no match is found
-    }
-
     // command 4 (Create a chat participant)
     vscode.chat.createChatParticipant('pytypewizard-chat', async (request, _context, response, token) => {
         const userQuery = request.prompt;
@@ -282,7 +272,41 @@ export function registerCommands(context: vscode.ExtensionContext, pyrePath: str
 
     // command 8 (Ask PyTypeWizard)
     context.subscriptions.push(
-        vscode.languages.registerCodeLensProvider({ scheme: 'file', language: 'python' }, new DynamicCodeLensProvider()), addToChatCommand
+        vscode.languages.registerCodeLensProvider({ scheme: 'file', language: 'python' }, new DynamicCodeLensProvider())
+    );
+
+    context.subscriptions.push(
+        vscode.commands.registerCommand('pytypewizard.addToChat', async (selectedText: string, callback?: () => void) => {
+            const defaultPrompt = `Explain this terminology '${selectedText}' in easy words with Python code example. Add the use cases as well. Be precise and short.`;
+
+            const userPrompt = await vscode.window.showInputBox({
+                value: defaultPrompt,
+                placeHolder: "Modify the prompt if needed",
+                prompt: "Press Enter to send or Escape to cancel"
+            });
+
+            if (userPrompt) {
+                const response = await vscode.window.withProgress({
+                    location: vscode.ProgressLocation.Notification,
+                    title: "PyTypeWizard",
+                    cancellable: false
+                }, async (progress) => {
+                    progress.report({ message: "Generating response..." });
+                    const geminiService = new GeminiService();
+                    return await geminiService.generateResponse(userPrompt);
+                });
+
+                const outputChannel = vscode.window.createOutputChannel("PyTypeWizard");
+                outputChannel.show(true);
+                outputChannel.appendLine("Query: " + userPrompt);
+                outputChannel.appendLine("\nResponse:");
+                outputChannel.appendLine(response);
+            }
+
+            if (callback) {
+                callback();
+            }
+        })
     );
 }
 
@@ -348,3 +372,6 @@ export async function runErrorExtractor(context: vscode.ExtensionContext, filePa
         });
     });
 }
+
+// Register the "Add to Chat" command
+// export const addToChatCommand = 
