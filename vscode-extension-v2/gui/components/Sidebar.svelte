@@ -209,6 +209,7 @@
 
     .explanation li {
         margin-bottom: 10px;
+        line-height: 1.5;
     }
 
     .explanation strong {
@@ -216,7 +217,7 @@
     }
 
     .code-container {
-    position: relative;
+        position: relative;
     }
 
     .copy-button {
@@ -229,6 +230,7 @@
         border-radius: 4px;
         color: white;
         cursor: pointer;
+        width: 70px;
     }
 
     .copy-button:hover {
@@ -290,7 +292,7 @@
                 </div>
             {:else if solution}
                 <div class="code-container">
-                    <pre>${filterCode(solution)}</pre>
+                    <pre>{filterCode(solution)}</pre>
                     <button class="copy-button" on:click={(event) => copyCode(filterCode(solution), event.target)}>Copy</button>
                 </div>
                 <p class="section-header">Explanation</p>
