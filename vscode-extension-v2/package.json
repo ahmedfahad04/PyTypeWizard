@@ -124,7 +124,14 @@
 		"@vscode-elements/elements": "^1.9.0",
 		"@vscode/python-extension": "^1.0.5",
 		"axios": "^1.7.9",
+		"better-sqlite3": "^11.7.2",
+		"highlight.js": "^11.11.1",
+		"markdown": "^0.5.0",
+		"marked": "^15.0.6",
+		"rimraf": "^6.0.1",
 		"vscode-languageclient": "^9.0.1",
+		"vscode-languageserver-protocol": "^3.17.5",
+		"web-tree-sitter": "^0.24.6",
 		"which": "^4.0.0"
 	},
 	"devDependencies": {
@@ -132,7 +139,6 @@
 		"@rollup/plugin-node-resolve": "^11.0.1",
 		"@rollup/plugin-typescript": "^8.1.0",
 		"@tsconfig/svelte": "^1.0.10",
-		"@types/glob": "^8.1.0",
 		"@types/mocha": "^8.0.4",
 		"@types/node": "^12.11.7",
 		"@types/polka": "^0.5.1",

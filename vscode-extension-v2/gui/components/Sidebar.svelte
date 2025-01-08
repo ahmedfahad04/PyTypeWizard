@@ -1,6 +1,5 @@
 <script>
     import { onDestroy, onMount } from 'svelte';
-    
 
     let errors = [];
     let loading = true;
@@ -10,12 +9,21 @@
 
     const toggleExpansion = (index) => {
         expandedErrors[index] = !expandedErrors[index];
-        expandedErrors = [...expandedErrors]; // Trigger reactivity
+        expandedErrors = [...expandedErrors];
+    };
+
+    const filterCode = (content) => {
+        const regex = /```python([\s\S]*?)```/;
+        const match = regex.exec(content);
+
+        if (match) {
+            return match[1].trim(); // Extract and trim the snippet
+        }
+        return null; // Return null if no match is found
     };
 
     const handleMessage = (event) => {
         const message = event.data;
-        console.log(">> MESSAGE", {message});
 
         switch (message.type) {
             case 'typeErrors':
@@ -46,12 +54,12 @@
         window.addEventListener('message', handleMessage);
         console.log('Event listener added');
 
-        // Cleanup when component is destroyed
         onDestroy(() => {
             window.removeEventListener('message', handleMessage);
             console.log('Event listener removed');
         });
     });
+
 </script>
 
 
@@ -161,6 +169,13 @@
         font-style: italic;
         color: var(--vscode-disabledForeground);
     }
+
+    pre {
+        background-color: #222222;
+        padding: 10px;
+        border-radius: 5px;
+        overflow: auto;
+    }
 </style>
 
 <div>
@@ -216,8 +231,7 @@
                     <p>Generating solution...</p>
                 </div>
             {:else if solution}
-                <!-- <div class="markdown-content" innerHTML={solution}></div> -->
-                <pre><code>{solution}</code></pre>
+                <pre>{filterCode(solution)}</pre>
             {:else}
                 <p class="empty-state">Click on an error to generate a solution</p>
             {/if}
