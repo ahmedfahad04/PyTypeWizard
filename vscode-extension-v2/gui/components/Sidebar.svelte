@@ -1,4 +1,5 @@
 <script>
+    import markdownit from 'markdown-it';
     import { onDestroy, onMount } from 'svelte';
 
     let errors = [];
@@ -6,6 +7,8 @@
     let solution = '';
     let expandedErrors = [];
     let solutionLoading = false;
+
+    const md = markdownit()
 
     const toggleExpansion = (index) => {
         expandedErrors[index] = !expandedErrors[index];
@@ -21,6 +24,16 @@
         }
         return null; // Return null if no match is found
     };
+
+
+    const filterExplanation = (content) => {
+        const codeBlockRegex = /```python[\s\S]*?```/g;
+        // Remove all code blocks and trim the remaining text
+        const explanation = content.replace(codeBlockRegex, '').trim();
+        return md.render(explanation || null);
+        // return explanation || null;
+    };
+
 
     const handleMessage = (event) => {
         const message = event.data;
@@ -150,6 +163,7 @@
         font-size: 1.2em;
         font-weight: bold;
         margin-bottom: 10px;
+        margin-top: 10px;
         color: var(--text-color);
     }
 
@@ -175,6 +189,19 @@
         padding: 10px;
         border-radius: 5px;
         overflow: auto;
+    }
+
+    .explanation ul {
+        margin-left: 20px;
+        list-style: disc;
+    }
+
+    .explanation li {
+        margin-bottom: 10px;
+    }
+
+    .explanation strong {
+        font-weight: bold;
     }
 </style>
 
@@ -232,6 +259,8 @@
                 </div>
             {:else if solution}
                 <pre>{filterCode(solution)}</pre>
+                <p class="section-header">Explanation</p>
+                <div style="margin-top: 20px; background-color: --var(--vscode-editor-background); explanation">{@html filterExplanation(solution)}</div>
             {:else}
                 <p class="empty-state">Click on an error to generate a solution</p>
             {/if}

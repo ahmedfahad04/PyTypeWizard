@@ -26,7 +26,7 @@ export class GeminiService {
             return response.text();
         } catch (error) {
             vscode.window.showErrorMessage(`Gemini API Error: ${error}`);
-            return '';
+            return null;
         }
     }
 }

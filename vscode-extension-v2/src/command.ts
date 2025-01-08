@@ -141,7 +141,9 @@ export function registerCommands(context: vscode.ExtensionContext, pyrePath: str
                 Code: ${warningLine}
 
                 # Instruction
-                put the solution only as python code snippet. Add necessary explanation in easy words.
+                Answer in the following format:
+                * put the solution only as python code snippet at first
+                * Add necessary explanation in easy words and bullet points. Important words should be written in bold.
                 `;
 
             vscode.window.showWarningMessage(`PROMPT:>> ${prompt}`);
@@ -187,7 +189,7 @@ export function registerCommands(context: vscode.ExtensionContext, pyrePath: str
             if (response.length > 0) {
                 sidebarProvider._view?.webview.postMessage({
                     type: 'solutionGenerated',
-                    solution: snippet
+                    solution: response
                 });
             }
 
