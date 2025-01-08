@@ -151,13 +151,12 @@ export function registerCommands(context: vscode.ExtensionContext, pyrePath: str
 
             const response = await vscode.window.withProgress({
                 location: vscode.ProgressLocation.Notification,
-                title: "Generating error explanation...",
+                title: "Get Explanation",
                 cancellable: false
             }, async (progress) => {
-                progress.report({ increment: 50 });
+                progress.report({ message: "Generating response..." });
                 const gemini = getGeminiService();
                 const result = await gemini.generateResponse(prompt);
-                progress.report({ increment: 100 });
                 return result;
             });
 
@@ -277,7 +276,7 @@ export function registerCommands(context: vscode.ExtensionContext, pyrePath: str
 
     context.subscriptions.push(
         vscode.commands.registerCommand('pytypewizard.addToChat', async (selectedText: string, callback?: () => void) => {
-            const defaultPrompt = `Explain this terminology '${selectedText}' in easy words with Python code example. Add the use cases as well. Be precise and short.`;
+            const defaultPrompt = `Explain this terminology '${selectedText}' like a high school student with short and simple python example. Add the use cases as well. Be precise and short.`;
 
             const userPrompt = await vscode.window.showInputBox({
                 value: defaultPrompt,
@@ -296,11 +295,12 @@ export function registerCommands(context: vscode.ExtensionContext, pyrePath: str
                     return await geminiService.generateResponse(userPrompt);
                 });
 
-                const outputChannel = vscode.window.createOutputChannel("PyTypeWizard");
-                outputChannel.show(true);
-                outputChannel.appendLine("Query: " + userPrompt);
-                outputChannel.appendLine("\nResponse:");
-                outputChannel.appendLine(response);
+                if (response.length > 0) {
+                    sidebarProvider._view?.webview.postMessage({
+                        type: 'explainTerminology',
+                        explanation: response
+                    });
+                }
             }
 
             if (callback) {

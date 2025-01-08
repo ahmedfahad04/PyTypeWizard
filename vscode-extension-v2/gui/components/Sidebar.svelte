@@ -1,14 +1,20 @@
 <script>
     import markdownit from 'markdown-it';
     import { onDestroy, onMount } from 'svelte';
+ 
 
     let errors = [];
     let loading = true;
     let solution = '';
     let expandedErrors = [];
     let solutionLoading = false;
+    let explainTerminology = '';
 
-    const md = markdownit()
+    const md = markdownit({
+        html: true,
+        linkify: true,
+        typographer: true
+    });
 
     const toggleExpansion = (index) => {
         expandedErrors[index] = !expandedErrors[index];
@@ -27,12 +33,10 @@
 
     const filterExplanation = (content) => {
         const codeBlockRegex = /```python[\s\S]*?```/g;
-        // Remove all code blocks and trim the remaining text
         const explanation = content.replace(codeBlockRegex, '').trim();
         return md.render(explanation || null);
         // return explanation || null;
     };
-
 
     const handleMessage = (event) => {
         const message = event.data;
@@ -56,6 +60,10 @@
                 solutionLoading = false;
                 break;
 
+            case 'explainTerminology':
+                explainTerminology = md.render(message.explanation);
+                break;
+
             default:
                 console.warn('Unhandled message type:', message.type);
                 break;
@@ -72,7 +80,6 @@
             button.textContent = originalText;
         }, 1500);
     }
-
 
     onMount(() => {
         window.addEventListener('message', handleMessage);
@@ -202,9 +209,21 @@
         overflow: auto;
     }
 
+    .explanation {
+        width: '80%';
+        overflow: auto;
+    }
+
+    .explanation {
+        background-color: #222222;
+        padding: 5px;
+        border-radius: 5px;
+    }
+
     .explanation ul {
         margin-left: 20px;
         list-style: disc;
+        margin-top: 10px;
     }
 
     .explanation li {
@@ -300,6 +319,13 @@
             {:else}
                 <p class="empty-state">Click on an error to generate a solution</p>
             {/if}
+        </div>
+
+        <hr />
+
+        <div>
+            <p class="section-header">Terminology Explanation</p>
+            <div class="explanation">{@html explainTerminology}</div>
         </div>
     {/if}
 </div>
