@@ -25,7 +25,6 @@
         return null; // Return null if no match is found
     };
 
-
     const filterExplanation = (content) => {
         const codeBlockRegex = /```python[\s\S]*?```/g;
         // Remove all code blocks and trim the remaining text
@@ -62,6 +61,18 @@
                 break;
         }
     };
+
+    function copyCode(content, button) {
+        navigator.clipboard.writeText(content);
+        
+        // Visual feedback
+        const originalText = 'Copy';
+        button.textContent = 'Copied!';
+        setTimeout(() => {
+            button.textContent = originalText;
+        }, 1500);
+    }
+
 
     onMount(() => {
         window.addEventListener('message', handleMessage);
@@ -203,6 +214,26 @@
     .explanation strong {
         font-weight: bold;
     }
+
+    .code-container {
+    position: relative;
+    }
+
+    .copy-button {
+        position: absolute;
+        top: 5px;
+        right: 5px;
+        padding: 4px 8px;
+        background: #333;
+        border: none;
+        border-radius: 4px;
+        color: white;
+        cursor: pointer;
+    }
+
+    .copy-button:hover {
+        background: #444;
+    }
 </style>
 
 <div>
@@ -258,7 +289,10 @@
                     <p>Generating solution...</p>
                 </div>
             {:else if solution}
-                <pre>{filterCode(solution)}</pre>
+                <div class="code-container">
+                    <pre>${filterCode(solution)}</pre>
+                    <button class="copy-button" on:click={(event) => copyCode(filterCode(solution), event.target)}>Copy</button>
+                </div>
                 <p class="section-header">Explanation</p>
                 <div style="margin-top: 20px; background-color: --var(--vscode-editor-background); explanation">{@html filterExplanation(solution)}</div>
             {:else}
