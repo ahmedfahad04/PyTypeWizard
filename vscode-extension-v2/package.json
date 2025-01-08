@@ -104,6 +104,11 @@
 					"type": "string",
 					"default": "",
 					"description": "API Key for Google Gemini"
+				},
+				"pytypewizard.enableCodeLens": {
+					"type": "boolean",
+					"default": true,
+					"description": "Enable/disable the PyTypeWizard CodeLens feature"
 				}
 			}
 		}

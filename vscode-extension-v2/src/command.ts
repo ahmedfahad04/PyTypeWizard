@@ -7,6 +7,7 @@ import * as vscode from 'vscode';
 import which from "which";
 import { sendApiRequest } from "./api";
 import { PyreCodeActionProvider } from "./codeActionProvider";
+import { addToChatCommand, DynamicCodeLensProvider } from "./dynamicCodeLensProvider";
 import { getGeminiService } from "./llm";
 import { getSimplifiedSmartSelection } from "./smartSelection";
 import { getPyRePath, outputChannel } from './utils';
@@ -277,6 +278,11 @@ export function registerCommands(context: vscode.ExtensionContext, pyrePath: str
                 vscode.window.showErrorMessage(`Search failed: ${error.message}`);
             }
         })
+    );
+
+    // command 8 (Ask PyTypeWizard)
+    context.subscriptions.push(
+        vscode.languages.registerCodeLensProvider({ scheme: 'file', language: 'python' }, new DynamicCodeLensProvider()), addToChatCommand
     );
 }
 
