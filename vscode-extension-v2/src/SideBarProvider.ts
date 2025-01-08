@@ -13,7 +13,7 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
         webviewView.webview.options = {
             // Allow scripts in the webview
             enableScripts: true,
-
+            enableCommandUris: true,
             localResourceRoots: [this._extensionUri],
         };
 
@@ -83,6 +83,13 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
                 <link href="${styleResetUri}" rel="stylesheet">
 				<link href="${styleVSCodeUri}" rel="stylesheet">
                 <link href="${styleMainUri}" rel="stylesheet">
+
+                <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/vs2015.min.css">
+                <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+                <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/python.min.js"></script>
+
+                <link rel="stylesheet" href="/path/to/styles/default.min.css">
+                <script>hljs.highlightAll();</script>
 
                 <script nonce="${nonce}">
                     const tsvscode = acquireVsCodeApi();

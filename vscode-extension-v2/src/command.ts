@@ -158,18 +158,51 @@ export function registerCommands(context: vscode.ExtensionContext, pyrePath: str
                 return result;
             });
 
+            // sample response with code snippet in python
+            // Example usage:
+            //             const response = `
+            // Some text here...
+
+            // \`\`\`python
+            // def example_function():
+            //     print("Hello, World!")
+            // \`\`\`
+
+            // This is a sample text to test.
+            // def calculate_taxes(incomes: list[float], tax_rate: float) -> list[float]:
+            //     return [income * tax_rate for income in incomes]
+
+
+            // incomes = [50000.0, 60000.0, "75000.0"]
+            // tax_rate = 0.2
+            // taxes = calculate_taxes(incomes, tax_rate)
+            //             `;
+
+            // const snippet = extractSinglePythonSnippet(response);
+            const snippet = response;
+
             outputChannel.appendLine(`Explanation: ${response}`);
 
             //! Send type errors to the sidebar
             if (response.length > 0) {
                 sidebarProvider._view?.webview.postMessage({
                     type: 'solutionGenerated',
-                    solution: response
+                    solution: snippet
                 });
             }
 
         })
     );
+
+    function extractSinglePythonSnippet(content) {
+        const regex = /```python([\s\S]*?)```/;
+        const match = regex.exec(content);
+
+        if (match) {
+            return match[1].trim(); // Extract and trim the snippet
+        }
+        return null; // Return null if no match is found
+    }
 
     // command 4 (Create a chat participant)
     vscode.chat.createChatParticipant('pytypewizard-chat', async (request, _context, response, token) => {
