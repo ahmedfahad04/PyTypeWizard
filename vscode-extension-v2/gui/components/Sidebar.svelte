@@ -1,8 +1,11 @@
 <script>
-    import markdownit from 'markdown-it';
     import { onDestroy, onMount } from 'svelte';
- 
-
+    // must mention the other component here
+    import ErrorList from './ErrorList.svelte';
+    import SolutionViewer from './SolutionViewer.svelte';
+    import HelloWorld from './HelloWorld.svelte';
+    
+    let currentPage = 'main'; // Add this to track current page
     let errors = [];
     let loading = true;
     let solution = '';
@@ -10,87 +13,43 @@
     let solutionLoading = false;
     let explainTerminology = '';
 
-    const md = markdownit({
-        html: true,
-        linkify: true,
-        typographer: true
-    });
-
-    const toggleExpansion = (index) => {
-        expandedErrors[index] = !expandedErrors[index];
-        expandedErrors = [...expandedErrors];
-    };
-
-    const filterCode = (content) => {
-        const regex = /```python([\s\S]*?)```/;
-        const match = regex.exec(content);
-
-        if (match) {
-            return match[1].trim(); // Extract and trim the snippet
-        }
-        return null; // Return null if no match is found
-    };
-
-    const filterExplanation = (content) => {
-        const codeBlockRegex = /```python[\s\S]*?```/g;
-        const explanation = content.replace(codeBlockRegex, '').trim();
-        return md.render(explanation || null);
-        // return explanation || null;
-    };
-
     const handleMessage = (event) => {
         const message = event.data;
-
         switch (message.type) {
             case 'typeErrors':
-                console.log('Received type errors:', message);
                 errors = message.errors;
                 expandedErrors = Array(errors.length).fill(false);
                 loading = false;
                 break;
-
             case 'solutionLoading':
-                console.log('Solution loading:', message);
                 solutionLoading = message.loading;
                 break;
-
             case 'solutionGenerated':
-                console.log('Solution generated:', message);
                 solution = message.solution;
                 solutionLoading = false;
                 break;
-
             case 'explainTerminology':
-                explainTerminology = md.render(message.explanation);
-                break;
-
-            default:
-                console.warn('Unhandled message type:', message.type);
+                explainTerminology = message.explanation;
                 break;
         }
     };
 
-    function copyCode(content, button) {
-        navigator.clipboard.writeText(content);
-        
-        // Visual feedback
-        const originalText = 'Copy';
-        button.textContent = 'Copied!';
-        setTimeout(() => {
-            button.textContent = originalText;
-        }, 1500);
-    }
+    const switchPage = (page) => {
+        currentPage = page;
+    };
+
+    // tabs
+    const tabs = [
+        { id: 'main', icon: '🏠', text: 'Home' }, 
+        { id: 'hello', icon: '❌', text: 'Type Error Details' }
+    ];
 
     onMount(() => {
         window.addEventListener('message', handleMessage);
-        console.log('Event listener added');
-
         onDestroy(() => {
             window.removeEventListener('message', handleMessage);
-            console.log('Event listener removed');
         });
     });
-
 </script>
 
 
@@ -105,227 +64,75 @@
         --button-hover-color: var(--vscode-button-hoverBackground);
     }
 
-    .error-container {
-        margin-top: 10px;
-        border: 1px solid var(--border-color);
-        border-radius: 4px;
-        overflow: hidden;
-        background-color: var(--error-background);
-        color: var(--text-color);
-    }
-
-    .error-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 10px;
-        cursor: pointer;
-        background-color: var(--error-hover-background);
-        transition: background-color 0.3s;
-    }
-
-    .error-header:hover {
-        background-color: var(--button-hover-color);
-        color: var(--vscode-button-foreground);
-    }
-
-    .error-details {
-        padding: 10px;
-        background-color: var(--error-background);
-        border-top: 1px solid var(--border-color);
-    }
-
-    .goto-button {
-        display: inline-block;
-        margin-top: 10px;
-        padding: 5px 10px;
-        background-color: var(--button-color);
-        /* color: var(--vscode-button-foreground); */
-        border: none;
-        border-radius: 4px;
-        cursor: pointer;
-        text-align: center;
-    }
-
-    .goto-button:hover {
-        background-color: var(--button-hover-color);
-        color: var(--vscode-button-foreground);
-    }
-
-    .error-list {
-        max-height: 400px;
-        overflow-y: auto;
-        padding-right: 5px;
-    }
-
-    .error-list::-webkit-scrollbar {
-        width: 8px;
-    }
-
-    .error-list::-webkit-scrollbar-thumb {
-        background-color: var(--vscode-scrollbarSlider-background);
-        border-radius: 4px;
-    }
-
-    .error-list::-webkit-scrollbar-thumb:hover {
-        background-color: var(--button-hover-color);
-    }
-
     hr {
         border: none;
         border-top: 1px solid var(--border-color);
         margin: 20px 0;
     }
 
-    .section-header {
-        font-size: 1.2em;
-        font-weight: bold;
-        margin-bottom: 10px;
-        margin-top: 10px;
-        color: var(--text-color);
+    .tab-list {
+        display: flex;
+        padding: 0;
+        margin: 0;
+        list-style: none;
     }
 
-    .error-count {
-        font-weight: bold;
-        color: var(--warning-color);
-    }
-
-    .loading-container {
+    .tab-item {
         display: flex;
         align-items: center;
-        justify-content: center;
-    }
-
-    .empty-state {
-        text-align: center;
-        font-style: italic;
-        color: var(--vscode-disabledForeground);
-    }
-
-    pre {
-        background-color: #222222;
-        padding: 10px;
-        border-radius: 5px;
-        overflow: auto;
-    }
-
-    .explanation {
-        width: '80%';
-        overflow: auto;
-    }
-
-    .explanation {
-        background-color: #222222;
-        padding: 5px;
-        border-radius: 5px;
-    }
-
-    .explanation ul {
-        margin-left: 20px;
-        list-style: disc;
-        margin-top: 10px;
-    }
-
-    .explanation li {
-        margin-bottom: 10px;
-        line-height: 1.5;
-    }
-
-    .explanation strong {
-        font-weight: bold;
-    }
-
-    .code-container {
-        position: relative;
-    }
-
-    .copy-button {
-        position: absolute;
-        top: 5px;
-        right: 5px;
-        padding: 4px 8px;
-        background: #333;
-        border: none;
-        border-radius: 4px;
-        color: white;
+        padding: 8px 16px;
         cursor: pointer;
-        width: 70px;
+        border: none;
+        background: transparent;
+        color: var(--vscode-foreground);
+        border-bottom: 2px solid transparent;
+        transition: background-color 0.2s;
     }
 
-    .copy-button:hover {
-        background: #444;
+    .tab-item:hover {
+        background: var(--vscode-list-hoverBackground);
     }
+
+    .tab-item.active {
+        border-bottom: 2px solid var(--vscode-focusBorder);
+        background: var(--vscode-list-activeSelectionBackground);
+        color: var(--vscode-list-activeSelectionForeground);
+    }
+
+    .tab-icon {
+        margin-right: 8px;
+        font-size: 1.1em;
+    }
+
+    .tab-text {
+        font-size: 13px;
+    }
+
 </style>
 
 <div>
-    {#if loading}
-        <p>Loading errors...</p>
-    {:else}
-        <div>
-            <p class="section-header">Detected Type Errors: <span class="error-count">{errors.length}</span></p>
-            <div class="error-list">
-                {#each errors as error, index}
-                <div class="error-container">
-                    <!-- svelte-ignore a11y-click-events-have-key-events -->
-                    <!-- svelte-ignore a11y-interactive-supports-focus -->
-                    <div
-                        class="error-header"
-                        on:click={() => toggleExpansion(index)}
-                        role="button"
-                        aria-expanded={expandedErrors[index]}
+    <nav class="tab-container">
+        <ul class="tab-list">
+            {#each tabs as tab}
+                <li>
+                    <button 
+                        class="tab-item"
+                        class:active={currentPage === tab.id}
+                        on:click={() => switchPage(tab.id)}
                     >
-                        <span>{error.rule_id}</span>
-                        <span>Line {error.line_num}, Col {error.col_num}</span>
-                    </div>
-                    {#if expandedErrors[index]}
-                    <div class="error-details">
-                        <p><strong>File:</strong> {error.display_name}</p>
-                        <p><strong>Message:</strong> {error.message}</p>
-                        <button
-                            class="goto-button"
-                            on:click={() => {
-                                tsvscode.postMessage({
-                                    type: 'openFile',
-                                    file: error.file_name,
-                                    line: error.line_num,
-                                    column: error.col_num
-                                });
-                            }}
-                        >
-                            Go To →
-                        </button>
-                    </div>
-                    {/if}
-                </div>
-                {/each}
-            </div>
-        </div>
+                        <span class="tab-icon">{tab.icon}</span>
+                        <span class="tab-text">{tab.text}</span>
+                    </button>
+                </li>
+            {/each}
+        </ul>
+    </nav>
 
+    {#if currentPage === 'main'}
+        <ErrorList {errors} {loading} {expandedErrors} />
         <hr />
-
-        <div>
-            <p class="section-header">Potential Solutions</p>
-            {#if solutionLoading}
-                <div class="loading-container">
-                    <p>Generating solution...</p>
-                </div>
-            {:else if solution}
-                <div class="code-container">
-                    <pre>{filterCode(solution)}</pre>
-                    <button class="copy-button" on:click={(event) => copyCode(filterCode(solution), event.target)}>Copy</button>
-                </div>
-                <p class="section-header">Explanation</p>
-                <div style="margin-top: 20px; background-color: --var(--vscode-editor-background); explanation">{@html filterExplanation(solution)}</div>
-            {:else}
-                <p class="empty-state">Click on an error to generate a solution</p>
-            {/if}
-        </div>
-
-        <hr />
-
-        <div>
-            <p class="section-header">Terminology Explanation</p>
-            <div class="explanation">{@html explainTerminology}</div>
-        </div>
+        <SolutionViewer {solution} {solutionLoading} {explainTerminology} />
+    {:else if currentPage === 'hello'}
+        <HelloWorld />
     {/if}
 </div>

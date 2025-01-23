@@ -12,6 +12,10 @@
 8. Add activity icon in the bottom panel like cody/copilot instead of sidebar.⌛
 9. Show count of total detected error in the sidebar Icon ⌛
 
+## VSCODE Packaging
+
+1. Implement Default Packaging feature ✅ (run `vsce package` and update the version in package json)
+
 ### Extra
 
 - Add command in Copilot Chat Interface (like specific command to explain, debug etc... think more!!) ✅
