@@ -133,17 +133,20 @@ export function registerCommands(context: vscode.ExtensionContext, pyrePath: str
             //     Keep the explanation in details and focused so that developers can quickly understand and resolve the issue. Answer in markdown format.
             //     `;
 
+            outputChannel.appendLine(`TEXT: ${vscode.window.activeTextEditor?.document.getText()}`)
+
             const prompt = `
                 Explain the following error in given instructions:
 
                 # Error Details
                 Error Type: ${errType[0]}
                 Error Message: ${errType[1]}
-                Code: ${warningLine}
+                Error Code Snippet: ${warningLine}
+                Source Code: ${vscode.window.activeTextEditor?.document.getText()}
 
                 # Instruction
                 Answer in the following format:
-                * put the solution only as python code snippet at first
+                * put the solution only snippet as python code snippet at first
                 * Add necessary explanation in easy words and bullet points. Important words should be written in bold.
                 `;
 
@@ -278,11 +281,12 @@ export function registerCommands(context: vscode.ExtensionContext, pyrePath: str
         vscode.commands.registerCommand('pytypewizard.addToChat', async (selectedText: string, callback?: () => void) => {
             const defaultPrompt = `Explain this terminology '${selectedText}' like a high school student with short and simple python example. Add the use cases as well. Be precise and short.`;
 
-            const userPrompt = await vscode.window.showInputBox({
-                value: defaultPrompt,
-                placeHolder: "Modify the prompt if needed",
-                prompt: "Press Enter to send or Escape to cancel"
-            });
+            // const userPrompt = await vscode.window.showInputBox({
+            //     value: defaultPrompt,
+            //     placeHolder: "Modify the prompt if needed",
+            //     prompt: "Press Enter to send or Escape to cancel"
+            // });
+            const userPrompt = defaultPrompt;
 
             if (userPrompt) {
                 const response = await vscode.window.withProgress({

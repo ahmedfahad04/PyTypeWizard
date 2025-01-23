@@ -1,5 +1,4 @@
 import * as vscode from 'vscode';
-import { GeminiService } from './llm';
 
 
 export class DynamicCodeLensProvider implements vscode.CodeLensProvider {
