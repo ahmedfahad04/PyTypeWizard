@@ -2,16 +2,23 @@
 	"name": "pytypewizard",
 	"displayName": "PyTypeWizard",
 	"description": "Python Static Type Error Resolver",
-	"version": "0.0.1",
+	"publisher": "CodeGenBD",
+	"version": "1.0.0",
 	"engines": {
 		"vscode": "^1.96.0"
 	},
 	"categories": [
-		"Other"
+		"Programming Languages",
+		"AI",
+		"Linters"
 	],
 	"activationEvents": [
-		"*"
+		"onLanguage:python"
 	],
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/ahmedfahad04/SPL3"
+	},
 	"main": "./dist/extension.js",
 	"contributes": {
 		"commands": [
@@ -128,6 +135,7 @@
 		"@google/generative-ai": "^0.21.0",
 		"@vscode-elements/elements": "^1.9.0",
 		"@vscode/python-extension": "^1.0.5",
+		"@vscode/vsce": "^3.2.1",
 		"axios": "^1.7.9",
 		"better-sqlite3": "^11.7.2",
 		"highlight.js": "^11.11.1",
