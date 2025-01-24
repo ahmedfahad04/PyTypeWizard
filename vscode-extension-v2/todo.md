@@ -11,6 +11,7 @@
 7. Add enable/disable option in vscode 'panel'.⌛
 8. Add activity icon in the bottom panel like cody/copilot instead of sidebar.⌛
 9. Show count of total detected error in the sidebar Icon ⌛
+10. Show a Re-generate Solution button.
 
 ## VSCODE Packaging
 
@@ -21,7 +22,7 @@
 - Add command in Copilot Chat Interface (like specific command to explain, debug etc... think more!!) ✅
 - Add Walkthrough window if time demands about how to use this application [lowest priority]
 - Add project readability or cognitive complexity due to usage of type hints
-- We should have the option to ignore some errors
+- We should have the option to ignore some errors ✅
 - Show the generated solution above the error-generated code snippet.
 
 ## RAG
