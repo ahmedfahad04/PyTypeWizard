@@ -109,7 +109,7 @@
                         aria-expanded={expandedErrors[index]}
                     >
                         <span>{error.rule_id}</span>
-                        <span>Line {error.line_num}, Col {error.col_num}</span>
+                        <span> {error.file_name.split('/').pop()} - Line {error.line_num}, Col {error.col_num}</span>
                     </div>
                     {#if expandedErrors[index]}
                     <div class="error-details">
