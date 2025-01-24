@@ -3,10 +3,12 @@ import axios from 'axios';
 import { spawn } from "child_process";
 import { existsSync, statSync } from 'fs';
 import path from 'path';
+import { v4 as uuidv4 } from 'uuid';
 import * as vscode from 'vscode';
 import which from "which";
 import { sendApiRequest } from "./api";
 import { PyreCodeActionProvider } from "./codeActionProvider";
+import { getDatabaseManager } from "./db";
 import { DynamicCodeLensProvider } from "./dynamicCodeLensProvider";
 import { GeminiService, getGeminiService } from "./llm";
 import { getSimplifiedSmartSelection } from "./smartSelection";
@@ -64,34 +66,7 @@ export function registerCommands(context: vscode.ExtensionContext, pyrePath: str
                 // col_num: colNum
             };
 
-            // console.log(`DATA: \n${errorObject.source_code}`);
-
-            const response = await runErrorExtractor(context, filePath, errType[0], errType[1], lineNum, colNum, outputDir, pyrePath, errorObject);
-
-            // if (panelManager) {
-
-            //     // Show loading message
-            //     panelManager.setSolutions([])
-
-            //     // Run error extractor and get solution
-            //     const response = await runErrorExtractor(context, filePath, errType[0], errType[1], lineNum, colNum, outputDir, pyrePath, errorObject);
-
-            //     // Update webview with solutions
-            //     panelManager.setSolutions(Array.isArray(response) ? response : []);
-            //     panelManager.showPanel(context, errors)
-
-            //     // copy to clipboard handler
-            //     panelManager.addMessageHandler('copyToClipboard', (message) => {
-            //         if (Array.isArray(response) && response.length > message.index) {
-            //             const data = response[message.index];
-            //             vscode.env.clipboard.writeText(data).then(() => {
-            //                 vscode.window.showInformationMessage('Copied to clipboard!');
-            //             });
-            //         } else {
-            //             vscode.window.showErrorMessage('Invalid response or index');
-            //         }
-            //     });
-            // }
+            await runErrorExtractor(context, filePath, errType[0], errType[1], lineNum, colNum, outputDir, pyrePath, errorObject);
         }));
 
     // command 2 (for Quick Fix option)
@@ -163,6 +138,20 @@ export function registerCommands(context: vscode.ExtensionContext, pyrePath: str
                 return result;
             });
 
+
+            //! store response in db
+            const db = await getDatabaseManager();
+            await db.addSolution({
+                id: uuidv4(), // Generate unique ID
+                errorType: errType[0],
+                errorMessage: errMessage,
+                originalCode: warningLine,
+                suggestedSolution: response,
+                filePath: document.uri.fsPath,
+                lineNumber: diagnostic.range.start.line,
+                timestamp: new Date().toISOString()
+            });
+
             // sample response with code snippet in python
             // Example usage:
             //             const response = `
@@ -184,9 +173,6 @@ export function registerCommands(context: vscode.ExtensionContext, pyrePath: str
             //             `;
 
             // const snippet = extractSinglePythonSnippet(response);
-            const snippet = response;
-
-            outputChannel.appendLine(`Explanation: ${response}`);
 
             //! Send type errors to the sidebar
             if (response.length > 0) {

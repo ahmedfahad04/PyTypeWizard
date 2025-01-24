@@ -10,6 +10,7 @@ import { createLanguageClient, listenForEnvChanges } from './languageClient';
 import { SidebarProvider } from './SideBarProvider';
 import { ErrorObjectType } from './types/errorObjType';
 import { getPyRePath, outputChannel } from './utils';
+import { closeDatabaseConnection } from './db';
 
 type LanguageClientState = {
 	languageClient: LanguageClient,
@@ -168,4 +169,6 @@ export async function activate(context: vscode.ExtensionContext) {
 }
 
 // This method is called when your extension is deactivated
-export function deactivate() { }
+export function deactivate() { 
+	closeDatabaseConnection();
+}
