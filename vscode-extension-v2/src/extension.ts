@@ -148,24 +148,6 @@ export async function activate(context: vscode.ExtensionContext) {
 
 	// register all commands for the extension
 	registerCommands(context, activePythonPath.path, sideBarProvider);
-
-	//!
-	// try {
-	// 	let result = await fileCollectionAndPreprocessing();
-	// 	// outputChannel.clear();
-	// 	// outputChannel.appendLine(`Preprocessed files: ${result.map(i => i.filePath).join('\n')}`);
-	// 	outputChannel.appendLine(`Total Preprocessed files: ${result.length}`);
-	// 	// print content for only first 3 files
-	// 	for (let i = 2; i < 3; i++) {
-	// 		// outputChannel.appendLine(`Content of file ${i} - \n ${result[i].filePath}: ${result[i].content}`);
-	// 		const tokenizedSnippets = await tokenizeFile(result[i].filePath, result[i].content);
-	// 		outputChannel.appendLine(`Tokenized Snippets ${i} : ${tokenizedSnippets.map(i => i.content).join('\n')}`);
-	// 	}
-
-	// 	// outputChannel.appendLine(`Tokenized Snippets: ${tokenizedSnippets.map(i => i.content).join('\n')}`);
-	// } catch (error) {
-	// 	console.error("Error during file collection and preprocessing:", error);
-	// }
 }
 
 // This method is called when your extension is deactivated

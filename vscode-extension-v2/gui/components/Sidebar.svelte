@@ -3,7 +3,7 @@
     // must mention the other component here
     import ErrorList from './ErrorList.svelte';
     import SolutionViewer from './SolutionViewer.svelte';
-    import HelloWorld from './HelloWorld.svelte';
+	import History from './History.svelte';
     
     let currentPage = 'main'; // Add this to track current page
     let errors = [];
@@ -12,6 +12,8 @@
     let expandedErrors = [];
     let solutionLoading = false;
     let explainTerminology = '';
+    let history = [];
+    let testData = ''
 
     const handleMessage = (event) => {
         const message = event.data;
@@ -31,6 +33,12 @@
             case 'explainTerminology':
                 explainTerminology = message.explanation;
                 break;
+            case 'history':
+                console.log('Inside History: ', message.history);
+                history = message.history;
+                testData = message.testData;
+                switchPage(message.currentPage)
+                break;
         }
     };
 
@@ -41,7 +49,7 @@
     // tabs
     const tabs = [
         { id: 'main', icon: '🏠', text: 'Home' }, 
-        { id: 'hello', icon: '❌', text: 'Type Error Details' }
+        // { id: 'history', icon: '📜', text: 'History' }
     ];
 
     onMount(() => {
@@ -132,7 +140,7 @@
         <ErrorList {errors} {loading} {expandedErrors} />
         <hr />
         <SolutionViewer {solution} {solutionLoading} {explainTerminology} />
-    {:else if currentPage === 'hello'}
-        <HelloWorld />
+    {:else if currentPage === 'history'}
+        <History {history} {testData} />
     {/if}
 </div>
