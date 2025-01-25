@@ -1,6 +1,6 @@
 import * as vscode from "vscode";
 import { DatabaseManager, Solution } from "./db/database";
-import { generateAndStoreSolution } from "./utils";
+import { generateAndStoreSolution, outputChannel } from "./utils";
 
 export class SidebarProvider implements vscode.WebviewViewProvider {
     _view?: vscode.WebviewView;
@@ -102,6 +102,80 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
                     }
 
                     vscode.window.showInformationMessage('Solution re-generated successfully');
+
+                    break;
+                }
+                case 'applyFix': {
+                    const { errorType, errorMessage, filePath, lineNumber } = data.solutionObject;
+                    outputChannel.appendLine('Fix applied successfully ' + errorType + ' ' + errorMessage + ' ' + lineNumber);
+
+                    const uri = vscode.Uri.file(filePath);
+                    const document = await vscode.workspace.openTextDocument(uri);
+                    const editor = await vscode.window.showTextDocument(document);
+                    const decoration = vscode.window.createTextEditorDecorationType({
+                        backgroundColor: new vscode.ThemeColor('editor.selectionBackground'),
+                    });
+
+                    const position = new vscode.Position(lineNumber - 1, 0);
+                    editor.setDecorations(decoration, [new vscode.Range(position, position)])
+
+                    editor.edit(editBuilder => {
+                        editBuilder.replace(new vscode.Range(position, position), data.code);
+                    });
+
+                    const fixLength = data.code.split('\n').length;
+                    vscode.window.showInformationMessage(`Code Length: ${fixLength}`);
+
+                    // now here, register codelense with accept and reject button
+                    // if accept, then delete the decoration 
+                    // if reject, then remove the code snippet and add the decoration as well
+
+                    const codeLensProvider = new class implements vscode.CodeLensProvider {
+                        provideCodeLenses(document: vscode.TextDocument): vscode.CodeLens[] {
+                            const range = new vscode.Range(position, position);
+
+                            const acceptLens = new vscode.CodeLens(range, {
+                                title: "✓ Accept Fix",
+                                command: 'pytypewizard.acceptFix',
+                                arguments: [document, position, decoration]
+                            });
+
+                            const rejectLens = new vscode.CodeLens(range, {
+                                title: "✗ Reject Fix",
+                                command: 'pytypewizard.rejectFix',
+                                arguments: [document, position, decoration, data.code]
+                            });
+
+                            return [acceptLens, rejectLens];
+                        }
+                    };
+
+                    const disposables: vscode.Disposable[] = [];
+                    disposables.push(
+                        vscode.languages.registerCodeLensProvider({ language: 'python' }, codeLensProvider),
+
+                        vscode.commands.registerCommand('pytypewizard.acceptFix', async (document, position, decoration) => {
+                            decoration.dispose();
+                            await document.save();
+                            vscode.window.showInformationMessage('Fix applied successfully!');
+                            disposables.forEach(d => d.dispose());
+                        }),
+
+                        vscode.commands.registerCommand('pytypewizard.rejectFix', async (document, position, decoration, code) => {
+                            const editor = await vscode.window.showTextDocument(document);
+
+                            //! we have to select the text and then press the reject button
+                            const selection = editor.selection;
+
+                            await editor.edit(builder => {
+                                builder.delete(selection);
+                            });
+
+                            decoration.dispose();
+                            vscode.window.showInformationMessage('Fix rejected');
+                            disposables.forEach(d => d.dispose());
+                        })
+                    );
 
                     break;
                 }

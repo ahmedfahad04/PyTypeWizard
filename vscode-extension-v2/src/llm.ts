@@ -35,7 +35,6 @@ export class LLMService {
 
     async generateResponse(prompt: string): Promise<string> {
         this.selectedProvider = vscode.workspace.getConfiguration('pytypewizard').get('llmProvider') as 'gemini' | 'openai';
-        vscode.window.showInformationMessage(`Using ${this.selectedProvider.toUpperCase()} as the Language Model Provider`);
 
         try {
             if (this.selectedProvider === 'openai') {

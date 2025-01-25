@@ -133,12 +133,22 @@
     }
 
     .button-container {
-        display: flex;
-        justify-content: center;
-        align-items: center;
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
         gap: 10px;
         margin-top: 10px;
+        width: 100%;
     }
+
+    .button-container > button {
+        width: 100%;
+    }
+
+    /* For single button to take full width */
+    .button-container > button:only-child {
+        grid-column: 1 / -1;
+    }
+
 
     .save-button {
         padding: 4px 8px;
@@ -161,10 +171,24 @@
         color: var(--text-color);
         cursor: pointer;
         gap: 4px;
+        margin-top: 0.5rem;
     }
 
     .regenerate-button:hover {
         background: var(--error-hover-background);
+    }
+
+    .apply-button {
+        padding: 4px 8px;
+        background: var(--button-color);
+        border: none;
+        border-radius: 4px;
+        color: #222222;
+        cursor: pointer;
+    }
+
+    .apply-button:hover {
+        background: var(--button-hover-color);
     }
 
     hr {
@@ -189,8 +213,17 @@
         <p class="section-header">Explanation</p>
         <div class="explanation">{@html filterExplanation(solution)}</div>
         <div class="button-container">
-            <button class="save-button" on:click={() => onSaveSolution()}>Save Solution</button>
-            <button class="regenerate-button" on:click={() => onReGenerateSolution()}>↺ Regenerate Response</button>
+            <div>
+                <button class="save-button" on:click={() => onSaveSolution()}>Save Solution</button>
+                <button class="regenerate-button" on:click={() => onReGenerateSolution()}>↺ Regenerate Response</button>
+            </div>
+            <div>
+                <button class="apply-button" on:click={() => tsvscode.postMessage({ 
+                    type: 'applyFix', 
+                    code: filterCode(solution),
+                    solutionObject: solutionObject,
+                }, '*')}>Apply Fix</button>
+            </div>
         </div>
         {:else}
         <p class="empty-state">Click on an error to generate a solution</p>
