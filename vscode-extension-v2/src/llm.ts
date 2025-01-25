@@ -14,7 +14,7 @@ export class GeminiService {
         this.genAI = new GoogleGenerativeAI(apiKey);
         // this.model = this.genAI.getGenerativeModel({ model: 'gemini-pro' });
         this.model = this.genAI.getGenerativeModel({
-            model: "gemini-1.5-pro",
+            model: "gemini-1.5-flash",
             systemInstruction: "You are an expert Python Type Hint related bug solver. I will provide you code, bug message, add instruction about what to do and you will provide only the updated code snippet and exact, to the point short explanation. No exagerated words is needed.",
         });
     }

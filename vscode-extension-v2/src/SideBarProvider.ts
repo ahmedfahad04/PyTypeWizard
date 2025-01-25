@@ -1,6 +1,6 @@
 import * as vscode from "vscode";
 import { DatabaseManager, Solution } from "./db/database";
-import { outputChannel } from "./utils";
+import { generateAndStoreSolution } from "./utils";
 
 export class SidebarProvider implements vscode.WebviewViewProvider {
     _view?: vscode.WebviewView;
@@ -23,23 +23,6 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
         // functionality to handle messages from the webview (to)
         webviewView.webview.onDidReceiveMessage(async (data) => {
             switch (data.type) {
-                case "onInfo": {
-                    if (!data.value) {
-                        return;
-                    }
-                    vscode.window.showInformationMessage(data.value);
-                    break;
-                }
-                case "onError": {
-                    if (!data.value) {
-                        return;
-                    }
-                    vscode.window.showErrorMessage(data.value);
-                    if (data.description) {
-                        outputChannel.appendLine(data.description);
-                    }
-                    break;
-                }
                 case "openFile": {
                     const document = await vscode.workspace.openTextDocument(data.file);
                     const editor = await vscode.window.showTextDocument(document);
@@ -79,6 +62,47 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
                         history: history,
                         currentPage: 'main'
                     });
+                    break;
+                }
+                case 'reGenerateSolution': {
+
+                    // I want to pass the active editor content to the webview and the diagnostics
+                    const document = data.document;
+                    const diagnostic = data.diagnostic;
+                    const { errorType, errorMessage, originalCode, suggestedSolution, filePath, lineNumber, timestamp } = data.solutionObject;
+
+                    const prompt = `        
+                        # Error Details
+                        Error Type: ${errorType}
+                        Error Message: ${errorMessage}
+                        Error Code Snippet: ${originalCode}
+                        Source Code: ${document}
+
+                        # Previous Solution:
+                        ${suggestedSolution}
+        
+                        # Instruction
+                        Your Previous answer was wrong. Now rethink the correct solution. Answer in the following format:
+                        * put the solution only snippet as python code snippet at first
+                        * Add necessary explanation in easy words and bullet points. Important words should be written in bold.
+                        `;
+
+                    const solutionObject = await generateAndStoreSolution(
+                        errorType, errorMessage, filePath, lineNumber, originalCode, prompt
+                    );
+
+                    if (solutionObject.suggestedSolution.length > 0) {
+                        this._view?.webview.postMessage({
+                            type: 'solutionGenerated',
+                            solution: solutionObject.suggestedSolution,
+                            solutionObject: solutionObject,
+                            document: document,
+                            diagnostic: diagnostic
+                        });
+                    }
+
+                    vscode.window.showInformationMessage('Solution re-generated successfully');
+
                     break;
                 }
             }

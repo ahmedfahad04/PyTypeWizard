@@ -5,6 +5,8 @@
     export let solutionLoading = false;
     export let explainTerminology = '';
     export let solutionObject;
+    export let document;
+    export let diagnostic;
     
     const md = markdownit({
         html: true,
@@ -34,8 +36,11 @@
     }
 
     const onSaveSolution = () => {
-        console.log('Saving solution');
         tsvscode.postMessage({ type: 'saveEntry', value: solutionObject }, '*');
+    }
+
+    const onReGenerateSolution = () => {
+        tsvscode.postMessage({ type: 'reGenerateSolution', solutionObject: solutionObject, document: document, diagnostic: diagnostic },  '*');
     }
 </script>
 
@@ -127,6 +132,14 @@
         margin-top: 10px;
     }
 
+    .button-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 10px;
+        margin-top: 10px;
+    }
+
     .save-button {
         padding: 4px 8px;
         background: var(--button-color);
@@ -134,11 +147,24 @@
         border-radius: 4px;
         color: #222222;
         cursor: pointer;
-        margin-top: 0.5rem;
     }
 
     .save-button:hover {
         background: var(--button-hover-color);
+    }
+
+    .regenerate-button {
+        padding: 4px 8px;
+        background: transparent;
+        border: 1px solid var(--button-color);
+        border-radius: 4px;
+        color: var(--text-color);
+        cursor: pointer;
+        gap: 4px;
+    }
+
+    .regenerate-button:hover {
+        background: var(--error-hover-background);
     }
 
     hr {
@@ -162,8 +188,11 @@
         </div>
         <p class="section-header">Explanation</p>
         <div class="explanation">{@html filterExplanation(solution)}</div>
-        <button class="save-button" on:click={() => onSaveSolution()}>Save Solution</button>
-    {:else}
+        <div class="button-container">
+            <button class="save-button" on:click={() => onSaveSolution()}>Save Solution</button>
+            <button class="regenerate-button" on:click={() => onReGenerateSolution()}>↺ Regenerate Response</button>
+        </div>
+        {:else}
         <p class="empty-state">Click on an error to generate a solution</p>
     {/if}
 

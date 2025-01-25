@@ -3,7 +3,6 @@ import axios from 'axios';
 import { spawn } from "child_process";
 import { existsSync, statSync } from 'fs';
 import path from 'path';
-import { v4 as uuidv4 } from 'uuid';
 import * as vscode from 'vscode';
 import which from "which";
 import { sendApiRequest } from "./api";
@@ -11,9 +10,9 @@ import { PyreCodeActionProvider } from "./codeActionProvider";
 import { getDatabaseManager } from "./db";
 import { Solution } from "./db/database";
 import { DynamicCodeLensProvider } from "./dynamicCodeLensProvider";
-import { GeminiService, getGeminiService } from "./llm";
+import { GeminiService } from "./llm";
 import { getSimplifiedSmartSelection } from "./smartSelection";
-import { getPyRePath, outputChannel } from './utils';
+import { generateAndStoreSolution, getPyRePath, outputChannel } from './utils';
 
 
 export function registerCommands(context: vscode.ExtensionContext, pyrePath: string, sidebarProvider: any): void {
@@ -88,6 +87,8 @@ export function registerCommands(context: vscode.ExtensionContext, pyrePath: str
                 loading: true
             });
 
+            outputChannel.appendLine(`TEXT: ${diagnostic.message}`)
+
             const errMessage = diagnostic.message;
             const errType = errMessage.split(':', 2);
             const warningLine = document.lineAt(diagnostic.range.start.line).text.trim();
@@ -126,43 +127,23 @@ export function registerCommands(context: vscode.ExtensionContext, pyrePath: str
                 * Add necessary explanation in easy words and bullet points. Important words should be written in bold.
                 `;
 
-            vscode.window.showWarningMessage(`PROMPT:>> ${prompt}`);
+            outputChannel.appendLine(`PROMPT:>> ${prompt}`);
+            const solutionObject = await generateAndStoreSolution(errType, errMessage, document.uri.fsPath, diagnostic.range.start.line, warningLine, prompt);
 
-            const response = await vscode.window.withProgress({
-                location: vscode.ProgressLocation.Notification,
-                title: "Get Explanation",
-                cancellable: false
-            }, async (progress) => {
-                progress.report({ message: "Generating response..." });
-                const gemini = getGeminiService();
-                const result = await gemini.generateResponse(prompt);
-                return result;
-            });
-
-
-            //! store response in db
-            const solutionObject = {
-                id: uuidv4(), // Generate unique ID
-                errorType: errType[0],
-                errorMessage: errMessage,
-                originalCode: warningLine,
-                suggestedSolution: response,
-                filePath: document.uri.fsPath,
-                lineNumber: diagnostic.range.start.line,
-                timestamp: new Date().toISOString()
-            }
-
-            // const snippet = extractSinglePythonSnippet(response);
-
-            //! Send type errors to the sidebar
-            if (response.length > 0) {
+            if (solutionObject?.suggestedSolution?.length > 0) {
                 sidebarProvider._view?.webview.postMessage({
                     type: 'solutionGenerated',
-                    solution: response,
+                    solution: solutionObject.suggestedSolution,
                     solutionObject: solutionObject,
+                    document: document,
+                    diagnostic: diagnostic
+                });
+            } else {
+                sidebarProvider._view?.webview.postMessage({
+                    type: 'solutionLoading',
+                    loading: false
                 });
             }
-
         })
     );
 

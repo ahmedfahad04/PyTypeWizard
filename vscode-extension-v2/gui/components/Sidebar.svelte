@@ -14,6 +14,8 @@
     let explainTerminology = '';
     let history = [];
     let solutionObject;
+    let document;
+    let diagnostic;
 
     const handleMessage = (event) => {
         const message = event.data;
@@ -29,6 +31,8 @@
             case 'solutionGenerated':
                 solution = message.solution;
                 solutionObject = message.solutionObject;
+                document = message.document;
+                diagnostic = message.diagnostic;
                 solutionLoading = false;
                 break;
             case 'explainTerminology':
