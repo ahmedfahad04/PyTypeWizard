@@ -136,6 +136,59 @@ export class DatabaseManager {
         }
     }
 
+    async searchSolutions(searchQuery: string, page: number = 1, pageSize: number = 5): Promise<{ solutions: Solution[], total: number }> {
+        let queryString = searchQuery.trim();
+        
+        try {
+            const offset = (page - 1) * pageSize;
+            const searchTerm = `%${queryString}%`;
+
+            const countQuery = `
+                SELECT COUNT(*) as total FROM solutions 
+                WHERE originalCode LIKE ? 
+                OR suggestedSolution LIKE ? 
+                OR errorMessage LIKE ?
+            `;
+
+            const searchQuery = `
+                SELECT * FROM solutions 
+                WHERE originalCode LIKE ? 
+                OR suggestedSolution LIKE ? 
+                OR errorMessage LIKE ?
+                ORDER BY timestamp DESC
+                LIMIT ? OFFSET ?
+            `;
+
+            const total = await new Promise<{ total: number }>((resolve, reject) => {
+                this.db.get(countQuery, [searchTerm, searchTerm, searchTerm], (err, row) => {
+                    if (err) {
+                        reject(err);
+                    } else {
+                        resolve(row as { total: number });
+                    }
+                });
+            });
+
+            const solutions = await new Promise<Solution[]>((resolve, reject) => {
+                this.db.all(searchQuery, [searchTerm, searchTerm, searchTerm, pageSize, offset], (err, rows) => {
+                    if (err) {
+                        reject(err);
+                    } else {
+                        resolve(rows as Solution[]);
+                    }
+                });
+            });
+
+            return {
+                solutions,
+                total: total.total
+            };
+        } catch (error) {
+            vscode.window.showErrorMessage(`Search failed: ${error.message}`);
+            throw error;
+        }
+    }
+
     private runQuery(query: string, params: any[] = []): Promise<void> {
         return new Promise((resolve, reject) => {
             this.db.run(query, params, (err) => {
