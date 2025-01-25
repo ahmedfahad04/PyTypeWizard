@@ -28,6 +28,7 @@
 - Curate Best **Prompt** to get the best results.
 - Check suggestions in Keeps
 - Add Temperature and Others features of LLM as settings options
+- Add a learn more option in Terminology Section and by clicking it take him to chatbot
 
 ## RAG
 

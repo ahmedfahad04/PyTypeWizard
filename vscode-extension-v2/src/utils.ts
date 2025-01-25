@@ -3,7 +3,7 @@ import { dirname, join } from 'path';
 import { v4 as uuidv4 } from 'uuid';
 import * as vscode from 'vscode';
 import { Solution } from './db/database';
-import { getGeminiService } from './llm';
+import { getLLMService } from './llm';
 
 export let outputChannel = vscode.window.createOutputChannel('PyTypeWizard');
 
@@ -68,7 +68,7 @@ export function getPyRePath(pythonPath: string): string {
 }
 
 export async function generateAndStoreSolution(
-    errType: string[],
+    errType: string,
     errMessage: string,
     filePath: string,
     lineNumber: number,
@@ -88,8 +88,10 @@ export async function generateAndStoreSolution(
             if (token.isCancellationRequested) {
                 return null;
             }
-            const gemini = getGeminiService();
-            const result = await gemini.generateResponse(prompt);
+            // const gemini = getGeminiService();
+            // const result = await gemini.generateResponse(prompt);
+            const llmService = getLLMService();
+            const result = await llmService.generateResponse(prompt);
 
             // Check for cancellation after getting the response
             if (token.isCancellationRequested) {
@@ -108,7 +110,7 @@ export async function generateAndStoreSolution(
 
     const solutionObject: Solution = {
         id: uuidv4(),
-        errorType: errType[0],
+        errorType: errType,
         errorMessage: errMessage,
         originalCode: warningLine,
         suggestedSolution: response,

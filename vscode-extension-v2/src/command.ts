@@ -10,7 +10,7 @@ import { PyreCodeActionProvider } from "./codeActionProvider";
 import { getDatabaseManager } from "./db";
 import { Solution } from "./db/database";
 import { DynamicCodeLensProvider } from "./dynamicCodeLensProvider";
-import { GeminiService } from "./llm";
+import { getLLMService } from "./llm";
 import { getSimplifiedSmartSelection } from "./smartSelection";
 import { generateAndStoreSolution, getPyRePath, outputChannel } from './utils';
 
@@ -128,7 +128,7 @@ export function registerCommands(context: vscode.ExtensionContext, pyrePath: str
                 `;
 
             outputChannel.appendLine(`PROMPT:>> ${prompt}`);
-            const solutionObject = await generateAndStoreSolution(errType, errMessage, document.uri.fsPath, diagnostic.range.start.line, warningLine, prompt);
+            const solutionObject = await generateAndStoreSolution(errType[0], errMessage, document.uri.fsPath, diagnostic.range.start.line, warningLine, prompt);
 
             if (solutionObject?.suggestedSolution?.length > 0) {
                 sidebarProvider._view?.webview.postMessage({
@@ -241,10 +241,23 @@ export function registerCommands(context: vscode.ExtensionContext, pyrePath: str
                     location: vscode.ProgressLocation.Notification,
                     title: "PyTypeWizard",
                     cancellable: false
-                }, async (progress) => {
-                    progress.report({ message: "Generating response..." });
-                    const geminiService = new GeminiService();
-                    return await geminiService.generateResponse(userPrompt);
+                }, async (progress, token) => {
+                    progress.report({ message: 'Generating response...' });
+
+                    // Check for cancellation before making the API call
+                    if (token.isCancellationRequested) {
+                        return null;
+                    }
+
+                    const llmService = getLLMService();
+                    const result = await llmService.generateResponse(userPrompt);
+
+                    // Check for cancellation after getting the response
+                    if (token.isCancellationRequested) {
+                        return null;
+                    }
+
+                    return result;
                 });
 
                 if (response.length > 0) {
