@@ -2,6 +2,17 @@
     export let history;
     export let testData;
 
+    // Add search state
+    let searchQuery = '';
+    
+    // Add filter function
+    $: filteredHistory = history.filter(solution => {
+        const searchTerm = searchQuery.toLowerCase();
+        return solution.originalCode.toLowerCase().includes(searchTerm) || 
+               solution.suggestedSolution.toLowerCase().includes(searchTerm) ||
+               solution.errorMessage.toLowerCase().includes(searchTerm);
+    });
+
     const filterCode = (content) => {
         const regex = /```python([\s\S]*?)```/;
         const match = regex.exec(content);
@@ -47,6 +58,20 @@
         color: var(--vscode-disabledForeground);
     }
 
+    /* Add search bar styles */
+    .search-container {
+        margin-bottom: 1rem;
+    }
+    
+    .search-input {
+        width: 100%;
+        padding: 0.5rem;
+        border: 1px solid var(--vscode-editor-foreground);
+        border-radius: 4px;
+        background: var(--vscode-input-background);
+        color: var(--vscode-input-foreground);
+    }
+
     hr {
         border: none;
         border-top: 1px solid var(--vscode-editor-foreground);
@@ -62,11 +87,21 @@
 <div class="solutions-container">
     <h2 style="margin-bottom: 10px; font-weight: bold;">Saved Solutions</h2>
 
-    {#if history.length === 0}
+    <!-- Add search bar -->
+    <div class="search-container">
+        <input 
+            type="text" 
+            bind:value={searchQuery}
+            placeholder="Search in code and solutions..."
+            class="search-input"
+        />
+    </div>
+
+    {#if filteredHistory.length === 0}
         <p>No solutions saved yet.</p>
     {/if}
 
-    {#each history as solution}
+    {#each filteredHistory as solution}
         <div class="solution-card">
             <div class="header">
                 <span class="error-type">{solution.errorType}</span>
@@ -88,5 +123,4 @@
             </div>
         </div>
     {/each}
-
 </div>

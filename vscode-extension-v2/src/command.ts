@@ -9,6 +9,7 @@ import which from "which";
 import { sendApiRequest } from "./api";
 import { PyreCodeActionProvider } from "./codeActionProvider";
 import { getDatabaseManager } from "./db";
+import { Solution } from "./db/database";
 import { DynamicCodeLensProvider } from "./dynamicCodeLensProvider";
 import { GeminiService, getGeminiService } from "./llm";
 import { getSimplifiedSmartSelection } from "./smartSelection";
@@ -152,26 +153,6 @@ export function registerCommands(context: vscode.ExtensionContext, pyrePath: str
                 timestamp: new Date().toISOString()
             });
 
-            // sample response with code snippet in python
-            // Example usage:
-            //             const response = `
-            // Some text here...
-
-            // \`\`\`python
-            // def example_function():
-            //     print("Hello, World!")
-            // \`\`\`
-
-            // This is a sample text to test.
-            // def calculate_taxes(incomes: list[float], tax_rate: float) -> list[float]:
-            //     return [income * tax_rate for income in incomes]
-
-
-            // incomes = [50000.0, 60000.0, "75000.0"]
-            // tax_rate = 0.2
-            // taxes = calculate_taxes(incomes, tax_rate)
-            //             `;
-
             // const snippet = extractSinglePythonSnippet(response);
 
             //! Send type errors to the sidebar
@@ -296,6 +277,29 @@ export function registerCommands(context: vscode.ExtensionContext, pyrePath: str
             if (callback) {
                 callback();
             }
+        })
+    );
+
+    // command 9 (show History)
+    context.subscriptions.push(
+        vscode.commands.registerCommand('pytypewizard.showHistory', async () => {
+
+            // read all data from database
+            const db = await getDatabaseManager();
+            const history: Solution[] = await db.getAllSolutions();
+
+            if (history.length === 0) {
+                vscode.window.showInformationMessage('No history found!');
+                return;
+            } else {
+                sidebarProvider._view?.webview.postMessage({
+                    type: 'history',
+                    history: history,
+                    testData: 'This is a simple Test Data',
+                    currentPage: 'history'
+                });
+            }
+
         })
     );
 }
