@@ -123,7 +123,7 @@ export function registerCommands(context: vscode.ExtensionContext, pyrePath: str
 
                 # Instruction
                 Answer in the following format:
-                * put the solution only snippet as python code snippet at first
+                * put the solution only snippet as python code snippet at first. No need to mention skipped section or anything else. Just write down the exact lines sequentially.
                 * Add necessary explanation in easy words and bullet points. Important words should be written in bold.
                 `;
 
