@@ -1,4 +1,5 @@
 import * as vscode from "vscode";
+import { DatabaseManager, Solution } from "./db/database";
 import { outputChannel } from "./utils";
 
 export class SidebarProvider implements vscode.WebviewViewProvider {
@@ -45,6 +46,22 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
                     const position = new vscode.Position(data.line - 1, data.column);
                     editor.selection = new vscode.Selection(position, position);
                     editor.revealRange(new vscode.Range(position, position));
+                    break;
+                }
+                case 'deleteEntry': {
+                    if (!data.id) {
+                        return;
+                    }
+                    const db = new DatabaseManager();
+                    await db.deleteSolution(data.id);
+                    const history: Solution[] = await db.getAllSolutions();
+                    vscode.window.showInformationMessage('Solution deleted successfully');
+                    
+                    this._view?.webview.postMessage({
+                        type: 'history',
+                        history: history,
+                        currentPage: 'history'
+                    });
                     break;
                 }
             }

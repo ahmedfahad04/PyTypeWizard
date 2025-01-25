@@ -97,7 +97,7 @@ export class DatabaseManager {
     async getAllSolutions(): Promise<Solution[]> {
         try {
             return new Promise((resolve, reject) => {
-                this.db.all('SELECT * FROM solutions', (err, rows) => {
+                this.db.all('SELECT * FROM solutions ORDER BY timestamp DESC', (err, rows) => {
                     if (err) {
                         vscode.window.showErrorMessage(`Failed to retrieve solutions: ${err.message}`);
                         reject(err);
@@ -126,9 +126,10 @@ export class DatabaseManager {
         }
     }
 
-    async deleteSolution(id: string): Promise<void> {
+    public async deleteSolution(id: string): Promise<void> {
         try {
-            await this.runQuery('DELETE FROM solutions WHERE id = ?', [id]);
+            const query = `DELETE FROM solutions WHERE id = ?`;
+            await this.runQuery(query, [id]);
             vscode.window.showInformationMessage('Solution deleted successfully');
         } catch (error) {
             vscode.window.showErrorMessage(`Failed to delete solution: ${error.message}`);
@@ -136,9 +137,10 @@ export class DatabaseManager {
         }
     }
 
+
     async searchSolutions(searchQuery: string, page: number = 1, pageSize: number = 5): Promise<{ solutions: Solution[], total: number }> {
         let queryString = searchQuery.trim();
-        
+
         try {
             const offset = (page - 1) * pageSize;
             const searchTerm = `%${queryString}%`;

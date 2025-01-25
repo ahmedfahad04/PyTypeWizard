@@ -4,6 +4,7 @@
 
     // Add search state
     let searchQuery = '';
+
     
     // Add filter function
     $: filteredHistory = history.filter(solution => {
@@ -12,6 +13,11 @@
                solution.suggestedSolution.toLowerCase().includes(searchTerm) ||
                solution.errorMessage.toLowerCase().includes(searchTerm);
     });
+
+    const onDeleteSolution = (id) => {
+        console.log('Deleting solution with id:', id);
+        tsvscode.postMessage({ type: 'deleteEntry', id: id }, '*');
+    }
 
     const filterCode = (content) => {
         const regex = /```python([\s\S]*?)```/;
@@ -32,9 +38,36 @@
         padding: 1rem;
     }
 
+    /* Add these new styles */
+    .delete-button {
+        cursor: pointer;
+        border-radius: 4px;
+        border: 1px solid var(--warning-color);
+        background: transparent;
+        margin-left: 0.5rem;
+        margin-right: 0.5rem;
+        width: 30px;
+        height: 30px;
+        /* background-color: rgb(51, 0, 0); */
+    }
+
+    .delete-button:hover {
+        background-color: rgb(97, 0, 0);
+        color: var(--vscode-editor-background);
+    }
+
+    /* Update the header style to accommodate the delete button */
     .header {
         display: flex;
         justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+
+    .header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
         margin-bottom: 1rem;
 
         font-size: 1.3em;
@@ -60,16 +93,24 @@
 
     /* Add search bar styles */
     .search-container {
+        margin-top: 1rem;
         margin-bottom: 1rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
     }
     
     .search-input {
         width: 100%;
         padding: 0.5rem;
-        border: 1px solid var(--vscode-editor-foreground);
+        border: 2px solid var(--vscode-editor-foreground);
         border-radius: 4px;
         background: var(--vscode-input-background);
         color: var(--vscode-input-foreground);
+    }
+
+    .error-message {
+        color: var(--warning-color);
     }
 
     hr {
@@ -85,10 +126,19 @@
 </style>
 
 <div class="solutions-container">
-    <h2 style="margin-bottom: 10px; font-weight: bold;">Saved Solutions</h2>
+
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+        <h2 style="margin-bottom: 10px; font-weight: bold;">
+            Previous Fix History
+        </h2>
+        <h3 style="margin-bottom: 10px; font-weight: bold;">
+            Total Entries: <span style="font-weight: bold; color: skyblue;">{history.length}</span> 
+        </h3>
+    </div>
 
     <!-- Add search bar -->
     <div class="search-container">
+        <span style="margin-right: 10px; font-size: 16px;">Search:</span>
         <input 
             type="text" 
             bind:value={searchQuery}
@@ -105,7 +155,16 @@
         <div class="solution-card">
             <div class="header">
                 <span class="error-type">{solution.errorType}</span>
-                <span class="timestamp">{new Date(solution.timestamp).toLocaleString()}</span>
+                <div style="display: flex; align-items: center;">
+                    <!-- <span>{new Date(solution.timestamp).toDateString()}</span> -->
+                    <button 
+                        class="delete-button" 
+                        on:click={() => onDeleteSolution(solution.id)}
+                        title="Delete solution"
+                    >
+                        🗑️
+                    </button>
+                </div>
             </div>
             
             <hr/>

@@ -295,7 +295,6 @@ export function registerCommands(context: vscode.ExtensionContext, pyrePath: str
                 sidebarProvider._view?.webview.postMessage({
                     type: 'history',
                     history: history,
-                    testData: 'This is a simple Test Data',
                     currentPage: 'history'
                 });
             }
