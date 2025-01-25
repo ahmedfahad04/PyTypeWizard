@@ -106,7 +106,7 @@ export class DatabaseManager {
                 });
             });
         } catch (error) {
-            vscode.window.showErrorMessage(`Failed to get solutions: ${error.message}`);
+            vscode.window.showErrorMessage(`Entry Already Exists`);
             throw error;
         }
     }

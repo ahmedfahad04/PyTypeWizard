@@ -4,6 +4,7 @@
     export let solution = '';
     export let solutionLoading = false;
     export let explainTerminology = '';
+    export let solutionObject;
     
     const md = markdownit({
         html: true,
@@ -30,6 +31,11 @@
         setTimeout(() => {
             button.textContent = originalText;
         }, 1500);
+    }
+
+    const onSaveSolution = () => {
+        console.log('Saving solution');
+        tsvscode.postMessage({ type: 'saveEntry', value: solutionObject }, '*');
     }
 </script>
 
@@ -83,7 +89,6 @@
         width: 70px;
     }
 
-
     .explanation {
         width: '80%';
         overflow: auto;
@@ -114,6 +119,28 @@
         color: var(--vscode-disabledForeground);
     }
 
+    /* save button style */
+
+    .button-container {
+        display: flex;
+        gap: 10px;
+        margin-top: 10px;
+    }
+
+    .save-button {
+        padding: 4px 8px;
+        background: var(--button-color);
+        border: none;
+        border-radius: 4px;
+        color: #222222;
+        cursor: pointer;
+        margin-top: 0.5rem;
+    }
+
+    .save-button:hover {
+        background: var(--button-hover-color);
+    }
+
     hr {
         border: none;
         border-top: 1px solid var(--border-color);
@@ -135,6 +162,7 @@
         </div>
         <p class="section-header">Explanation</p>
         <div class="explanation">{@html filterExplanation(solution)}</div>
+        <button class="save-button" on:click={() => onSaveSolution()}>Save Solution</button>
     {:else}
         <p class="empty-state">Click on an error to generate a solution</p>
     {/if}

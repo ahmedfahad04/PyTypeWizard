@@ -13,7 +13,7 @@
     let solutionLoading = false;
     let explainTerminology = '';
     let history = [];
-    let testData = ''
+    let solutionObject;
 
     const handleMessage = (event) => {
         const message = event.data;
@@ -28,6 +28,7 @@
                 break;
             case 'solutionGenerated':
                 solution = message.solution;
+                solutionObject = message.solutionObject;
                 solutionLoading = false;
                 break;
             case 'explainTerminology':
@@ -36,7 +37,6 @@
             case 'history':
                 console.log('Inside History: ', message.history);
                 history = message.history;
-                testData = message.testData;
                 switchPage(message.currentPage)
                 break;
         }
@@ -139,8 +139,8 @@
     {#if currentPage === 'main'}
         <ErrorList {errors} {loading} {expandedErrors} />
         <hr />
-        <SolutionViewer {solution} {solutionLoading} {explainTerminology} />
+        <SolutionViewer {solution} {solutionObject} {solutionLoading} {explainTerminology} />
     {:else if currentPage === 'history'}
-        <History {history} {testData} />
+        <History {history} />
     {/if}
 </div>

@@ -56,11 +56,28 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
                     await db.deleteSolution(data.id);
                     const history: Solution[] = await db.getAllSolutions();
                     vscode.window.showInformationMessage('Solution deleted successfully');
-                    
+
                     this._view?.webview.postMessage({
                         type: 'history',
                         history: history,
                         currentPage: 'history'
+                    });
+                    break;
+                }
+                case 'saveEntry': {
+                    if (!data.value) {
+                        return;
+                    }
+
+                    const db = new DatabaseManager();
+                    await db.addSolution(data.value);
+                    const history: Solution[] = await db.getAllSolutions();
+                    vscode.window.showInformationMessage('Solution saved successfully');
+
+                    this._view?.webview.postMessage({
+                        type: 'history',
+                        history: history,
+                        currentPage: 'main'
                     });
                     break;
                 }

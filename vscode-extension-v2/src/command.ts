@@ -141,8 +141,7 @@ export function registerCommands(context: vscode.ExtensionContext, pyrePath: str
 
 
             //! store response in db
-            const db = await getDatabaseManager();
-            await db.addSolution({
+            const solutionObject = {
                 id: uuidv4(), // Generate unique ID
                 errorType: errType[0],
                 errorMessage: errMessage,
@@ -151,7 +150,7 @@ export function registerCommands(context: vscode.ExtensionContext, pyrePath: str
                 filePath: document.uri.fsPath,
                 lineNumber: diagnostic.range.start.line,
                 timestamp: new Date().toISOString()
-            });
+            }
 
             // const snippet = extractSinglePythonSnippet(response);
 
@@ -159,7 +158,8 @@ export function registerCommands(context: vscode.ExtensionContext, pyrePath: str
             if (response.length > 0) {
                 sidebarProvider._view?.webview.postMessage({
                     type: 'solutionGenerated',
-                    solution: response
+                    solution: response,
+                    solutionObject: solutionObject,
                 });
             }
 

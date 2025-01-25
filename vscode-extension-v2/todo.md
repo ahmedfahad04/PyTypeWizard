@@ -12,6 +12,7 @@
 8. Add activity icon in the bottom panel like cody/copilot instead of sidebar.⌛
 9. Show count of total detected error in the sidebar Icon ⌛
 10. Show a Re-generate Solution button.
+11. Show previously fixed solution History ✅
 
 ## VSCODE Packaging
 
@@ -24,6 +25,9 @@
 - Add project readability or cognitive complexity due to usage of type hints
 - We should have the option to ignore some errors ✅
 - Show the generated solution above the error-generated code snippet.
+- Curate Best **Prompt** to get the best results.
+- Check suggestions in Keeps
+- Add Temperature and Others features of LLM as settings options
 
 ## RAG
 

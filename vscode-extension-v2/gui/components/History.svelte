@@ -1,6 +1,5 @@
 <script>
     export let history;
-    export let testData;
 
     // Add search state
     let searchQuery = '';
@@ -19,11 +18,6 @@
         tsvscode.postMessage({ type: 'deleteEntry', id: id }, '*');
     }
 
-    const filterCode = (content) => {
-        const regex = /```python([\s\S]*?)```/;
-        const match = regex.exec(content);
-        return match ? match[1].trim() : null;
-    };
 </script>
 
 <style>
