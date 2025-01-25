@@ -133,10 +133,21 @@
 					"type": "string",
 					"enum": [
 						"gemini",
-						"openai"
+						"openai",
+						"olama"
 					],
 					"default": "gemini",
 					"description": "Select the LLM provider to use"
+				},
+				"pytypewizard.ollamaEndpoint": {
+					"type": "string",
+					"default": "http://localhost:11434",
+					"description": "Ollama API endpoint"
+				},
+				"pytypewizard.ollamaModel": {
+					"type": "string",
+					"default": "codellama",
+					"description": "Ollama model to use (e.g., codellama, llama2, mistral)"
 				},
 				"pytypewizard.openaiApiKey": {
 					"type": "string",

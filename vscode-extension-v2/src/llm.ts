@@ -6,10 +6,14 @@ export class LLMService {
     private genAI!: GoogleGenerativeAI;
     private openAI!: OpenAI;
     private geminiModel: any;
-    private selectedProvider: 'gemini' | 'openai';
+    private selectedProvider: 'gemini' | 'openai' | 'ollama';
+    private ollamaEndpoint: string;
+    private ollamaModel: string;
 
     constructor() {
-        this.selectedProvider = vscode.workspace.getConfiguration('pytypewizard').get('llmProvider') as 'gemini' | 'openai';
+        this.selectedProvider = vscode.workspace.getConfiguration('pytypewizard').get('llmProvider') as 'gemini' | 'openai' | 'ollama';
+        this.ollamaEndpoint = vscode.workspace.getConfiguration('pytypewizard').get('ollamaEndpoint') || 'http://localhost:11434';
+        this.ollamaModel = vscode.workspace.getConfiguration('pytypewizard').get('ollamaModel') || 'codellama';
         this.initializeProviders();
     }
 
@@ -33,20 +37,44 @@ export class LLMService {
         }
     }
 
+    //! Ollama doesn't work with the current version of the extension
     async generateResponse(prompt: string): Promise<string> {
-        this.selectedProvider = vscode.workspace.getConfiguration('pytypewizard').get('llmProvider') as 'gemini' | 'openai';
-        vscode.window.showInformationMessage(`Using ${this.selectedProvider.toUpperCase()} as the Language Model Provider`);
+        this.selectedProvider = vscode.workspace.getConfiguration('pytypewizard').get('llmProvider') as 'gemini' | 'openai' | 'ollama';
 
         try {
-            if (this.selectedProvider === 'openai') {
-                return await this.generateOpenAIResponse(prompt);
-            } else {
-                return await this.generateGeminiResponse(prompt);
+            switch (this.selectedProvider) {
+                case 'openai':
+                    return await this.generateOpenAIResponse(prompt);
+                case 'ollama':
+                    return await this.generateOllamaResponse(prompt);
+                default:
+                    return await this.generateGeminiResponse(prompt);
             }
         } catch (error) {
             vscode.window.showErrorMessage(`${this.selectedProvider.toUpperCase()} API Error: ${error}`);
             return null;
         }
+    }
+
+    private async generateOllamaResponse(prompt: string): Promise<string> {
+        const response = await fetch(`${this.ollamaEndpoint}/api/generate`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                model: this.ollamaModel,
+                prompt: `You are an expert Python Type Hint related bug solver. ${prompt}`,
+                stream: false,
+            }),
+        });
+
+        if (!response.ok) {
+            throw new Error(`Ollama API error: ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        return data.response;
     }
 
     private async generateGeminiResponse(prompt: string): Promise<string> {
