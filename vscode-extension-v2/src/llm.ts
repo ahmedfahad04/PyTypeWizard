@@ -1,6 +1,7 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import OpenAI from 'openai';
 import * as vscode from 'vscode';
+import { pyreTypeErrorsExplanation } from './prompt';
 
 export class LLMService {
     private genAI!: GoogleGenerativeAI;
@@ -20,7 +21,13 @@ export class LLMService {
             this.genAI = new GoogleGenerativeAI(geminiApiKey);
             this.geminiModel = this.genAI.getGenerativeModel({
                 model: "gemini-1.5-flash",
-                systemInstruction: "You are an expert Python Type Hint related bug solver. I will provide you code, bug message, add instruction about what to do and you will provide only the updated code snippet and exact, to the point short explanation. No exagerated words is needed.",
+                systemInstruction: `You are an expert in solving Python type hint-related bugs. I will provide you with code snippets and corresponding bug messages. Your task is to analyze these and provide solutions based on the descriptions of type errors from Pyre's documentation. But never alter anything from the source code that alters the functionality or breaks the code. Please refer to the following Pyre type error explanations when formulating your responses:
+
+                ${pyreTypeErrorsExplanation}
+                
+                Try to keep the explanation concise and to the point. Do not include any unnecessary information.
+                `,
+
             });
         }
 

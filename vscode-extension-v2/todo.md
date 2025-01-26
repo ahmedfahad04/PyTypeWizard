@@ -11,7 +11,7 @@
 7. Add enable/disable option in vscode 'panel'.⌛
 8. Add activity icon in the bottom panel like cody/copilot instead of sidebar.⌛
 9. Show count of total detected error in the sidebar Icon ⌛
-10. Show a Re-generate Solution button.
+10. Show a Re-generate Solution button. ✅
 11. Show previously fixed solution History ✅
 
 ## VSCODE Packaging
