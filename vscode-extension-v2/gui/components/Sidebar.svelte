@@ -4,6 +4,7 @@
     import ErrorList from './ErrorList.svelte';
     import SolutionViewer from './SolutionViewer.svelte';
 	import History from './History.svelte';
+    import TypeDefinitions from './TypeDefinitions.svelte';
     
     let currentPage = 'main'; // Add this to track current page
     let errors = [];
@@ -53,7 +54,8 @@
     // tabs
     const tabs = [
         { id: 'main', icon: '🏠', text: 'Home' }, 
-        // { id: 'history', icon: '📜', text: 'History' }
+        { id: 'typeIntro', icon: '📚', text: 'About Type Hints' }
+
     ];
 
     onMount(() => {
@@ -146,5 +148,7 @@
         <SolutionViewer {solution} {solutionObject} {solutionLoading} {explainTerminology} />
     {:else if currentPage === 'history'}
         <History {history} />
+    {:else if currentPage === 'typeIntro'}
+        <TypeDefinitions />
     {/if}
 </div>
