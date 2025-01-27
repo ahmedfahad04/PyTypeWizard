@@ -1,6 +1,18 @@
 <script>
-	// You can define any reactive variables or import statements here if needed
+	// Add scroll to top functionality
+	let showScrollButton = false;
+
+	function scrollToTop() {
+		window.scrollTo({ top: 0, behavior: 'smooth' });
+	}
+
+	// Show button when scrolled down
+	function handleScroll() {
+		showScrollButton = window.scrollY > 200;
+	}
 </script>
+
+<svelte:window on:scroll={handleScroll} />
 
 <main>
 	<h1>Python Type Hints Overview</h1>
@@ -277,6 +289,29 @@ print("Processing value: ", value)
 			experience.
 		</p>
 	</section>
+	{#if showScrollButton}
+		<button
+			class="scroll-top-button"
+			on:click={scrollToTop}
+			title="Scroll to top"
+		>
+			<svg
+				enable-background="new 0 0 32 32"
+				height="32px"
+				id="Layer_1"
+				version="1.1"
+				viewBox="0 0 32 32"
+				width="32px"
+				xml:space="preserve"
+				xmlns="http://www.w3.org/2000/svg"
+				xmlns:xlink="http://www.w3.org/1999/xlink"
+				><path
+					d="M18.221,7.206l9.585,9.585c0.879,0.879,0.879,2.317,0,3.195l-0.8,0.801c-0.877,0.878-2.316,0.878-3.194,0  l-7.315-7.315l-7.315,7.315c-0.878,0.878-2.317,0.878-3.194,0l-0.8-0.801c-0.879-0.878-0.879-2.316,0-3.195l9.587-9.585  c0.471-0.472,1.103-0.682,1.723-0.647C17.115,6.524,17.748,6.734,18.221,7.206z"
+					fill="#515151"
+				/></svg
+			>
+		</button>
+	{/if}
 </main>
 
 <style>
@@ -361,5 +396,30 @@ print("Processing value: ", value)
 
 	section:nth-child(odd) {
 		background-color: var(--vscode-editor-selectionBackground);
+	}
+
+	.scroll-top-button {
+		position: fixed;
+		bottom: 20px;
+		right: 20px;
+		width: 40px;
+		height: 40px;
+		border-radius: 50%;
+		background-color: var(--vscode-button-background);
+		color: var(--vscode-button-foreground);
+		border: none;
+		cursor: pointer;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		font-size: 10px;
+		opacity: 0.8;
+		transition: opacity 0.2s;
+		z-index: 1000;
+	}
+
+	.scroll-top-button:hover {
+		opacity: 1;
+		background-color: var(--vscode-button-hoverBackground);
 	}
 </style>
