@@ -105,7 +105,9 @@
 		{#if explainTerminology.length > 0}
 			<div class="explanation">
 				{@html filterExplanation(explainTerminology)}
-				<pre>{filterCode(explainTerminology)}</pre>
+				{#if explainTerminology.includes('```python')}
+					<pre>{filterCode(explainTerminology)}</pre>
+				{/if}
 			</div>
 		{:else}
 			<p class="empty-state">Select any Keyword to generate explanation</p>
