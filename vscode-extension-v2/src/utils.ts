@@ -74,7 +74,6 @@ export async function generateAndStoreSolution(
     lineNumber: number,
     warningLine: string,
     prompt: string,
-    prevData?: string
 ): Promise<Solution> {
     const response = await vscode.window.withProgress(
         {
@@ -91,15 +90,6 @@ export async function generateAndStoreSolution(
             }
 
             const llmService = getLLMService();
-            // if (prevData) {
-            //     llmService.conversationHistory.push({
-            //         role: "user",
-            //         content: `
-            //         # Previous Solution:
-            //         ${prevData}
-            //         `
-            //     });
-            // }
             const result = await llmService.generateResponse(prompt);
 
             // Check for cancellation after getting the response
