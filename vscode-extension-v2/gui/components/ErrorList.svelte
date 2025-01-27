@@ -16,7 +16,7 @@
         font-weight: bold;
         margin-bottom: 10px;
         margin-top: 10px;
-        color: var(--text-color);
+        color: skyblue;
     }
 
     .error-list {
@@ -89,11 +89,20 @@
         font-weight: bold;
         color: var(--warning-color);
     }
+
+    /* add animation for loading */
+    .loading {
+        font-size: 1em;
+        font-weight: bold;
+        color: var(--text-color);
+        animation: pulse 1.5s infinite;
+        margin-top: 10px;
+    }
 </style>
 
 <div>
     {#if loading}
-        <p>Loading errors...</p>
+        <p class="loading">Loading errors...</p>
     {:else}
         <div>
             <p class="section-header">Detected Type Errors: <span class="error-count">{errors.length}</span></p>

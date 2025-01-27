@@ -220,14 +220,17 @@ export function registerCommands(context: vscode.ExtensionContext, pyrePath: str
         })
     );
 
-    // command 8 (Ask PyTypeWizard)
+    // command 8 (Ask PyTypeWizard CodeLens Only)
     context.subscriptions.push(
         vscode.languages.registerCodeLensProvider({ scheme: 'file', language: 'python' }, new DynamicCodeLensProvider())
     );
 
+    // command 9 (Ask PyTypeWizard)
     context.subscriptions.push(
         vscode.commands.registerCommand('pytypewizard.addToChat', async (selectedText: string, callback?: () => void) => {
-            const defaultPrompt = `Explain this terminology '${selectedText}' like a high school student with short and simple python example. Add the use cases as well. Be precise and short.`;
+            const defaultPrompt = `Explain this terminology '${selectedText}' like a high school student with short and simple python example. Add the use cases as well. Be precise and short.
+            Add the coding example at the end
+            `;
 
             // const userPrompt = await vscode.window.showInputBox({
             //     value: defaultPrompt,

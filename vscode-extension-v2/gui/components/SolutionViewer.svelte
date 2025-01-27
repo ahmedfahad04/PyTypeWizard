@@ -68,7 +68,7 @@
         font-weight: bold;
         margin-bottom: 10px;
         margin-top: 10px;
-        color: var(--text-color);
+        color: skyblue;
     }
 
     .loading-container {
@@ -94,27 +94,26 @@
         width: 70px;
     }
 
-    .explanation {
-        width: '80%';
-        overflow: auto;
-        background-color: #222222;
-        padding: 5px;
-        border-radius: 5px;
-    }
-
-    .explanation ul {
-        margin-left: 20px;
+    :global(.explanation ul) {
+        margin-left: 5px;
         list-style: disc;
         margin-top: 10px;
     }
 
-    .explanation li {
+    :global(.explanation li) {
         margin-bottom: 10px;
         line-height: 1.5;
     }
 
-    .explanation strong {
+    :global(.explanation strong) {
         font-weight: bold;
+    }
+
+    :global(.explanation pre) {
+        background-color: #222222;
+        padding: 10px;
+        border-radius: 5px;
+        overflow: auto;
     }
 
 
@@ -233,6 +232,13 @@
 
     <div>
         <p class="section-header">Terminology Explanation</p>
-        <div class="explanation">{@html explainTerminology}</div>
+        {#if explainTerminology.length > 0}
+            <div class="explanation">
+                {@html filterExplanation(explainTerminology)}
+                <pre>{filterCode(explainTerminology)}</pre>
+            </div>
+        {:else}
+            <p class="empty-state">Select any Keyword to generate explanation</p>
+        {/if}
     </div>
 </div>

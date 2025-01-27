@@ -165,7 +165,6 @@
 		"axios": "^1.7.9",
 		"better-sqlite3": "^11.7.2",
 		"highlight.js": "^11.11.1",
-		"markdown": "^0.5.0",
 		"markdown-it": "^14.1.0",
 		"marked": "^15.0.6",
 		"openai": "^4.80.1",

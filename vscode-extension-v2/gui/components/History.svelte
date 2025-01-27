@@ -1,9 +1,16 @@
 <script>
+    import markdownit from 'markdown-it';
+
     export let history;
 
     // Add search state
     let searchQuery = '';
 
+    const md = markdownit({
+        html: true,
+        linkify: true,
+        typographer: true
+    });
     
     // Add filter function
     $: filteredHistory = history.filter(solution => {
@@ -12,6 +19,18 @@
                solution.suggestedSolution.toLowerCase().includes(searchTerm) ||
                solution.errorMessage.toLowerCase().includes(searchTerm);
     });
+
+    const filterExplanation = (content) => {
+        const codeBlockRegex = /```python[\s\S]*?```/g;
+        const explanation = content.replace(codeBlockRegex, '').trim();
+        return md.render(explanation || null);
+    };
+
+    const filterCode = (content) => {
+        const regex = /```python([\s\S]*?)```/;
+        const match = regex.exec(content);
+        return match ? match[1].trim() : null;
+    };
 
     const onDeleteSolution = (id) => {
         console.log('Deleting solution with id:', id);
@@ -36,7 +55,7 @@
     .delete-button {
         cursor: pointer;
         border-radius: 4px;
-        border: 1px solid var(--warning-color);
+        border: 1px solid var(--vscode-editor-foreground);
         background: transparent;
         margin-left: 0.5rem;
         margin-right: 0.5rem;
@@ -82,7 +101,7 @@
         font-weight: bold;
         margin-bottom: 0.5rem;
         margin-top: 1.5rem;
-        color: var(--vscode-disabledForeground);
+        color: skyblue;
     }
 
     /* Add search bar styles */
@@ -107,15 +126,54 @@
         color: var(--warning-color);
     }
 
+    :global(.explanation ul) {
+        margin-left: 20px;
+        list-style: disc;
+        margin-top: 10px;
+    }
+
+    :global(.explanation li) {
+        margin-bottom: 10px;
+        line-height: 1.5;
+    }
+
+    :global(.explanation strong) {
+        font-weight: bold;
+    }
+
+    :global(.explanation pre) {
+        background-color: #222222;
+        padding: 10px;
+        border-radius: 5px;
+        overflow: auto;
+    }
+
     hr {
         border: none;
         border-top: 1px solid var(--vscode-editor-foreground);
         margin: 10px 0;
     }
 
-    pre {
-        margin: 0;
-        white-space: pre-wrap;
+    .code-container {
+        position: relative;
+        background: #222222;
+        padding: 0 0.5rem;
+        overflow-x: auto; /* Adds horizontal scrollbar when needed */
+        white-space: nowrap; /* Prevents text wrapping */
+        max-width: 100%; /* Ensures container doesn't exceed parent width */
+    }
+
+    .copy-button {
+        position: absolute;
+        top: 5px;
+        right: 5px;
+        padding: 4px 8px;
+        background: #333;
+        border: none;
+        border-radius: 4px;
+        color: white;
+        cursor: pointer;
+        width: 70px;
     }
 </style>
 
@@ -170,8 +228,15 @@
                     <pre>{solution.originalCode}</pre>
                 </div>
                 <h4 class="topic-header">Solution:</h4>
-                <div class="code-block">
-                    <pre>{solution.suggestedSolution}</pre>
+                <!-- <div class="code-block">
+                    <pre>{filterCode(solution.suggestedSolution)}</pre>
+                </div> -->
+                <div class="code-container">
+                    <pre>{filterCode(solution.suggestedSolution)}</pre>
+                    <!-- <button class="copy-button" on:click={(event) => copyCode(filterCode(solution.suggestedSolution), event.target)}>Copy</button> -->
+                </div>
+                <div class="explanation">
+                    {@html filterExplanation(solution.suggestedSolution)}
                 </div>
             </div>
         </div>
