@@ -39,10 +39,11 @@ a:active {
     color: var(--vscode-textLink-activeForeground);
 }
 
-code {
+/* code {
     font-size: var(--vscode-editor-font-size);
     font-family: var(--vscode-editor-font-family);
-}
+    background-color: #222222;
+} */
 
 button {
     border: none;

@@ -3,6 +3,7 @@ import { exec } from 'child_process';
 import * as vscode from 'vscode';
 import { LanguageClient } from 'vscode-languageclient/node';
 import { findPyreCommand, registerCommands } from './command';
+import { closeDatabaseConnection } from './db';
 import { checkPyreConfigFiles, isPyreCheckInstalled, setupPyreConfig } from './install';
 import { createLanguageClient, listenForEnvChanges } from './languageClient';
 import { SidebarProvider } from './SideBarProvider';
@@ -89,47 +90,58 @@ export async function activate(context: vscode.ExtensionContext) {
 
 		// Single start() call with proper initialization
 		await state.languageClient.start().then(() => {
+			// First collect all diagnostics in a single pass
 			const diagnosticsListener = vscode.languages.onDidChangeDiagnostics((_e) => {
 				const diagnostics = vscode.languages.getDiagnostics();
 				const workspaceFolder = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
-				let typeErrors: ErrorObjectType[] = [];
-				const filteredDiagnostics: any[] = [];
+				const typeErrors: ErrorObjectType[] = [];
+				const filteredDiagnostics: { uri: vscode.Uri, diagnostic: vscode.Diagnostic }[] = [];
 
+				// First pass - collect all Pyre error diagnostics
 				diagnostics.forEach(([uri, diagnosticArray]) => {
-					diagnosticArray.forEach((diag) => {
-						if (
-							diag.source === 'Pyre' && // Replace with your specific extension source
-							diag.severity === vscode.DiagnosticSeverity.Error // Filter warnings
-						) {
-							filteredDiagnostics.push({ uri, diagnostic: diag });
-						}
-					});
+					const pyreErrors = diagnosticArray.filter(diag =>
+						diag.source === 'Pyre' &&
+						diag.severity === vscode.DiagnosticSeverity.Error
+					);
+
+					if (pyreErrors.length > 0) {
+						pyreErrors.forEach(diagnostic => {
+							filteredDiagnostics.push({ uri, diagnostic });
+						});
+					}
 				});
 
+				// Second pass - transform filtered diagnostics into ErrorObjectType
 				if (filteredDiagnostics.length > 0) {
-					console.log('Filtered Diagnostics:');
-					outputChannel.clear();
 					filteredDiagnostics.forEach(({ uri, diagnostic }) => {
+						const [ruleId, message] = diagnostic.message.split(':', 2);
 						typeErrors.push({
 							file_name: uri.fsPath,
 							display_name: uri.fsPath.replace(workspaceFolder + '/', ''),
-							rule_id: diagnostic.message.split(':', 2)[0],
-							message: diagnostic.message.split(':', 2)[1],
+							rule_id: ruleId,
+							message: message,
 							line_num: diagnostic.range.start.line + 1,
 							col_num: diagnostic.range.start.character + 1,
 							length: diagnostics.length
 						});
 					});
-				} else {
-					outputChannel.appendLine('No matching diagnostics found.');
-				}
 
-				//! Send type errors to the sidebar
-				sideBarProvider._view?.webview.postMessage({
-					type: 'typeErrors',
-					errors: typeErrors
-				});
+					// Send consolidated results to sidebar
+					sideBarProvider._view?.webview.postMessage({
+						type: 'typeErrors',
+						errors: typeErrors
+					});
+
+					outputChannel.appendLine(`Processed ${typeErrors.length} type errors`);
+				} else {
+					outputChannel.appendLine('No type errors found');
+					sideBarProvider._view?.webview.postMessage({
+						type: 'typeErrors',
+						errors: []
+					});
+				}
 			});
+
 
 			context.subscriptions.push(diagnosticsListener);
 
@@ -150,4 +162,6 @@ export async function activate(context: vscode.ExtensionContext) {
 }
 
 // This method is called when your extension is deactivated
-export function deactivate() { }
+export function deactivate() {
+	closeDatabaseConnection();
+}

@@ -1,71 +1,57 @@
-# pytypewizard README
+# PyTypeWizard
 
-This is the README for your extension "pytypewizard". After writing up a brief description, we recommend including the following sections.
+A powerful VS Code extension for Python type checking and error fixing using Pyre.
 
 ## Features
 
-Describe specific features of your extension including screenshots of your extension in action. Image paths are relative to this README file.
-
-For example if there is an image subfolder under your extension project workspace:
-
-\!\[feature X\]\(images/feature-x.png\)
-
-> Tip: Many popular extensions utilize animations. This is an excellent way to show off your extension! We recommend short, focused animations that are easy to follow.
+- Real-time Python type checking using Pyre
+- Automatic type error detection and fixes
+- Smart code selection and analysis
+- Interactive sidebar for error management
+- Code lens support for quick type checking
+- Explanation and solution suggestions for type errors
 
 ## Requirements
 
-If you have any requirements or dependencies, add a section describing those and how to install and configure them.
+- Python 3.6 or higher
+- VS Code Python extension
+- Pyre-check package (auto-installed)
+
+## Installation
+
+1. Install from VS Code Marketplace
+2. Extension will automatically install required dependencies
+3. Reload VS Code to activate
+
+## Usage
+
+1. Open a Python project
+2. View type errors in the Problems panel
+3. Use quick fixes by clicking on the lightbulb icon
+4. Access detailed explanations through the sidebar
+5. Select code to analyze using CodeLens
 
 ## Extension Settings
 
-Include if your extension adds any VS Code settings through the `contributes.configuration` extension point.
-
-For example:
-
-This extension contributes the following settings:
-
-* `myExtension.enable`: Enable/disable this extension.
-* `myExtension.thing`: Set to `blah` to do something.
+* `pytypewizard.enableCodeLens`: Enable/disable CodeLens feature
+* `pytypewizard.enabledErrorTypes`: Configure which error types to display
 
 ## Known Issues
 
-Calling out known issues can help limit users opening duplicate issues against your extension.
+See our [GitHub issues page](https://github.com/ahmedfahad04/SPL3/issues)
 
 ## Release Notes
 
-Users appreciate release notes as you update your extension.
-
 ### 1.0.0
+- Initial release
+- Core type checking functionality
+- Error fixing capabilities
+- Interactive sidebar
 
-Initial release of ...
+## Contributing
 
-### 1.0.1
+Contributions are welcome! Please check our contribution guidelines.
 
-Fixed issue #.
+## License
 
-### 1.1.0
-
-Added features X, Y, and Z.
-
----
-
-## Following extension guidelines
-
-Ensure that you've read through the extensions guidelines and follow the best practices for creating your extension.
-
-* [Extension Guidelines](https://code.visualstudio.com/api/references/extension-guidelines)
-
-## Working with Markdown
-
-You can author your README using Visual Studio Code. Here are some useful editor keyboard shortcuts:
-
-* Split the editor (`Cmd+\` on macOS or `Ctrl+\` on Windows and Linux).
-* Toggle preview (`Shift+Cmd+V` on macOS or `Shift+Ctrl+V` on Windows and Linux).
-* Press `Ctrl+Space` (Windows, Linux, macOS) to see a list of Markdown snippets.
-
-## For more information
-
-* [Visual Studio Code's Markdown Support](http://code.visualstudio.com/docs/languages/markdown)
-* [Markdown Syntax Reference](https://help.github.com/articles/markdown-basics/)
-
-**Enjoy!**
+MIT

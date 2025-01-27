@@ -1,4 +1,5 @@
 import { EnvironmentPath } from "@vscode/python-extension";
+import axios from 'axios';
 import { spawn } from "child_process";
 import { existsSync, statSync } from 'fs';
 import path from 'path';
@@ -6,9 +7,12 @@ import * as vscode from 'vscode';
 import which from "which";
 import { sendApiRequest } from "./api";
 import { PyreCodeActionProvider } from "./codeActionProvider";
-import { getGeminiService } from "./llm";
+import { getDatabaseManager } from "./db";
+import { Solution } from "./db/database";
+import { DynamicCodeLensProvider } from "./dynamicCodeLensProvider";
+import { getLLMService } from "./llm";
 import { getSimplifiedSmartSelection } from "./smartSelection";
-import { getPyRePath, outputChannel } from './utils';
+import { generateAndStoreSolution, getPyRePath, outputChannel } from './utils';
 
 
 export function registerCommands(context: vscode.ExtensionContext, pyrePath: string, sidebarProvider: any): void {
@@ -62,34 +66,7 @@ export function registerCommands(context: vscode.ExtensionContext, pyrePath: str
                 // col_num: colNum
             };
 
-            // console.log(`DATA: \n${errorObject.source_code}`);
-
-            const response = await runErrorExtractor(context, filePath, errType[0], errType[1], lineNum, colNum, outputDir, pyrePath, errorObject);
-
-            // if (panelManager) {
-
-            //     // Show loading message
-            //     panelManager.setSolutions([])
-
-            //     // Run error extractor and get solution
-            //     const response = await runErrorExtractor(context, filePath, errType[0], errType[1], lineNum, colNum, outputDir, pyrePath, errorObject);
-
-            //     // Update webview with solutions
-            //     panelManager.setSolutions(Array.isArray(response) ? response : []);
-            //     panelManager.showPanel(context, errors)
-
-            //     // copy to clipboard handler
-            //     panelManager.addMessageHandler('copyToClipboard', (message) => {
-            //         if (Array.isArray(response) && response.length > message.index) {
-            //             const data = response[message.index];
-            //             vscode.env.clipboard.writeText(data).then(() => {
-            //                 vscode.window.showInformationMessage('Copied to clipboard!');
-            //             });
-            //         } else {
-            //             vscode.window.showErrorMessage('Invalid response or index');
-            //         }
-            //     });
-            // }
+            await runErrorExtractor(context, filePath, errType[0], errType[1], lineNum, colNum, outputDir, pyrePath, errorObject);
         }));
 
     // command 2 (for Quick Fix option)
@@ -109,6 +86,8 @@ export function registerCommands(context: vscode.ExtensionContext, pyrePath: str
                 type: 'solutionLoading',
                 loading: true
             });
+
+            outputChannel.appendLine(`TEXT: ${diagnostic.message}`)
 
             const errMessage = diagnostic.message;
             const errType = errMessage.split(':', 2);
@@ -131,42 +110,40 @@ export function registerCommands(context: vscode.ExtensionContext, pyrePath: str
             //     Keep the explanation in details and focused so that developers can quickly understand and resolve the issue. Answer in markdown format.
             //     `;
 
+            outputChannel.appendLine(`TEXT: ${vscode.window.activeTextEditor?.document.getText()}`)
+
             const prompt = `
                 Explain the following error in given instructions:
 
                 # Error Details
                 Error Type: ${errType[0]}
                 Error Message: ${errType[1]}
-                Code: ${warningLine}
+                Error Code Snippet: ${warningLine}
+                Source Code: ${vscode.window.activeTextEditor?.document.getText()}
 
                 # Instruction
-                put the solution only as python code snippet. Add necessary explanation in easy words.
+                Answer in the following format:
+                * put the solution only snippet as python code snippet at first. No need to mention skipped section or anything else. Just write down the exact lines sequentially.
+                * Add necessary explanation in easy words and bullet points. Important words should be written in bold.
                 `;
 
-            vscode.window.showWarningMessage(`PROMPT:>> ${prompt}`);
+            outputChannel.appendLine(`PROMPT:>> ${prompt}`);
+            const solutionObject = await generateAndStoreSolution(errType[0], errMessage, document.uri.fsPath, diagnostic.range.start.line, warningLine, prompt);
 
-            const response = await vscode.window.withProgress({
-                location: vscode.ProgressLocation.Notification,
-                title: "Generating error explanation...",
-                cancellable: false
-            }, async (progress) => {
-                progress.report({ increment: 50 });
-                const gemini = getGeminiService();
-                const result = await gemini.generateResponse(prompt);
-                progress.report({ increment: 100 });
-                return result;
-            });
-
-            outputChannel.appendLine(`Explanation: ${response}`);
-
-            //! Send type errors to the sidebar
-            if (response.length > 0) {
+            if (solutionObject?.suggestedSolution?.length > 0) {
                 sidebarProvider._view?.webview.postMessage({
                     type: 'solutionGenerated',
-                    solution: response
+                    solution: solutionObject.suggestedSolution,
+                    solutionObject: solutionObject,
+                    document: document,
+                    diagnostic: diagnostic
+                });
+            } else {
+                sidebarProvider._view?.webview.postMessage({
+                    type: 'solutionLoading',
+                    loading: false
                 });
             }
-
         })
     );
 
@@ -187,6 +164,138 @@ export function registerCommands(context: vscode.ExtensionContext, pyrePath: str
     context.subscriptions.push(
         vscode.commands.registerCommand('pytypewizard.openSettings', () => {
             vscode.commands.executeCommand('workbench.action.openSettings', 'pytypewizard settings');
+        })
+    );
+
+    // Command 6 (Index Project)
+    context.subscriptions.push(
+        vscode.commands.registerCommand('pytypewizard.indexProject', async () => {
+            const projectPath = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+            if (!projectPath) {
+                vscode.window.showErrorMessage('No project folder found!');
+                return;
+            }
+
+            try {
+                const response = await axios.post('http://localhost:8000/index', { project_path: projectPath });
+                vscode.window.showInformationMessage(response.data.message);
+            } catch (error) {
+                vscode.window.showErrorMessage(`Indexing failed: ${error.message}`);
+            }
+        })
+    );
+
+    // command 7 (Search Code)
+    context.subscriptions.push(
+        vscode.commands.registerCommand('pytypewizard.searchCode', async () => {
+            const query = await vscode.window.showInputBox({ placeHolder: 'Enter search query' });
+            if (!query) return;
+
+            try {
+                const response = await axios.post('http://localhost:8000/search', { query });
+                const results = response.data.results;
+
+                if (results.length > 0) {
+                    const items = results.map((result: any) => ({
+                        label: `${result.file}:${result.line}`,
+                        detail: result.snippet,
+                    }));
+
+                    const selection = await vscode.window.showQuickPick(items, { placeHolder: 'Search Results' });
+                    if (selection) {
+                        vscode.window.showInformationMessage(`Selected: ${selection}`);
+                        // const [file, line] = selection.label.split(':');
+                        // const doc = await vscode.workspace.openTextDocument(vscode.Uri.file(file));
+                        // const editor = await vscode.window.showTextDocument(doc);
+                        // const position = new vscode.Position(Number(line) - 1, 0);
+                        // editor.selection = new vscode.Selection(position, position);
+                        // editor.revealRange(new vscode.Range(position, position));
+                    }
+                } else {
+                    vscode.window.showInformationMessage('No results found!');
+                }
+            } catch (error) {
+                vscode.window.showErrorMessage(`Search failed: ${error.message}`);
+            }
+        })
+    );
+
+    // command 8 (Ask PyTypeWizard CodeLens Only)
+    context.subscriptions.push(
+        vscode.languages.registerCodeLensProvider({ scheme: 'file', language: 'python' }, new DynamicCodeLensProvider())
+    );
+
+    // command 9 (Ask PyTypeWizard)
+    context.subscriptions.push(
+        vscode.commands.registerCommand('pytypewizard.addToChat', async (selectedText: string, callback?: () => void) => {
+            const defaultPrompt = `Explain this terminology '${selectedText}' like a high school student with short and simple python example. Add the use cases as well. Be precise and short.
+            Add the coding example at the end
+            `;
+
+            // const userPrompt = await vscode.window.showInputBox({
+            //     value: defaultPrompt,
+            //     placeHolder: "Modify the prompt if needed",
+            //     prompt: "Press Enter to send or Escape to cancel"
+            // });
+            const userPrompt = defaultPrompt;
+
+            if (userPrompt) {
+                const response = await vscode.window.withProgress({
+                    location: vscode.ProgressLocation.Notification,
+                    title: "PyTypeWizard",
+                    cancellable: false
+                }, async (progress, token) => {
+                    progress.report({ message: 'Generating response...' });
+
+                    // Check for cancellation before making the API call
+                    if (token.isCancellationRequested) {
+                        return null;
+                    }
+
+                    const llmService = getLLMService();
+                    const result = await llmService.generateResponse(userPrompt);
+
+                    // Check for cancellation after getting the response
+                    if (token.isCancellationRequested) {
+                        return null;
+                    }
+
+                    return result;
+                });
+
+                if (response.length > 0) {
+                    sidebarProvider._view?.webview.postMessage({
+                        type: 'explainTerminology',
+                        explanation: response
+                    });
+                }
+            }
+
+            if (callback) {
+                callback();
+            }
+        })
+    );
+
+    // command 9 (show History)
+    context.subscriptions.push(
+        vscode.commands.registerCommand('pytypewizard.showHistory', async () => {
+
+            // read all data from database
+            const db = await getDatabaseManager();
+            const history: Solution[] = await db.getAllSolutions();
+
+            if (history.length === 0) {
+                vscode.window.showInformationMessage('No history found!');
+                return;
+            } else {
+                sidebarProvider._view?.webview.postMessage({
+                    type: 'history',
+                    history: history,
+                    currentPage: 'history'
+                });
+            }
+
         })
     );
 }
@@ -253,3 +362,6 @@ export async function runErrorExtractor(context: vscode.ExtensionContext, filePa
         });
     });
 }
+
+// Register the "Add to Chat" command
+// export const addToChatCommand = 

@@ -26,13 +26,13 @@ export function createLanguageClient(pyrePath: string): LanguageClientState {
         handleDiagnostics: (uri, diagnostics, next) => {
             const selectedErrorTypes = getSelectedErrorTypes();
 
-            outputChannel.appendLine(`Selected error types: ${selectedErrorTypes.map(type => `"${type}"`).join(', ')}`);
+            // outputChannel.appendLine(`Selected error types: ${selectedErrorTypes.map(type => `"${type}"`).join(', ')}`);
 
             const filteredDiagnostics = diagnostics.filter(diagnostic =>
                 selectedErrorTypes.some(errorType => diagnostic.message.includes(errorType))
             );
 
-            outputChannel.appendLine(`Filtered diagnostics: ${filteredDiagnostics.length}`);
+            // outputChannel.appendLine(`Filtered diagnostics: ${filteredDiagnostics.length}`);
 
             // Pass the filtered diagnostics to the next handler
             next(uri, filteredDiagnostics);
