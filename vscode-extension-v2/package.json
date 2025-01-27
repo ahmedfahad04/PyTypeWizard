@@ -2,6 +2,7 @@
 	"name": "pytypewizard",
 	"displayName": "PyTypeWizard",
 	"description": "Python Static Type Error Resolver",
+	"icon": "media/logo.webp",
 	"publisher": "CodeGenBD",
 	"version": "1.0.0",
 	"engines": {
