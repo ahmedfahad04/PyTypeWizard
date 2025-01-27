@@ -82,9 +82,10 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
                         ${suggestedSolution}
         
                         # Instruction
-                        Your Previous answer was wrong. Now rethink the correct solution. Answer in the following format:
+                        Your Previous answer was wrong. Now rethink a better correct solution and answer in the following format:
                         * put the solution only snippet as python code snippet at first
                         * Add necessary explanation in easy words and bullet points. Important words should be written in bold.
+                        * Keep the explanation precise and to the point. Unnecessary exaggeration is discouraged.
                         `;
 
                     const solutionObject = await generateAndStoreSolution(

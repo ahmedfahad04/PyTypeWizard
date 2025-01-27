@@ -8,6 +8,8 @@ export class LLMService {
     private openAI!: OpenAI;
     private geminiModel: any;
     private selectedProvider: 'gemini' | 'openai';
+    public conversationHistory: Array<{ role: string, parts: any[] }> = [];
+
 
     constructor() {
         this.selectedProvider = vscode.workspace.getConfiguration('pytypewizard').get('llmProvider') as 'gemini' | 'openai';
@@ -56,9 +58,24 @@ export class LLMService {
     }
 
     private async generateGeminiResponse(prompt: string): Promise<string> {
-        const result = await this.geminiModel.generateContent(prompt);
-        const response = await result.response;
-        return response.text();
+
+        this.conversationHistory.push({ role: "user", parts: [{ text: prompt }] });
+
+        const chatSession = this.geminiModel.startChat({
+            // generationConfig,
+            history: this.conversationHistory
+        });
+
+        const result = await chatSession.sendMessage(prompt);
+        const responseText = result.response.text();
+
+        this.conversationHistory.push({
+            role: "model",
+            parts: [{ text: responseText }]
+        });
+
+
+        return responseText;
     }
 
     private async generateOpenAIResponse(prompt: string): Promise<string> {
