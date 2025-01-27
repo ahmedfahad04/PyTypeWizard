@@ -90,13 +90,10 @@
 				<h4 class="topic-header">Error Message:</h4>
 				<p class="error-message">{solution.errorMessage.split(']:')[1]}</p>
 				<h4 class="topic-header">Original Code:</h4>
-				<div class="code-block">
+				<div class="code-container">
 					<pre>{solution.originalCode}</pre>
 				</div>
 				<h4 class="topic-header">Solution:</h4>
-				<!-- <div class="code-block">
-                    <pre>{filterCode(solution.suggestedSolution)}</pre>
-                </div> -->
 				<div class="code-container">
 					<pre>{filterCode(solution.suggestedSolution)}</pre>
 					<!-- <button class="copy-button" on:click={(event) => copyCode(filterCode(solution.suggestedSolution), event.target)}>Copy</button> -->
@@ -110,146 +107,151 @@
 </div>
 
 <style>
-	:root {
-		--content-font: var(--vscode-editor-font-family);
-	}
+    :root {
+        --content-font: var(--vscode-editor-font-family);
+    }
 
-	:global(*) {
-		font-size: var(--vscode-editor-font-size);
-	}
+    :global(*) {
+        font-size: var(--vscode-editor-font-size);
+        font-family: var(--vscode-font-family);
+    }
 
-	.solutions-container {
-		padding: 1rem;
-	}
+    .solutions-container {
+        padding: 1rem;
+    }
 
-	.solution-card {
-		border: 1px solid var(--vscode-editor-foreground);
-		border-radius: 4px;
-		margin-bottom: 1rem;
-		padding: 1rem;
-	}
+    .solution-card {
+        border: 1px solid var(--vscode-panel-border);
+        border-radius: 4px;
+        margin-bottom: 1rem;
+        padding: 1rem;
+        background-color: var(--vscode-editor-background);
+    }
 
-	/* Add these new styles */
-	.delete-button {
-		cursor: pointer;
-		border-radius: 4px;
-		border: 1px solid var(--vscode-editor-foreground);
-		background: transparent;
-		margin-left: 0.5rem;
-		margin-right: 0.5rem;
-		width: 30px;
-		height: 30px;
-		/* background-color: rgb(51, 0, 0); */
-	}
+    .delete-button {
+        cursor: pointer;
+        border-radius: 4px;
+        border: 1px solid var(--vscode-button-border);
+        background: var(--vscode-button-secondaryBackground);
+        color: var(--vscode-button-secondaryForeground);
+        margin-left: 0.5rem;
+        margin-right: 0.5rem;
+        width: 30px;
+        height: 30px;
+    }
 
-	.delete-button:hover {
-		background-color: rgb(97, 0, 0);
-		color: var(--vscode-editor-background);
-	}
+    .delete-button:hover {
+        background-color: var(--vscode-button-secondaryHoverBackground);
+    }
 
-	/* Update the header style to accommodate the delete button */
-	.header {
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		margin-bottom: 1rem;
-	}
+    .header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+        font-size: 1.3em;
+        font-weight: 800;
+        color: var(--vscode-editor-foreground);
+    }
 
-	.header {
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		margin-bottom: 1rem;
+    .code-block {
+        background: var(--vscode-editor-background);
+        padding: 0 0.5rem;
+        margin: 0.5rem 0;
+        border: 1px solid var(--vscode-panel-border);
+    }
 
-		font-size: 1.3em;
-		font-weight: 800;
-		color: var(--vscode-editor-foreground);
-	}
+    .topic-header {
+        font-size: 1em;
+        font-weight: bold;
+        margin-bottom: 0.5rem;
+        margin-top: 1.5rem;
+        color: var(--vscode-textLink-foreground);
+    }
 
-	.code-block {
-		background: #222222;
-		/* only apply left padding */
-		padding: 0 0.5rem;
-		margin: 0.5rem 0;
-	}
+    .search-container {
+        margin-top: 1rem;
+        margin-bottom: 1rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
 
-	.topic-header {
-		font-size: 1em;
-		font-weight: bold;
-		margin-bottom: 0.5rem;
-		margin-top: 1.5rem;
-		color: skyblue;
-	}
+    .search-input {
+        width: 100%;
+        padding: 0.5rem;
+        border: 1px solid var(--vscode-input-border);
+        border-radius: 4px;
+        background: var(--vscode-input-background);
+        color: var(--vscode-input-foreground);
+    }
 
-	/* Add search bar styles */
-	.search-container {
-		margin-top: 1rem;
-		margin-bottom: 1rem;
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-	}
+    .search-input:focus {
+        border-color: var(--vscode-focusBorder);
+        outline: none;
+    }
 
-	.search-input {
-		width: 100%;
-		padding: 0.5rem;
-		border: 2px solid var(--vscode-editor-foreground);
-		border-radius: 4px;
-		background: var(--vscode-input-background);
-		color: var(--vscode-input-foreground);
-	}
+    .error-message {
+        color: var(--vscode-errorForeground);
+    }
 
-	.error-message {
-		color: var(--warning-color);
-	}
+    :global(.explanation ul) {
+        margin-left: 20px;
+        list-style: disc;
+        margin-top: 10px;
+        color: var(--vscode-editor-foreground);
+    }
 
-	:global(.explanation ul) {
-		margin-left: 20px;
-		list-style: disc;
-		margin-top: 10px;
-	}
+    :global(.explanation li) {
+        margin-bottom: 10px;
+        line-height: 1.5;
+    }
 
-	:global(.explanation li) {
-		margin-bottom: 10px;
-		line-height: 1.5;
-	}
+    :global(.explanation strong) {
+        font-weight: bold;
+        color: var(--vscode-editor-foreground);
+    }
 
-	:global(.explanation strong) {
-		font-weight: bold;
-	}
+    :global(.explanation pre) {
+        background-color: var(--vscode-editor-background);
+        padding: 10px;
+        border-radius: 5px;
+        overflow: auto;
+        border: 1px solid var(--vscode-panel-border);
+    }
 
-	:global(.explanation pre) {
-		background-color: #222222;
-		padding: 10px;
-		border-radius: 5px;
-		overflow: auto;
-	}
+    hr {
+        border: none;
+        border-top: 1px solid var(--vscode-panel-border);
+        margin: 10px 0;
+    }
 
-	hr {
-		border: none;
-		border-top: 1px solid var(--vscode-editor-foreground);
-		margin: 10px 0;
-	}
+    .code-container {
+        position: relative;
+        background: var(--vscode-editor-background);
+        padding: 0 0.5rem;
+        overflow-x: auto;
+        white-space: nowrap;
+        max-width: 100%;
+        border: 1px solid var(--vscode-panel-border);
+        border-radius: 4px;
+    }
 
-	.code-container {
-		position: relative;
-		background: #222222;
-		padding: 0 0.5rem;
-		overflow-x: auto; /* Adds horizontal scrollbar when needed */
-		white-space: nowrap; /* Prevents text wrapping */
-		max-width: 100%; /* Ensures container doesn't exceed parent width */
-	}
+    .copy-button {
+        position: absolute;
+        top: 5px;
+        right: 5px;
+        padding: 4px 8px;
+        background: var(--vscode-button-secondaryBackground);
+        border: none;
+        border-radius: 4px;
+        color: var(--vscode-button-secondaryForeground);
+        cursor: pointer;
+        width: 70px;
+    }
 
-	.copy-button {
-		position: absolute;
-		top: 5px;
-		right: 5px;
-		padding: 4px 8px;
-		background: #333;
-		border: none;
-		border-radius: 4px;
-		color: white;
-		cursor: pointer;
-		width: 70px;
-	}
+    .copy-button:hover {
+        background: var(--vscode-button-secondaryHoverBackground);
+    }
 </style>
+

@@ -66,6 +66,7 @@
 
 	:global(*) {
 		font-size: var(--vscode-editor-font-size);
+		font-family: var(--vscode-font-family);
 	}
 
 	.section-header {
@@ -73,7 +74,7 @@
 		font-weight: bold;
 		margin-bottom: 10px;
 		margin-top: 10px;
-		color: skyblue;
+		color: var(--vscode-textLink-foreground);
 	}
 
 	.error-list {
@@ -92,16 +93,16 @@
 	}
 
 	.error-list::-webkit-scrollbar-thumb:hover {
-		background-color: var(--button-hover-color);
+		background-color: var(--vscode-scrollbarSlider-hoverBackground);
 	}
 
 	.error-container {
 		margin-top: 10px;
-		border: 1px solid var(--border-color);
+		border: 1px solid var(--vscode-panel-border);
 		border-radius: 4px;
 		overflow: hidden;
-		background-color: var(--error-background);
-		color: var(--text-color);
+		background-color: var(--vscode-editor-background);
+		color: var(--vscode-editor-foreground);
 	}
 
 	.error-header {
@@ -110,27 +111,27 @@
 		align-items: center;
 		padding: 10px;
 		cursor: pointer;
-		background-color: var(--error-hover-background);
-		transition: background-color 0.3s;
+		background-color: var(--vscode-editor-lineHighlightBackground);
+		transition: background-color 0.2s;
 	}
 
 	.error-header:hover {
-		background-color: var(--button-hover-color);
-		color: var(--vscode-button-foreground);
+		background-color: var(--vscode-list-hoverBackground);
+		color: var(--vscode-list-hoverForeground);
 	}
 
 	.error-details {
 		padding: 10px;
-		background-color: var(--error-background);
-		border-top: 1px solid var(--border-color);
+		background-color: var(--vscode-editor-background);
+		border-top: 1px solid var(--vscode-panel-border);
 	}
 
 	.goto-button {
 		display: inline-block;
 		margin-top: 10px;
 		padding: 5px 10px;
-		background-color: var(--button-color);
-		/* color: var(--vscode-button-foreground); */
+		background-color: var(--vscode-button-background);
+		color: var(--vscode-button-foreground);
 		border: none;
 		border-radius: 4px;
 		cursor: pointer;
@@ -138,21 +139,31 @@
 	}
 
 	.goto-button:hover {
-		background-color: var(--button-hover-color);
-		color: var(--vscode-button-foreground);
+		background-color: var(--vscode-button-hoverBackground);
 	}
 
 	.error-count {
 		font-weight: bold;
-		color: var(--warning-color);
+		color: var(--vscode-problemsWarningIcon-foreground);
 	}
 
-	/* add animation for loading */
 	.loading {
 		font-size: 1em;
 		font-weight: bold;
-		color: var(--text-color);
+		color: var(--vscode-editor-foreground);
 		animation: pulse 1.5s infinite;
 		margin-top: 10px;
+	}
+
+	@keyframes pulse {
+		0% {
+			opacity: 1;
+		}
+		50% {
+			opacity: 0.5;
+		}
+		100% {
+			opacity: 1;
+		}
 	}
 </style>

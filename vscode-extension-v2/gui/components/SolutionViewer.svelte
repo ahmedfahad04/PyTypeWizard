@@ -117,22 +117,16 @@
 
 <style>
 	:root {
-		--border-color: var(--vscode-editorGroup-border);
-		--text-color: var(--vscode-editor-foreground);
-		--error-background: var(--vscode-input-background);
-		--error-hover-background: var(--vscode-button-secondaryBackground);
-		--warning-color: var(--vscode-errorForeground);
-		--button-color: var(--vscode-button-background);
-		--button-hover-color: var(--vscode-button-hoverBackground);
 		--content-font: var(--vscode-editor-font-family);
 	}
 
 	:global(*) {
 		font-size: var(--vscode-editor-font-size);
+		font-family: var(--vscode-font-family);
 	}
 
 	pre {
-		background-color: #222222;
+		background-color: var(--vscode-editor-background);
 		padding: 10px;
 		border-radius: 5px;
 		overflow: auto;
@@ -145,17 +139,21 @@
 		font-weight: bold;
 		margin-bottom: 10px;
 		margin-top: 10px;
-		color: skyblue;
+		color: var(--vscode-textLink-foreground);
 	}
 
 	.loading-container {
 		display: flex;
 		align-items: center;
 		justify-content: center;
+		color: var(--vscode-editor-foreground);
 	}
 
 	.code-container {
 		position: relative;
+		background-color: var(--vscode-editor-background);
+		border: 1px solid var(--vscode-panel-border);
+		border-radius: 4px;
 	}
 
 	.copy-button {
@@ -163,48 +161,22 @@
 		top: 5px;
 		right: 5px;
 		padding: 4px 8px;
-		background: #333;
+		background: var(--vscode-button-secondaryBackground);
 		border: none;
 		border-radius: 4px;
-		color: white;
+		color: var(--vscode-button-secondaryForeground);
 		cursor: pointer;
 		width: 70px;
 	}
 
-	:global(.explanation ul) {
-		margin-left: 5px;
-		list-style: disc;
-		margin-top: 10px;
-	}
-
-	:global(.explanation li) {
-		margin-bottom: 10px;
-		line-height: 1.5;
-	}
-
-	:global(.explanation strong) {
-		font-weight: bold;
-	}
-
-	:global(.explanation pre) {
-		background-color: #222222;
-		padding: 10px;
-		border-radius: 5px;
-		overflow: auto;
+	.copy-button:hover {
+		background: var(--vscode-button-secondaryHoverBackground);
 	}
 
 	.empty-state {
 		text-align: center;
 		font-style: italic;
 		color: var(--vscode-disabledForeground);
-	}
-
-	/* save button style */
-
-	.button-container {
-		display: flex;
-		gap: 10px;
-		margin-top: 10px;
 	}
 
 	.button-container {
@@ -215,59 +187,75 @@
 		width: 100%;
 	}
 
-	.button-container > button {
-		width: 100%;
-	}
-
-	/* For single button to take full width */
-	.button-container > button:only-child {
-		grid-column: 1 / -1;
-	}
-
 	.save-button {
 		padding: 4px 8px;
-		background: var(--button-color);
+		background: var(--vscode-button-background);
 		border: none;
 		border-radius: 4px;
-		color: #222222;
+		color: var(--vscode-button-foreground);
 		cursor: pointer;
 	}
 
 	.save-button:hover {
-		background: var(--button-hover-color);
+		background: var(--vscode-button-hoverBackground);
 	}
 
 	.regenerate-button {
 		padding: 4px 8px;
 		background: transparent;
-		border: 1px solid var(--button-color);
+		border: 1px solid var(--vscode-button-background);
 		border-radius: 4px;
-		color: var(--text-color);
+		color: var(--vscode-editor-foreground);
 		cursor: pointer;
 		gap: 4px;
 		margin-top: 0.5rem;
 	}
 
 	.regenerate-button:hover {
-		background: var(--error-hover-background);
+		background: var(--vscode-list-hoverBackground);
 	}
 
 	.apply-button {
 		padding: 4px 8px;
-		background: var(--button-color);
+		background: var(--vscode-button-background);
 		border: none;
 		border-radius: 4px;
-		color: #222222;
+		color: var(--vscode-button-foreground);
 		cursor: pointer;
 	}
 
 	.apply-button:hover {
-		background: var(--button-hover-color);
+		background: var(--vscode-button-hoverBackground);
 	}
 
 	hr {
 		border: none;
-		border-top: 1px solid var(--border-color);
+		border-top: 1px solid var(--vscode-panel-border);
 		margin: 20px 0;
+	}
+
+	:global(.explanation ul) {
+		margin-left: 5px;
+		list-style: disc;
+		margin-top: 10px;
+		color: var(--vscode-editor-foreground);
+	}
+
+	:global(.explanation li) {
+		margin-bottom: 10px;
+		line-height: 1.5;
+	}
+
+	:global(.explanation strong) {
+		font-weight: bold;
+		color: var(--vscode-editor-foreground);
+	}
+
+	:global(.explanation pre) {
+		background-color: var(--vscode-editor-background);
+		padding: 10px;
+		border-radius: 5px;
+		overflow: auto;
+		border: 1px solid var(--vscode-panel-border);
 	}
 </style>
