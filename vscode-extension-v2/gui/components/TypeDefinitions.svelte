@@ -62,11 +62,11 @@
 			The <code>Any</code> type is a special type that can match any type:
 		</p>
 		<div class="code-example">
-			<pre>
-  from typing import Any
-  
-  def process(data: Any) -> None:
-      print(data)
+		<pre>
+		from typing import Any
+		
+		def process(data: Any) -> None:
+			print(data)
         </pre>
 		</div>
 		<p>
@@ -280,13 +280,21 @@
 </main>
 
 <style>
-	/* General styles for dark theme */
+	:root {
+		--content-font: var(--vscode-editor-font-family);
+	}
+
+	:global(*) {
+		font-size: var(--vscode-editor-font-size);
+	}
+
 	main {
 		/* font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; */
 		line-height: 1.6;
 		color: #dcdcdc; /* Light text for dark background */
 		padding: 20px;
 		background-color: #1e1e1e; /* VSCode dark background */
+		font-size: var(--vscode-editor-font-size);
 	}
 
 	h1 {
@@ -306,7 +314,7 @@
 	}
 
 	p {
-		font-size: 1rem;
+		font-size: var(--vscode-editor-font-size);
 		color: #d4d4d4; /* Slightly dimmed light text */
 		margin: 10px 0;
 	}

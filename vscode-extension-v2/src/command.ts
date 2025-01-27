@@ -228,8 +228,14 @@ export function registerCommands(context: vscode.ExtensionContext, pyrePath: str
     // command 9 (Ask PyTypeWizard)
     context.subscriptions.push(
         vscode.commands.registerCommand('pytypewizard.addToChat', async (selectedText: string, callback?: () => void) => {
-            const defaultPrompt = `Explain this terminology '${selectedText}' like a high school student with short and simple python example. Add the use cases as well. Be precise and short.
-            Add the coding example at the end
+            const defaultPrompt = `Explain this terminology '${selectedText}' with an coding related analogy and simple python example. Add the use cases as well. Be precise and short.
+            Add the coding example at the end.
+
+            Answer should following the given format below:
+            * Explain in simple and easy analogy
+            * Explain in technical way to understand relevant usage
+            * Add the use cases in coding
+            * Add the python code example
             `;
 
             // const userPrompt = await vscode.window.showInputBox({
