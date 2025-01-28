@@ -10,6 +10,7 @@ import { PyreCodeActionProvider } from "./codeActionProvider";
 import { getDatabaseManager } from "./db";
 import { Solution } from "./db/database";
 import { DynamicCodeLensProvider } from "./dynamicCodeLensProvider";
+import { processPythonFiles } from "./indexing/chunking";
 import { getLLMService } from "./llm";
 import { getSimplifiedSmartSelection } from "./smartSelection";
 import { generateAndStoreSolution, getPyRePath, outputChannel } from './utils';
@@ -237,16 +238,16 @@ export function registerCommands(context: vscode.ExtensionContext, pyrePath: str
             * Add the use cases in coding
             * Add the python code example
             `;
-    
+
             const userInput = await vscode.window.showInputBox({
                 placeHolder: "Enter your question about the selected text (Press Enter to use default)",
                 prompt: "What would you like to know about this code?"
             });
-    
-            const finalPrompt = userInput ? 
-                `Explain about '${selectedText}': ${userInput}` : 
+
+            const finalPrompt = userInput ?
+                `Explain about '${selectedText}': ${userInput}` :
                 defaultPrompt;
-    
+
             if (finalPrompt) {
                 const response = await vscode.window.withProgress({
                     location: vscode.ProgressLocation.Notification,
@@ -254,21 +255,21 @@ export function registerCommands(context: vscode.ExtensionContext, pyrePath: str
                     cancellable: true
                 }, async (progress, token) => {
                     progress.report({ message: 'Generating response...' });
-    
+
                     if (token.isCancellationRequested) {
                         return null;
                     }
-    
+
                     const llmService = getLLMService();
                     const result = await llmService.generateResponse(finalPrompt);
-    
+
                     if (token.isCancellationRequested) {
                         return null;
                     }
-    
+
                     return result;
                 });
-    
+
                 if (response?.length > 0) {
                     sidebarProvider._view?.webview.postMessage({
                         type: 'explainTerminology',
@@ -276,15 +277,14 @@ export function registerCommands(context: vscode.ExtensionContext, pyrePath: str
                     });
                 }
             }
-    
+
             if (callback) {
                 callback();
             }
         })
     );
-    
 
-    // command 9 (show History)
+    // command 10 (show History)
     context.subscriptions.push(
         vscode.commands.registerCommand('pytypewizard.showHistory', async () => {
 
@@ -305,6 +305,18 @@ export function registerCommands(context: vscode.ExtensionContext, pyrePath: str
 
         })
     );
+
+    // command 11 (chunk Documents)
+    context.subscriptions.push(
+        vscode.commands.registerCommand('pytypewizard.chunkDocuments', async () => {
+
+            // read files concurrently
+            const { totalCharacters, maxChars, chunks } = await processPythonFiles(vscode.workspace.workspaceFolders?.[0].uri.fsPath || '');
+            vscode.window.showInformationMessage(`Processing Done! Chars: ${totalCharacters} - MAX: ${maxChars}`);
+            outputChannel.appendLine(`Chunks: ${chunks.length}\n1st Chunk: ${chunks[0].content} \n Chunk: ${chunks[1].content} & Metadata: ${chunks[0].metadata.filePath}`);
+
+        })
+    )
 }
 
 export async function findPyreCommand(envPath: EnvironmentPath): Promise<string | undefined> {
@@ -369,6 +381,3 @@ export async function runErrorExtractor(context: vscode.ExtensionContext, filePa
         });
     });
 }
-
-// Register the "Add to Chat" command
-// export const addToChatCommand = 

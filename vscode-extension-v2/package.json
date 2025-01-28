@@ -25,16 +25,6 @@
 		"commands": [
 			{
 				"category": "PyTypeWizard",
-				"command": "pytypewizard.openDashboard",
-				"title": "Open Dashboard"
-			},
-			{
-				"category": "PyTypeWizard",
-				"command": "pytypewizard.refresh",
-				"title": "Refresh PyTypeWizard"
-			},
-			{
-				"category": "PyTypeWizard",
 				"command": "pytypewizard.showHistory",
 				"title": "Show History",
 				"icon": "$(history)"
@@ -44,6 +34,22 @@
 				"command": "pytypewizard.openSettings",
 				"title": "Open Settings",
 				"icon": "$(gear)"
+			},
+			{
+				"category": "PyTypeWizard",
+				"command": "pytypewizard.chunkDocuments",
+				"title": "Chunk Documents",
+				"icon": "$(notebook-render-output)"
+			},
+			{
+				"category": "PyTypeWizard",
+				"command": "pytypewizard.openDashboard",
+				"title": "Open Dashboard"
+			},
+			{
+				"category": "PyTypeWizard",
+				"command": "pytypewizard.refresh",
+				"title": "Refresh PyTypeWizard"
 			},
 			{
 				"category": "PyTypeWizard",
@@ -89,6 +95,12 @@
 					"when": "view == pytypewizard-sidebar",
 					"group": "navigation",
 					"icon": "$(gear)"
+				},
+				{
+					"command": "pytypewizard.chunkDocuments",
+					"when": "view == pytypewizard-sidebar",
+					"group": "navigation",
+					"icon": "$(notebook-render-output)"
 				}
 			]
 		},
