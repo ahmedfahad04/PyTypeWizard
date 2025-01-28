@@ -144,6 +144,7 @@
 
 	.error-count {
 		font-weight: bold;
+		font-size: 1.2em;
 		color: var(--vscode-problemsWarningIcon-foreground);
 	}
 

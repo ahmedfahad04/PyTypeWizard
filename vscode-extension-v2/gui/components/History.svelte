@@ -56,12 +56,10 @@
 	<div
 		style="display: flex; justify-content: space-between; align-items: center;"
 	>
-		<h2 style="margin-bottom: 10px; font-weight: bold;">
-			Previous Fix History
-		</h2>
+		<h2 class="section-header">Previous Fix Records</h2>
 		<h3 style="margin-bottom: 10px; font-weight: bold;">
 			Total Entries: <span style="font-weight: bold; color: skyblue;"
-				>{history.length}</span
+				>{filteredHistory.length}</span
 			>
 		</h3>
 	</div>
@@ -164,6 +162,14 @@
 <style>
 	:root {
 		--content-font: var(--vscode-editor-font-family);
+	}
+
+	.section-header {
+		font-size: 1.5em;
+		font-weight: bold;
+		margin-bottom: 10px;
+		margin-top: 10px;
+		color: var(--vscode-textLink-foreground);
 	}
 
 	:global(*) {

@@ -125,7 +125,6 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
                     });
 
                     const fixLength = data.code.split('\n').length;
-                    vscode.window.showInformationMessage(`Code Length: ${fixLength}`);
 
                     // now here, register codelense with accept and reject button
                     // if accept, then delete the decoration 

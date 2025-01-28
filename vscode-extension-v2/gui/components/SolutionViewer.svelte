@@ -53,7 +53,7 @@
 </script>
 
 <div>
-	<p class="section-header">Potential Solutions</p>
+	<p class="section-header">Potential Fixes</p>
 	{#if solutionLoading}
 		<div class="loading-container">
 			<p>Generating solution...</p>
@@ -70,16 +70,10 @@
 		<p class="section-header">Explanation</p>
 		<div class="explanation">{@html filterExplanation(solution)}</div>
 		<div class="button-container">
-			<div>
+			<div class="button-row">
 				<button class="save-button" on:click={() => onSaveSolution()}
-					>Save Solution</button
+					>Save Suggestion</button
 				>
-				<button
-					class="regenerate-button"
-					on:click={() => onReGenerateSolution()}>↺ Regenerate Response</button
-				>
-			</div>
-			<div>
 				<button
 					class="apply-button"
 					on:click={() =>
@@ -93,6 +87,12 @@
 						)}>Apply Fix</button
 				>
 			</div>
+			<div class="button-row">
+				<button
+					class="regenerate-button"
+					on:click={() => onReGenerateSolution()}>↺ Try Again</button
+				>
+			</div>
 		</div>
 	{:else}
 		<p class="empty-state">Click on an error to generate a solution</p>
@@ -101,7 +101,7 @@
 	<hr />
 
 	<div>
-		<p class="section-header">Terminology Explanation</p>
+		<p class="section-header">Code Insights</p>
 		{#if explainTerminology.length > 0}
 			<div class="explanation">
 				{@html filterExplanation(explainTerminology)}
@@ -110,7 +110,9 @@
 				{/if}
 			</div>
 		{:else}
-			<p class="empty-state">Select any Keyword to generate explanation</p>
+			<p class="empty-state">
+				Select a keyword or code snippet to see its explanation here
+			</p>
 		{/if}
 	</div>
 </div>
@@ -180,15 +182,34 @@
 	}
 
 	.button-container {
-		display: grid;
-		grid-template-columns: repeat(2, 1fr);
-		gap: 10px;
-		margin-top: 10px;
+		display: flex;
+		flex-direction: column;
 		width: 100%;
 	}
 
+	.button-row {
+		display: flex;
+		flex-direction: row;
+		gap: 10px;
+	}
+
+	.regenerate-button {
+		padding: 8px 8px;
+		background: transparent;
+		border: 1px solid var(--vscode-button-background);
+		border-radius: 4px;
+		color: var(--vscode-editor-foreground);
+		cursor: pointer;
+		margin-top: 0.5rem;
+		grid-column: span 2; /* This ensures the button spans both columns */
+	}
+
+	.regenerate-button:hover {
+		background: var(--vscode-list-hoverBackground);
+	}
+
 	.save-button {
-		padding: 4px 8px;
+		padding: 8px 8px;
 		background: var(--vscode-button-background);
 		border: none;
 		border-radius: 4px;
@@ -198,21 +219,6 @@
 
 	.save-button:hover {
 		background: var(--vscode-button-hoverBackground);
-	}
-
-	.regenerate-button {
-		padding: 4px 8px;
-		background: transparent;
-		border: 1px solid var(--vscode-button-background);
-		border-radius: 4px;
-		color: var(--vscode-editor-foreground);
-		cursor: pointer;
-		gap: 4px;
-		margin-top: 0.5rem;
-	}
-
-	.regenerate-button:hover {
-		background: var(--vscode-list-hoverBackground);
 	}
 
 	.apply-button {
