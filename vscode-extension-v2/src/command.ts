@@ -7,7 +7,7 @@ import * as vscode from 'vscode';
 import which from "which";
 import { sendApiRequest } from "./api";
 import { PyreCodeActionProvider } from "./codeActionProvider";
-import { getDatabaseManager } from "./db";
+import { getChunkDatabaseManager, getDatabaseManager } from "./db";
 import { Solution } from "./db/database";
 import { DynamicCodeLensProvider } from "./dynamicCodeLensProvider";
 import { processPythonFiles } from "./indexing/chunking";
@@ -314,6 +314,25 @@ export function registerCommands(context: vscode.ExtensionContext, pyrePath: str
             const { totalCharacters, maxChars, chunks } = await processPythonFiles(vscode.workspace.workspaceFolders?.[0].uri.fsPath || '');
             vscode.window.showInformationMessage(`Processing Done! Chars: ${totalCharacters} - MAX: ${maxChars}`);
             outputChannel.appendLine(`Chunks: ${chunks.length}\n1st Chunk: ${chunks[0].content} \n Chunk: ${chunks[1].content} & Metadata: ${chunks[0].metadata.filePath}`);
+
+            // store the chunks in db
+            const chunkDb = await getChunkDatabaseManager()
+            for (const chunk of chunks) {
+                const chunkData = {
+                    id: crypto.randomUUID(), // Generate unique ID
+                    content: chunk.content,
+                    filePath: chunk.metadata.filePath,
+                    startLine: chunk.metadata.startLine,
+                    endLine: chunk.metadata.endLine,
+                    chunkType: chunk.metadata.type,
+                    timestamp: new Date().toISOString()
+                };
+
+                await chunkDb.addChunk(chunkData);
+            }
+
+            vscode.window.showInformationMessage(`Stored ${chunks.length} code chunks in database`);
+            chunkDb.close();
 
         })
     )

@@ -21,67 +21,6 @@ export async function findPythonFiles(rootDir: string): Promise<string[]> {
     return pythonFiles;
 }
 
-async function readPythonFilesConcurrently(files: string[]): Promise<{
-    fileContents: Map<string, string>,
-    totalCharacters: number,
-    maxChars: number,
-    chunks: Array<{
-        content: string;
-        metadata: {
-            filePath: string;
-            startLine: number;
-            endLine: number
-        }
-    }>
-}> {
-    const fileContents = new Map<string, string>();
-    let totalCharacters = 0;
-    let maxChars = 0;
-    let chunks: Array<{ content: string; metadata: { filePath: string; startLine: number; endLine: number } }> = [];
-
-    const concurrencyLimit = 100;
-    const batches = Array.from(
-        { length: Math.ceil(files.length / concurrencyLimit) },
-        (_, i) => files.slice(i * concurrencyLimit, (i + 1) * concurrencyLimit)
-    );
-
-    for (const batch of batches) {
-        const readOperations = batch.map(async (filePath) => {
-            try {
-                const content = await fsPromises.readFile(filePath, "utf-8");
-                fileContents.set(filePath, content);
-
-                const fileChunks = await splitPythonCodeOptimally(filePath, content);
-                chunks.push(...fileChunks);
-
-                totalCharacters += content.length;
-                maxChars = Math.max(maxChars, content.length);
-
-                return { content, chunks: fileChunks };
-            } catch (error) {
-                outputChannel.appendLine(`Failed to read file: ${filePath} - ${error}`);
-                return null;
-            }
-        });
-
-        await Promise.all(readOperations);
-    }
-
-    return { fileContents, totalCharacters, maxChars, chunks };
-}
-
-export async function processPythonFiles(rootDir: string) {
-    outputChannel.appendLine("Finding Python files...");
-    const pythonFiles = await findPythonFiles(rootDir);
-    outputChannel.appendLine(`Found ${pythonFiles.length} Python files.`);
-
-    outputChannel.appendLine("Reading Python files concurrently...");
-    const result = await readPythonFilesConcurrently(pythonFiles);
-    outputChannel.appendLine(`Successfully read ${result.fileContents.size} Python files with ${result.chunks.length} chunks.`);
-
-    return result;
-}
-
 
 async function splitPythonCodeOptimally(filePath: string, fileContent: string): Promise<{
     content: string;
@@ -195,5 +134,73 @@ async function splitPythonCodeOptimally(filePath: string, fileContent: string): 
 
     outputChannel.appendLine(`Split ${filePath} into ${chunks.length} chunks`);
     return chunks;
+}
+
+async function readPythonFilesConcurrently(files: string[]): Promise<{
+    fileContents: Map<string, string>,
+    totalCharacters: number,
+    maxChars: number,
+    chunks: Array<{
+        content: string;
+        metadata: {
+            filePath: string;
+            startLine: number;
+            endLine: number
+            type: 'function' | 'standalone'
+
+        }
+    }>
+}> {
+    const fileContents = new Map<string, string>();
+    let totalCharacters = 0;
+    let maxChars = 0;
+    let chunks: Array<{
+        content: string; metadata: {
+            filePath: string; startLine: number; endLine: number, type: 'function' | 'standalone'
+        }
+    }> = [];
+
+    const concurrencyLimit = 100;
+    const batches = Array.from(
+        { length: Math.ceil(files.length / concurrencyLimit) },
+        (_, i) => files.slice(i * concurrencyLimit, (i + 1) * concurrencyLimit)
+    );
+
+    for (const batch of batches) {
+        const readOperations = batch.map(async (filePath) => {
+            try {
+                const content = await fsPromises.readFile(filePath, "utf-8");
+                fileContents.set(filePath, content);
+
+                const fileChunks = await splitPythonCodeOptimally(filePath, content);
+                chunks.push(...fileChunks);
+
+                totalCharacters += content.length;
+                maxChars = Math.max(maxChars, content.length);
+
+                return { content, chunks: fileChunks };
+            } catch (error) {
+                outputChannel.appendLine(`Failed to read file: ${filePath} - ${error}`);
+                return null;
+            }
+        });
+
+        await Promise.all(readOperations);
+    }
+
+    return { fileContents, totalCharacters, maxChars, chunks };
+}
+
+
+export async function processPythonFiles(rootDir: string) {
+    outputChannel.appendLine("Finding Python files...");
+    const pythonFiles = await findPythonFiles(rootDir);
+    outputChannel.appendLine(`Found ${pythonFiles.length} Python files.`);
+
+    outputChannel.appendLine("Reading Python files concurrently...");
+    const result = await readPythonFilesConcurrently(pythonFiles);
+    outputChannel.appendLine(`Successfully read ${result.fileContents.size} Python files with ${result.chunks.length} chunks.`);
+
+    return result;
 }
 
