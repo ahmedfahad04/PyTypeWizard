@@ -13,7 +13,8 @@ import { DynamicCodeLensProvider } from "./dynamicCodeLensProvider";
 import { processPythonFiles } from "./indexing/chunking";
 import { getLLMService } from "./llm";
 import { getSimplifiedSmartSelection } from "./smartSelection";
-import { generateAndStoreSolution, getPyRePath, outputChannel } from './utils';
+import { fetchContext, generateAndStoreSolution, getPyRePath, outputChannel } from './utils';
+var Fuse = require('fuse.js');
 
 
 export function registerCommands(context: vscode.ExtensionContext, pyrePath: string, sidebarProvider: any): void {
@@ -88,13 +89,15 @@ export function registerCommands(context: vscode.ExtensionContext, pyrePath: str
                 loading: true
             });
 
-            outputChannel.appendLine(`TEXT: ${diagnostic.message}`)
 
             const errMessage = diagnostic.message;
             const errType = errMessage.split(':', 2);
             const warningLine = document.lineAt(diagnostic.range.start.line).text.trim();
+            const codeContext = await fetchContext(warningLine);
+            let prompt = "";
 
-            const prompt = `
+            if (codeContext.length != 0) {
+                prompt = `
                 Explain the following error in given instructions:
 
                 # Error Details
@@ -103,11 +106,30 @@ export function registerCommands(context: vscode.ExtensionContext, pyrePath: str
                 Error Code Snippet: ${warningLine}
                 Source Code: ${vscode.window.activeTextEditor?.document.getText()}
 
+                # Additional Code Context
+                ${codeContext}
+
                 # Instruction
                 Answer in the following format:
                 * put the solution only snippet as python code snippet at first. No need to mention skipped section or anything else. Just write down the exact lines sequentially.
                 * Add necessary explanation in easy words and bullet points. Important words should be written in bold.
                 `;
+            } else {
+                prompt = `
+                Explain the following error in given instructions:
+
+                # Error Details
+                Error Type: ${errType[0]}
+                Error Message: ${errType[1]}
+                Error Code Snippet: ${warningLine}
+                Source Code: ${vscode.window.activeTextEditor?.document.getText()}                
+
+                # Instruction
+                Answer in the following format:
+                * put the solution only snippet as python code snippet at first. No need to mention skipped section or anything else. Just write down the exact lines sequentially.
+                * Add necessary explanation in easy words and bullet points. Important words should be written in bold.
+                `;
+            }
 
             outputChannel.appendLine(`PROMPT:>> ${prompt}`);
             const solutionObject = await generateAndStoreSolution(errType[0], errMessage, document.uri.fsPath, diagnostic.range.start.line, warningLine, prompt);
@@ -170,34 +192,48 @@ export function registerCommands(context: vscode.ExtensionContext, pyrePath: str
     // command 7 (Search Code)
     context.subscriptions.push(
         vscode.commands.registerCommand('pytypewizard.searchCode', async () => {
-            const query = await vscode.window.showInputBox({ placeHolder: 'Enter search query' });
-            if (!query) return;
+            // search the chunkdb for the code snippet
+            const chunkDb = await getChunkDatabaseManager();
 
-            try {
-                const response = await axios.post('http://localhost:8000/search', { query });
-                const results = response.data.results;
+            // show input box
+            const input = await vscode.window.showInputBox({
+                placeHolder: "Search code snippet",
+                prompt: "Enter the code snippet to search"
+            });
 
-                if (results.length > 0) {
-                    const items = results.map((result: any) => ({
-                        label: `${result.file}:${result.line}`,
-                        detail: result.snippet,
-                    }));
+            if (input.length > 0) {
 
-                    const selection = await vscode.window.showQuickPick(items, { placeHolder: 'Search Results' });
-                    if (selection) {
-                        vscode.window.showInformationMessage(`Selected: ${selection}`);
-                        // const [file, line] = selection.label.split(':');
-                        // const doc = await vscode.workspace.openTextDocument(vscode.Uri.file(file));
-                        // const editor = await vscode.window.showTextDocument(doc);
-                        // const position = new vscode.Position(Number(line) - 1, 0);
-                        // editor.selection = new vscode.Selection(position, position);
-                        // editor.revealRange(new vscode.Range(position, position));
-                    }
-                } else {
-                    vscode.window.showInformationMessage('No results found!');
+                let context: string = "";
+
+                const searchResults = await chunkDb.searchChunks(input);
+                outputChannel.appendLine(`Search Results: ${searchResults.length}`);
+                // outputChannel.appendLine(`Search Results: ${searchResults.map(i => i.filePath).join('\n')}`);
+
+                const fuseOptions = {
+                    shouldSort: true,
+                    isCaseSensitive: true,
+                    threshold: 0.6,
+                    keys: [
+                        "content",
+                    ]
+                };
+
+                // use fuse.js to rank query
+                const fuse = new Fuse(searchResults, fuseOptions);
+                const rankedResults = fuse.search(input);
+                outputChannel.appendLine(`Ranked Results Count: ${rankedResults.length}`);
+                outputChannel.appendLine(`Ranked Results File Path: ${rankedResults.map(i => i.item['filePath']).join('\n')}`);
+
+                // Get top 5 results with highest relevance scores
+                const topResults = rankedResults.length > 0
+                    ? rankedResults.slice(0, Math.min(5, rankedResults.length)).map(result => result.item)
+                    : searchResults.length > 5 ? searchResults.slice(0, 5) : searchResults;
+
+                for (const item of topResults) {
+                    context += `##File Path: \n${item['filePath']}\n\n##Code Snippet: \n${item['content']}\n\n`;
                 }
-            } catch (error) {
-                vscode.window.showErrorMessage(`Search failed: ${error.message}`);
+
+                outputChannel.appendLine(`Final Context: ${context}`);
             }
         })
     );

@@ -1,6 +1,7 @@
 import * as os from 'os';
 import * as path from 'path';
 import * as sqlite3 from 'sqlite3';
+import { PYTHON_KEYWORDS } from '../constant';
 
 export interface CodeChunk {
     id: string;
@@ -17,7 +18,7 @@ export class ChunkDatabaseManager {
 
     constructor() {
         const homeDir = os.homedir();
-        const dbPath = path.join(homeDir, 'pytypewizard_chunks.db');
+        const dbPath = path.join(homeDir, '.pytypewizard_chunks.db');
         this.db = new sqlite3.Database(dbPath);
     }
 
@@ -73,7 +74,6 @@ export class ChunkDatabaseManager {
         await this.runQuery(createFTSTable);
         await this.runQuery(createTriggers);
     }
-
 
     async addChunk(chunk: CodeChunk): Promise<void> {
         const query = `
@@ -139,41 +139,49 @@ export class ChunkDatabaseManager {
         });
     }
 
-    async searchChunks(searchQuery: string, page: number = 1, pageSize: number = 10): Promise<{ chunks: CodeChunk[], total: number }> {
-        const searchTerm = searchQuery.trim();
+    public async searchChunks(query: string): Promise<CodeChunk[]> {
 
-        const offset = (page - 1) * pageSize;
-        const countQuery = `
-            SELECT COUNT(*) as total 
-            FROM chunks_fts 
-            WHERE chunks_fts MATCH ?
-        `;
 
-        const searchSql = `
-            SELECT chunks.*
-            FROM chunks_fts 
-            JOIN chunks ON chunks.id = chunks_fts.id
-            WHERE chunks_fts MATCH ?
-            ORDER BY rank
-            LIMIT ? OFFSET ?
-        `;
+        let sanitizedQuery = query.replace(/[^\w\s]/gi, ' ');
+        sanitizedQuery = sanitizedQuery.trim();
+        let words = sanitizedQuery.split(/\s+/); // Split by spaces
 
-        const total = await new Promise<{ total: number }>((resolve, reject) => {
-            this.db.get(countQuery, [searchTerm], (err, row) => {
-                if (err) reject(err);
-                resolve(row as { total: number });
-            });
+        let filterWords = words.filter(word => {
+            return !PYTHON_KEYWORDS.includes(word.toLowerCase());
         });
 
-        const chunks = await new Promise<CodeChunk[]>((resolve, reject) => {
-            this.db.all(searchSql, [searchTerm, pageSize, offset], (err, rows) => {
+        let formattedQuery = filterWords.map(i => `"${i}"`).join(" OR ");
+
+        return new Promise((resolve, reject) => {
+            const searchQuery = `
+                SELECT * 
+                FROM chunks_fts 
+                WHERE content MATCH ?
+            `;
+            this.db.all(searchQuery, [formattedQuery], (err, rows) => {
                 if (err) reject(err);
                 resolve(rows as CodeChunk[]);
             });
         });
-
-        return { chunks, total: total.total };
     }
+
+    public async searchChunksWithRanking(query: string): Promise<(CodeChunk & { relevance: number })[]> {
+        return new Promise((resolve, reject) => {
+            const searchQuery = `
+                SELECT *, bm25(matchinfo(chunks_fts)) AS rank 
+                FROM chunks_fts
+                WHERE chunks_fts MATCH ?
+                ORDER BY rank DESC;
+            `;
+            this.db.all(searchQuery, [query], (err, rows) => {
+                if (err) reject(err);
+                resolve(rows as (CodeChunk & { relevance: number })[]);
+            });
+        });
+    }
+
+
+
     private runQuery(query: string, params: any[] = []): Promise<void> {
         return new Promise((resolve, reject) => {
             this.db.run(query, params, (err) => {

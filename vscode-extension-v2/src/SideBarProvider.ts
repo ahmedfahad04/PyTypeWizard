@@ -1,6 +1,8 @@
 import * as vscode from "vscode";
 import { DatabaseManager, Solution } from "./db/database";
 import { generateAndStoreSolution, outputChannel } from "./utils";
+import { getChunkDatabaseManager } from "./db";
+var Fuse = require('fuse.js');
 
 export class SidebarProvider implements vscode.WebviewViewProvider {
     _view?: vscode.WebviewView;
@@ -71,6 +73,29 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
                     const diagnostic = data.diagnostic;
                     const { errorType, errorMessage, originalCode, suggestedSolution, filePath, lineNumber, timestamp } = data.solutionObject;
 
+                    //!
+                    const chunkDb = await getChunkDatabaseManager();
+                    const searchResults = await chunkDb.searchChunks(originalCode);
+                    // outputChannel.appendLine(`Search Results: ${searchResults.length}`);
+                    // outputChannel.appendLine(`Search Results: ${searchResults.map(i => i.filePath).join('\n')}`);
+
+                    const fuseOptions = {
+                        shouldSort: true,
+                        threshold: 0.6,
+                        keys: [
+                            "content",
+                        ]
+                    };
+
+                    // use fuse.js to rank query
+                    const fuse = new Fuse(searchResults, fuseOptions);
+                    const rankedResults = fuse.search(originalCode);
+
+                    // show file name and that content
+                    // outputChannel.appendLine(`Ranked Results: ${rankedResults.length}`);
+                    // filename: name, Code: content
+                    //!
+
                     const prompt = `        
                         # Error Details
                         Error Type: ${errorType}
@@ -123,8 +148,6 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
                     editor.edit(editBuilder => {
                         editBuilder.replace(new vscode.Range(position, position), data.code);
                     });
-
-                    const fixLength = data.code.split('\n').length;
 
                     // now here, register codelense with accept and reject button
                     // if accept, then delete the decoration 

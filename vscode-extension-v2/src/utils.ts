@@ -1,8 +1,11 @@
 import { readFileSync, statSync } from 'fs';
 import { dirname, join } from 'path';
 import * as vscode from 'vscode';
+import { getChunkDatabaseManager } from './db';
 import { Solution } from './db/database';
 import { getLLMService } from './llm';
+var Fuse = require('fuse.js');
+
 
 export let outputChannel = vscode.window.createOutputChannel('PyTypeWizard');
 
@@ -74,7 +77,7 @@ export async function generateAndStoreSolution(
     warningLine: string,
     prompt: string,
 ): Promise<Solution> {
-    
+
     const response = await vscode.window.withProgress(
         {
             location: vscode.ProgressLocation.Notification,
@@ -119,4 +122,44 @@ export async function generateAndStoreSolution(
     };
 
     return solutionObject
+}
+
+export async function fetchContext(source: string): Promise<string> {
+
+    let context: string = "";
+    const chunkDb = await getChunkDatabaseManager();
+
+    const searchResults = await chunkDb.searchChunks(source);
+    outputChannel.appendLine(`Search Results: ${searchResults.length}`);
+    outputChannel.appendLine(`Search Results: ${searchResults.map(i => i.filePath).join('\n')}`);
+
+    const fuseOptions = {
+        shouldSort: true,
+        isisCaseSensitive: true,
+        threshold: 0.6,
+        keys: [
+            "content",
+        ]
+    };
+
+    // use fuse.js to rank query
+    const fuse = new Fuse(searchResults, fuseOptions);
+    const rankedResults = fuse.search(source);
+
+    // Get top 5 results with highest relevance scores
+    const topResults = rankedResults.length > 0
+        ? rankedResults.slice(0, Math.min(5, rankedResults.length)).map(result => result.item)
+        : searchResults.length > 5 ? searchResults.slice(0, 5) : searchResults;
+
+    for (const item of topResults) {
+
+        const currentScriptPath = vscode.window.activeTextEditor.document.uri.fsPath;
+        if (item['filePath'] === currentScriptPath) {
+            continue;
+        }
+
+        context += `##File Path: \n${item['filePath']}\n\n##Code Snippet: \n${item['content']}\n\n`;
+    }
+
+    return context;
 }
