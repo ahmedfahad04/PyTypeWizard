@@ -1,8 +1,6 @@
 import * as vscode from "vscode";
 import { DatabaseManager, Solution } from "./db/database";
 import { generateAndStoreSolution, outputChannel } from "./utils";
-import { getChunkDatabaseManager } from "./db";
-var Fuse = require('fuse.js');
 
 export class SidebarProvider implements vscode.WebviewViewProvider {
     _view?: vscode.WebviewView;
@@ -31,6 +29,15 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
                     const position = new vscode.Position(data.line - 1, data.column);
                     editor.selection = new vscode.Selection(position, position);
                     editor.revealRange(new vscode.Range(position, position));
+                    break;
+                }
+                case "navigateContext": {
+                    const document = await vscode.workspace.openTextDocument(data.filePath);
+                    const editor = await vscode.window.showTextDocument(document);
+                    const startPosition = new vscode.Position(data.startLine - 1, 0);
+                    const endPosition = new vscode.Position(data.endLine - 1, 0);
+                    editor.selection = new vscode.Selection(startPosition, endPosition);
+                    editor.revealRange(new vscode.Range(startPosition, endPosition));
                     break;
                 }
                 case 'deleteEntry': {
@@ -71,30 +78,8 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
                     // I want to pass the active editor content to the webview and the diagnostics
                     const document = data.document;
                     const diagnostic = data.diagnostic;
+                    const context = data.context;
                     const { errorType, errorMessage, originalCode, suggestedSolution, filePath, lineNumber, timestamp } = data.solutionObject;
-
-                    //!
-                    const chunkDb = await getChunkDatabaseManager();
-                    const searchResults = await chunkDb.searchChunks(originalCode);
-                    // outputChannel.appendLine(`Search Results: ${searchResults.length}`);
-                    // outputChannel.appendLine(`Search Results: ${searchResults.map(i => i.filePath).join('\n')}`);
-
-                    const fuseOptions = {
-                        shouldSort: true,
-                        threshold: 0.6,
-                        keys: [
-                            "content",
-                        ]
-                    };
-
-                    // use fuse.js to rank query
-                    const fuse = new Fuse(searchResults, fuseOptions);
-                    const rankedResults = fuse.search(originalCode);
-
-                    // show file name and that content
-                    // outputChannel.appendLine(`Ranked Results: ${rankedResults.length}`);
-                    // filename: name, Code: content
-                    //!
 
                     const prompt = `        
                         # Error Details
@@ -123,7 +108,8 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
                             solution: solutionObject.suggestedSolution,
                             solutionObject: solutionObject,
                             document: document,
-                            diagnostic: diagnostic
+                            diagnostic: diagnostic,
+                            context: context
                         });
                     }
 

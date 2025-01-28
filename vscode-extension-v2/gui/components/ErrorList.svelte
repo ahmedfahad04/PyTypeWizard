@@ -36,7 +36,10 @@
 						{#if expandedErrors[index]}
 							<div class="error-details">
 								<p><strong>File:</strong> {error.display_name}</p>
-								<p><strong>Message:</strong> {error.message}</p>
+								<p style="margin-top: 5px;">
+									<strong>Message:</strong>
+									{error.message}
+								</p>
 								<button
 									class="goto-button"
 									on:click={() => {

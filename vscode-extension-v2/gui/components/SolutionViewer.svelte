@@ -47,6 +47,7 @@
 				solutionObject: solutionObject,
 				document: document,
 				diagnostic: diagnostic,
+				context: context,
 			},
 			'*'
 		);
@@ -76,12 +77,22 @@
 	{#if showContext && context}
 		<div class="context-files">
 			{#each context as contextItem}
-				<div class="context-file">
+				<button
+					class="context-file"
+					on:click={() => {
+						tsvscode.postMessage({
+							type: 'navigateContext',
+							filePath: contextItem.filePath,
+							startLine: contextItem.startLine,
+							endLine: contextItem.endLine,
+						});
+					}}
+				>
 					<span class="file-name">{contextItem.fileName}</span>
 					<span class="file-lines"
 						>Lines {contextItem.startLine}-{contextItem.endLine}</span
 					>
-				</div>
+				</button>
 			{/each}
 		</div>
 	{/if}
@@ -331,8 +342,14 @@
 	.context-file {
 		display: flex;
 		justify-content: space-between;
-		padding: 4px 0;
+		/* padding: 4px 0; */
 		color: var(--vscode-editor-foreground);
+		background-color: var(--vscode-editor-inactiveSelectionBackground);
+		cursor: pointer;
+	}
+
+	.context-file:hover {
+		background: var(--vscode-list-hoverBackground);
 	}
 
 	.file-name {
