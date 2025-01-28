@@ -17,6 +17,7 @@
     let solutionObject;
     let document;
     let diagnostic;
+    let context;
 
     const handleMessage = (event) => {
         const message = event.data;
@@ -35,6 +36,7 @@
                 document = message.document;
                 diagnostic = message.diagnostic;
                 solutionLoading = false;
+                context = message.context;
                 break;
             case 'explainTerminology':
                 explainTerminology = message.explanation;
@@ -150,7 +152,7 @@
     {#if currentPage === 'main'}
         <ErrorList {errors} {loading} {expandedErrors} />
         <hr />
-        <SolutionViewer {solution} {solutionObject} {solutionLoading} {explainTerminology} />
+        <SolutionViewer {solution} {solutionObject} {solutionLoading} {explainTerminology} {context} />
     {:else if currentPage === 'history'}
         <History {history} />
     {:else if currentPage === 'typeIntro'}

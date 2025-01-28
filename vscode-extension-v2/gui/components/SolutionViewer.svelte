@@ -7,6 +7,7 @@
 	export let solutionObject;
 	export let document;
 	export let diagnostic;
+	export let context;
 
 	const md = markdownit({
 		html: true,
@@ -50,10 +51,41 @@
 			'*'
 		);
 	};
+
+	let showContext = false;
+	$: contextFilesCount = context?.length || 0;
 </script>
 
 <div>
-	<p class="section-header">Potential Fixes</p>
+	<div class="header-row">
+		<div>
+			<p class="section-header">Potential Fixes</p>
+		</div>
+		<div>
+			{#if contextFilesCount > 0}
+				<button
+					class="context-count"
+					on:click={() => (showContext = !showContext)}
+				>
+					{contextFilesCount} source files
+				</button>
+			{/if}
+		</div>
+	</div>
+
+	{#if showContext && context}
+		<div class="context-files">
+			{#each context as contextItem}
+				<div class="context-file">
+					<span class="file-name">{contextItem.fileName}</span>
+					<span class="file-lines"
+						>Lines {contextItem.startLine}-{contextItem.endLine}</span
+					>
+				</div>
+			{/each}
+		</div>
+	{/if}
+
 	{#if solutionLoading}
 		<div class="loading-container">
 			<p>Generating solution...</p>
@@ -69,6 +101,7 @@
 		</div>
 		<p class="section-header">Explanation</p>
 		<div class="explanation">{@html filterExplanation(solution)}</div>
+
 		<div class="button-container">
 			<div class="button-row">
 				<button class="save-button" on:click={() => onSaveSolution()}
@@ -263,5 +296,51 @@
 		border-radius: 5px;
 		overflow: auto;
 		border: 1px solid var(--vscode-panel-border);
+	}
+
+	.header-row {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+	}
+
+	.context-count {
+		background: var(--vscode-button-background);
+		border: 1px solid var(--vscode-button-background);
+		color: var(--vscode-button-foreground);
+		padding: 2px 8px;
+		border-radius: 12px;
+		cursor: pointer;
+		font-size: 0.9em;
+		/* width: 80%; */
+	}
+
+	.context-count:hover {
+		background: transparent;
+		color: var(--vscode-button-hoverBackground);
+	}
+
+	.context-files {
+		margin: 8px 0;
+		padding: 8px;
+		background: var(--vscode-list-hoverBackground);
+		border-radius: 4px;
+		/* border: 2px solid var(--vscode-panel-border); */
+	}
+
+	.context-file {
+		display: flex;
+		justify-content: space-between;
+		padding: 4px 0;
+		color: var(--vscode-editor-foreground);
+	}
+
+	.file-name {
+		font-family: var(--vscode-editor-font-family);
+	}
+
+	.file-lines {
+		color: var(--vscode-descriptionForeground);
+		font-size: 0.9em;
 	}
 </style>

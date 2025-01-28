@@ -82,7 +82,7 @@ export function registerCommands(context: vscode.ExtensionContext, pyrePath: str
         )
     );
 
-    // command 3 (for explain error)
+    // command 3 (Fix & Explain)
     context.subscriptions.push(
         vscode.commands.registerCommand('pytypewizard.explainAndSolve', async (document: vscode.TextDocument, diagnostic: vscode.Diagnostic) => {
 
@@ -91,14 +91,14 @@ export function registerCommands(context: vscode.ExtensionContext, pyrePath: str
                 loading: true
             });
 
-
             const errMessage = diagnostic.message;
             const errType = errMessage.split(':', 2);
             const warningLine = document.lineAt(diagnostic.range.start.line).text.trim();
-            const codeContext = await fetchContext(warningLine);
+            const { context, metadata } = await fetchContext(warningLine);
+
             let prompt = "";
 
-            if (codeContext.length != 0) {
+            if (context.length != 0) {
                 prompt = `
                 Explain the following error in given instructions:
 
@@ -109,7 +109,7 @@ export function registerCommands(context: vscode.ExtensionContext, pyrePath: str
                 Source Code: ${vscode.window.activeTextEditor?.document.getText()}
 
                 # Additional Code Context
-                ${codeContext}
+                ${context}
 
                 # Instruction
                 Answer in the following format:
@@ -142,7 +142,8 @@ export function registerCommands(context: vscode.ExtensionContext, pyrePath: str
                     solution: solutionObject.suggestedSolution,
                     solutionObject: solutionObject,
                     document: document,
-                    diagnostic: diagnostic
+                    diagnostic: diagnostic,
+                    context: metadata
                 });
             } else {
                 sidebarProvider._view?.webview.postMessage({

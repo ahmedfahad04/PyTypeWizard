@@ -124,9 +124,13 @@ export async function generateAndStoreSolution(
     return solutionObject
 }
 
-export async function fetchContext(source: string): Promise<string> {
+export async function fetchContext(source: string): Promise<{
+    context: string,
+    metadata: Array<{ startLine: number, endLine: number, fileName: string, filePath: string }>
+}> {
 
     let context: string = "";
+    const metadata: Array<{ startLine: number, endLine: number, fileName: string, filePath: string }> = [];
     const chunkDb = await getChunkDatabaseManager();
 
     const searchResults = await chunkDb.searchChunks(source);
@@ -137,29 +141,32 @@ export async function fetchContext(source: string): Promise<string> {
         shouldSort: true,
         isisCaseSensitive: true,
         threshold: 0.6,
-        keys: [
-            "content",
-        ]
+        keys: ["content"]
     };
 
-    // use fuse.js to rank query
     const fuse = new Fuse(searchResults, fuseOptions);
     const rankedResults = fuse.search(source);
 
-    // Get top 5 results with highest relevance scores
     const topResults = rankedResults.length > 0
         ? rankedResults.slice(0, Math.min(5, rankedResults.length)).map(result => result.item)
         : searchResults.length > 5 ? searchResults.slice(0, 5) : searchResults;
 
     for (const item of topResults) {
-
         const currentScriptPath = vscode.window.activeTextEditor.document.uri.fsPath;
         if (item['filePath'] === currentScriptPath) {
             continue;
         }
 
         context += `##File Path: \n${item['filePath']}\n\n##Code Snippet: \n${item['content']}\n\n`;
+
+        metadata.push({
+            startLine: item['startLine'],
+            endLine: item['endLine'],
+            fileName: item['filePath'].split('/').pop(),
+            filePath: item['filePath']
+        });
+
     }
 
-    return context;
+    return { context, metadata };
 }
