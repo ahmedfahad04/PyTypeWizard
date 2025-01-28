@@ -27,7 +27,7 @@
 				"category": "PyTypeWizard",
 				"command": "pytypewizard.showHistory",
 				"title": "Show History",
-				"icon": "$(history)"
+				"icon": "$(list-tree)"
 			},
 			{
 				"category": "PyTypeWizard",
@@ -40,6 +40,12 @@
 				"command": "pytypewizard.chunkDocuments",
 				"title": "Chunk Documents",
 				"icon": "$(notebook-render-output)"
+			},
+			{
+				"category": "PyTypeWizard",
+				"command": "pytypewizard.clearContext",
+				"title": "Clear Context",
+				"icon": "$(refresh)"
 			},
 			{
 				"category": "PyTypeWizard",
@@ -88,7 +94,13 @@
 					"command": "pytypewizard.showHistory",
 					"when": "view == pytypewizard-sidebar",
 					"group": "navigation",
-					"icon": "$(history)"
+					"icon": "$(list-tree)"
+				},
+				{
+					"command": "pytypewizard.clearContext",
+					"when": "view == pytypewizard-sidebar",
+					"group": "navigation",
+					"icon": "$(refresh)"
 				},
 				{
 					"command": "pytypewizard.openSettings",

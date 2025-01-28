@@ -19,6 +19,8 @@ var Fuse = require('fuse.js');
 
 export function registerCommands(context: vscode.ExtensionContext, pyrePath: string, sidebarProvider: any): void {
 
+    const llmService = getLLMService();
+
     // command 1 (for webview)
     context.subscriptions.push(
         vscode.commands.registerCommand('pytypewizard.fixError', async (document: vscode.TextDocument, diagnostic: vscode.Diagnostic) => {
@@ -277,7 +279,6 @@ export function registerCommands(context: vscode.ExtensionContext, pyrePath: str
                         return null;
                     }
 
-                    const llmService = getLLMService();
                     const result = await llmService.generateResponse(finalPrompt);
 
                     if (token.isCancellationRequested) {
@@ -371,6 +372,14 @@ export function registerCommands(context: vscode.ExtensionContext, pyrePath: str
             );
         })
     );
+
+    // command 12 (clear LLM context)
+    context.subscriptions.push(
+        vscode.commands.registerCommand('pytypewizard.clearContext', async () => {
+            llmService.clearConversationHistory();
+            vscode.window.showInformationMessage('LLM Context Cleared Successfully!');
+        })
+    )
 
 }
 
