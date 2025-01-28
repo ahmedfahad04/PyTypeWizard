@@ -94,25 +94,6 @@ export function registerCommands(context: vscode.ExtensionContext, pyrePath: str
             const errType = errMessage.split(':', 2);
             const warningLine = document.lineAt(diagnostic.range.start.line).text.trim();
 
-            // const prompt = `
-            //     Explain the following error in given instructions:
-
-            //     # Error Details
-            //     Error Type: ${errType[0]}
-            //     Error Message: ${errType[1]}
-            //     Code: ${warningLine}
-
-            //     # Instruction
-            //     Explain the given Python type error in simple and clear language in bullet point. The explanation should include the following section:
-            //     1. What this error means.
-            //     2. Why it occurs in the provided code.
-            //     3. A short and practical hint (not the solution) to fix the error.
-
-            //     Keep the explanation in details and focused so that developers can quickly understand and resolve the issue. Answer in markdown format.
-            //     `;
-
-            outputChannel.appendLine(`TEXT: ${vscode.window.activeTextEditor?.document.getText()}`)
-
             const prompt = `
                 Explain the following error in given instructions:
 
@@ -309,33 +290,52 @@ export function registerCommands(context: vscode.ExtensionContext, pyrePath: str
     // command 11 (chunk Documents)
     context.subscriptions.push(
         vscode.commands.registerCommand('pytypewizard.chunkDocuments', async () => {
+            const { chunks } = await processPythonFiles(vscode.workspace.workspaceFolders?.[0].uri.fsPath || '');
+            const chunkDb = await getChunkDatabaseManager();
 
-            // read files concurrently
-            const { totalCharacters, maxChars, chunks } = await processPythonFiles(vscode.workspace.workspaceFolders?.[0].uri.fsPath || '');
-            vscode.window.showInformationMessage(`Processing Done! Chars: ${totalCharacters} - MAX: ${maxChars}`);
-            outputChannel.appendLine(`Chunks: ${chunks.length}\n1st Chunk: ${chunks[0].content} \n Chunk: ${chunks[1].content} & Metadata: ${chunks[0].metadata.filePath}`);
+            await vscode.window.withProgress(
+                {
+                    location: vscode.ProgressLocation.Notification,
+                    title: 'Indexing Project',
+                    cancellable: true,
+                },
+                async (progress, token) => {
+                    const batchSize = 100; // Process chunks in batches
+                    const totalBatches = Math.ceil(chunks.length / batchSize);
 
-            // store the chunks in db
-            const chunkDb = await getChunkDatabaseManager()
-            for (const chunk of chunks) {
-                const chunkData = {
-                    id: crypto.randomUUID(), // Generate unique ID
-                    content: chunk.content,
-                    filePath: chunk.metadata.filePath,
-                    startLine: chunk.metadata.startLine,
-                    endLine: chunk.metadata.endLine,
-                    chunkType: chunk.metadata.type,
-                    timestamp: new Date().toISOString()
-                };
+                    for (let i = 0; i < chunks.length; i += batchSize) {
+                        if (token.isCancellationRequested) {
+                            chunkDb.close();
+                            return;
+                        }
 
-                await chunkDb.addChunk(chunkData);
-            }
+                        const batch = chunks.slice(i, i + batchSize).map(chunk => ({
+                            id: crypto.randomUUID(),
+                            content: chunk.content,
+                            filePath: chunk.metadata.filePath,
+                            startLine: chunk.metadata.startLine,
+                            endLine: chunk.metadata.endLine,
+                            chunkType: chunk.metadata.type,
+                            timestamp: new Date().toISOString()
+                        }));
 
-            vscode.window.showInformationMessage(`Stored ${chunks.length} code chunks in database`);
-            chunkDb.close();
+                        // Process batch in a single transaction
+                        await chunkDb.addChunks(batch);
 
+                        const progressPercent = ((i + batchSize) / chunks.length) * 100;
+                        progress.report({
+                            message: `Storing chunks... ${Math.min(progressPercent, 100).toFixed(1)}%`,
+                            increment: (1 / totalBatches) * 100
+                        });
+                    }
+
+                    vscode.window.showInformationMessage(`Successfully indexed ${chunks.length} code chunks`);
+                    chunkDb.close();
+                }
+            );
         })
-    )
+    );
+
 }
 
 export async function findPyreCommand(envPath: EnvironmentPath): Promise<string | undefined> {

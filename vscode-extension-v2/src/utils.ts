@@ -1,6 +1,5 @@
 import { readFileSync, statSync } from 'fs';
 import { dirname, join } from 'path';
-import { v4 as uuidv4 } from 'uuid';
 import * as vscode from 'vscode';
 import { Solution } from './db/database';
 import { getLLMService } from './llm';
@@ -75,6 +74,7 @@ export async function generateAndStoreSolution(
     warningLine: string,
     prompt: string,
 ): Promise<Solution> {
+    
     const response = await vscode.window.withProgress(
         {
             location: vscode.ProgressLocation.Notification,
@@ -108,7 +108,7 @@ export async function generateAndStoreSolution(
     }
 
     const solutionObject: Solution = {
-        id: uuidv4(),
+        id: crypto.randomUUID(),
         errorType: errType,
         errorMessage: errMessage,
         originalCode: warningLine,

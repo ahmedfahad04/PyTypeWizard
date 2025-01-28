@@ -91,6 +91,31 @@ export class ChunkDatabaseManager {
         ]);
     }
 
+    async addChunks(chunks: CodeChunk[]): Promise<void> {
+        return new Promise((resolve, reject) => {
+            this.db.serialize(() => {
+                const stmt = this.db.prepare('INSERT INTO chunks VALUES (?, ?, ?, ?, ?, ?, ?)');
+                for (const chunk of chunks) {
+                    stmt.run(
+                        chunk.id,
+                        chunk.content,
+                        chunk.filePath,
+                        chunk.startLine,
+                        chunk.endLine,
+                        chunk.chunkType,
+                        chunk.timestamp,
+                        (err) => {
+                            if (err) reject(err);
+                        }
+                    );
+                }
+                stmt.finalize((err) => {
+                    if (err) reject(err);
+                    else resolve();
+                });
+            });
+        });
+    }
 
     async getChunksByFile(filePath: string): Promise<CodeChunk[]> {
         return new Promise((resolve, reject) => {
@@ -116,7 +141,7 @@ export class ChunkDatabaseManager {
 
     async searchChunks(searchQuery: string, page: number = 1, pageSize: number = 10): Promise<{ chunks: CodeChunk[], total: number }> {
         const searchTerm = searchQuery.trim();
-        
+
         const offset = (page - 1) * pageSize;
         const countQuery = `
             SELECT COUNT(*) as total 

@@ -1,5 +1,6 @@
 import { promises as fsPromises } from "fs";
 import * as path from "path";
+import * as vscode from 'vscode';
 import { outputChannel } from "../utils";
 
 export async function findPythonFiles(rootDir: string): Promise<string[]> {
@@ -132,7 +133,7 @@ async function splitPythonCodeOptimally(filePath: string, fileContent: string): 
         flushStandaloneChunk(lines.length);
     }
 
-    outputChannel.appendLine(`Split ${filePath} into ${chunks.length} chunks`);
+    // outputChannel.appendLine(`Split ${filePath} into ${chunks.length} chunks`);
     return chunks;
 }
 
@@ -193,14 +194,41 @@ async function readPythonFilesConcurrently(files: string[]): Promise<{
 
 
 export async function processPythonFiles(rootDir: string) {
-    outputChannel.appendLine("Finding Python files...");
-    const pythonFiles = await findPythonFiles(rootDir);
-    outputChannel.appendLine(`Found ${pythonFiles.length} Python files.`);
+    // outputChannel.appendLine("Finding Python files...");
+    // const pythonFiles = await findPythonFiles(rootDir);
 
-    outputChannel.appendLine("Reading Python files concurrently...");
-    const result = await readPythonFilesConcurrently(pythonFiles);
-    outputChannel.appendLine(`Successfully read ${result.fileContents.size} Python files with ${result.chunks.length} chunks.`);
+    // outputChannel.appendLine("Reading Python files concurrently...");
+    // const result = await readPythonFilesConcurrently(pythonFiles);
+    // outputChannel.appendLine(`Successfully read ${result.fileContents.size} Python files with ${result.chunks.length} chunks.`);
 
-    return result;
+    const response = await vscode.window.withProgress(
+        {
+            location: vscode.ProgressLocation.Notification,
+            title: '',
+            cancellable: false,
+        },
+        async (progress, token) => {
+            progress.report({ message: 'Indexing Python Files...' });
+
+            // Check for cancellation before making the API call
+            if (token.isCancellationRequested) {
+                return null;
+            }
+
+            const pythonFiles = await findPythonFiles(rootDir);
+            vscode.window.showInformationMessage(`Found ${pythonFiles.length} Python files.`);
+
+            const result = await readPythonFilesConcurrently(pythonFiles);
+
+            // Check for cancellation after getting the response
+            if (token.isCancellationRequested) {
+                return null;
+            }
+
+            return result;
+        }
+    );
+
+    return response;
 }
 
