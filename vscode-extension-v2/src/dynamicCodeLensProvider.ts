@@ -46,7 +46,7 @@ export class DynamicCodeLensProvider implements vscode.CodeLensProvider {
             codeLens.command = {
                 title: "Ask PyTypeWizard",
                 command: "pytypewizard.addToChat",
-                tooltip: "Click to add this value to the chat",
+                tooltip: "Ask your question to PyTypeWizard",
                 arguments: [
                     _document.getText(this.codeLensRange),
                     () => {

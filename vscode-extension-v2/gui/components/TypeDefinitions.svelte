@@ -1,6 +1,18 @@
 <script>
-	// You can define any reactive variables or import statements here if needed
+	// Add scroll to top functionality
+	let showScrollButton = false;
+
+	function scrollToTop() {
+		window.scrollTo({ top: 0, behavior: 'smooth' });
+	}
+
+	// Show button when scrolled down
+	function handleScroll() {
+		showScrollButton = window.scrollY > 200;
+	}
 </script>
+
+<svelte:window on:scroll={handleScroll} />
 
 <main>
 	<h1>Python Type Hints Overview</h1>
@@ -28,8 +40,8 @@
 		</ul>
 		<div class="code-example">
 			<pre>
-        def add(a: int, b: int) -> int:
-            return a + b
+def add(a: int, b: int) -> int:
+	return a + b
         </pre>
 		</div>
 		<p>
@@ -46,8 +58,8 @@
 		</p>
 		<div class="code-example">
 			<pre>
-        def greet(name: str) -> None:
-            print(f"Hello, {name}")
+def greet(name: str) -> None:
+	print("Hello, ", name)
         </pre>
 		</div>
 		<p>
@@ -63,10 +75,10 @@
 		</p>
 		<div class="code-example">
 			<pre>
-  from typing import Any
-  
-  def process(data: Any) -> None:
-      print(data)
+from typing import Any
+
+def process(data: Any) -> None:
+	print(data)
         </pre>
 		</div>
 		<p>
@@ -155,10 +167,10 @@
 		</p>
 		<div class="code-example">
 			<pre>
-        from typing import Callable
-        
-        def apply_function(func: Callable[[int, int], int], a: int, b: int) -> int:
-            return func(a, b)
+from typing import Callable
+
+def apply_function(func: Callable[[int, int], int], a: int, b: int) -> int:
+	return func(a, b)
         </pre>
 		</div>
 		Here,<code>func</code> is a callable that takes two integers as arguments and
@@ -173,13 +185,13 @@
 		</p>
 		<div class="code-example">
 			<pre>
-    from typing import NewType
+from typing import NewType
 
-    UserId = NewType('UserId', int)
+UserId = NewType('UserId', int)
 
-    def get_user_name(user_id: UserId) -> str:
-    # Implementation here
-    return "John Doe"
+def get_user_name(user_id: UserId) -> str:
+# Implementation here
+return "John Doe"
         </pre>
 		</div>
 		<p>
@@ -196,12 +208,12 @@
 		</p>
 		<div class="code-example">
 			<pre>
-    from typing import TypeVar, List
+from typing import TypeVar, List
 
-    T = TypeVar('T')
+T = TypeVar('T')
 
-    def get_first_element(items: List[T]) -> T:
-    return items[0]
+def get_first_element(items: List[T]) -> T:
+return items[0]
         </pre>
 		</div>
 		<p>
@@ -217,11 +229,11 @@
 		</p>
 		<div class="code-example">
 			<pre>
-        from typing import Final
+from typing import Final
 
-        PI: Final = 3.14159
+PI: Final = 3.14159
 
-        # PI cannot be reassigned to another value
+# PI cannot be reassigned to another value
         </pre>
 		</div>
 		<p>
@@ -236,10 +248,10 @@
 		</p>
 		<div class="code-example">
 			<pre>
-        from typing import Literal
+from typing import Literal
 
-        def process_status(status: Literal['active', 'inactive']) -> None:
-        print(f"Processing status: {status}")
+def process_status(status: Literal['active', 'inactive']) -> None:
+print(f"Processing status: {status}")
         </pre>
 		</div>
 		<p>
@@ -256,10 +268,10 @@
 		</p>
 		<div class="code-example">
 			<pre>
-            from typing import Annotated
+from typing import Annotated
 
-            def process_value(value: Annotated[int, 'Positive Integer']) -> None:
-            print("Processing value: ", value)
+def process_value(value: Annotated[int, 'Positive Integer']) -> None:
+print("Processing value: ", value)
         </pre>
 		</div>
 		<p>
@@ -277,37 +289,66 @@
 			experience.
 		</p>
 	</section>
+	{#if showScrollButton}
+		<button
+			class="scroll-top-button"
+			on:click={scrollToTop}
+			title="Scroll to top"
+		>
+			<svg
+				enable-background="new 0 0 32 32"
+				height="32px"
+				id="Layer_1"
+				version="1.1"
+				viewBox="0 0 32 32"
+				width="32px"
+				xml:space="preserve"
+				xmlns="http://www.w3.org/2000/svg"
+				xmlns:xlink="http://www.w3.org/1999/xlink"
+				><path
+					d="M18.221,7.206l9.585,9.585c0.879,0.879,0.879,2.317,0,3.195l-0.8,0.801c-0.877,0.878-2.316,0.878-3.194,0  l-7.315-7.315l-7.315,7.315c-0.878,0.878-2.317,0.878-3.194,0l-0.8-0.801c-0.879-0.878-0.879-2.316,0-3.195l9.587-9.585  c0.471-0.472,1.103-0.682,1.723-0.647C17.115,6.524,17.748,6.734,18.221,7.206z"
+					fill="#515151"
+				/></svg
+			>
+		</button>
+	{/if}
 </main>
 
 <style>
-	/* General styles for dark theme */
+	:root {
+		--content-font: var(--vscode-editor-font-family);
+	}
+
+	:global(*) {
+		font-size: var(--vscode-editor-font-size);
+		font-family: var(--vscode-font-family);
+	}
+
 	main {
-		/* font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; */
 		line-height: 1.6;
-		color: #dcdcdc; /* Light text for dark background */
+		color: var(--vscode-editor-foreground);
 		padding: 20px;
-		background-color: #1e1e1e; /* VSCode dark background */
+		background-color: var(--vscode-editor-background);
 	}
 
 	h1 {
 		font-size: 2rem;
-		color: #569cd6; /* Bright blue for headers */
-		border-bottom: 2px solid #569cd6;
+		color: var(--vscode-textLink-foreground);
+		border-bottom: 2px solid var(--vscode-textLink-foreground);
 		padding-bottom: 10px;
 		margin-bottom: 20px;
 	}
 
 	h2 {
 		font-size: 1.5rem;
-		color: #4ec9b0; /* Bright teal for secondary headers */
+		color: var(--vscode-textLink-activeForeground);
 		margin-top: 5px;
-		border-bottom: 1px solid #3c3c3c;
+		border-bottom: 1px solid var(--vscode-panel-border);
 		padding-bottom: 5px;
 	}
 
 	p {
-		font-size: 1rem;
-		color: #d4d4d4; /* Slightly dimmed light text */
+		color: var(--vscode-editor-foreground);
 		margin: 10px 0;
 	}
 
@@ -319,38 +360,66 @@
 
 	ul li {
 		margin: 5px 0;
-		color: #d4d4d4;
+		color: var(--vscode-editor-foreground);
 	}
 
 	.code-example {
-		background-color: #252526; /* Slightly lighter dark for code blocks */
-		color: #dcdcdc; /* Text color matching VSCode's default theme */
-		padding: 15px;
-		border-radius: 8px;
+		background-color: var(--vscode-editor-background);
+		border: 1px solid var(--vscode-panel-border);
+		padding: 16px;
+		border-radius: 4px;
 		margin: 15px 0;
-		font-size: 0.95rem;
-		overflow-x: auto;
-		box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+		position: relative;
 	}
 
 	.code-example pre {
 		margin: 0;
-		font-family: 'Fira Code', Courier, monospace;
+		/* padding: 16px; */
+		font-family: var(--vscode-editor-font-family);
+		font-size: var(--vscode-editor-font-size);
+		line-height: 1.5;
+		overflow-x: auto;
+		white-space: pre;
 	}
 
 	.code-example code {
-		color: #dcdcaa; /* Yellowish tone for code syntax highlights */
+		color: var(--vscode-textPreformat-foreground);
 	}
 
 	section {
-		margin-bottom: 30px;
+		margin-bottom: 24px;
 		padding: 20px;
-		background-color: #2d2d2d; /* Darker background for sections */
-		border-radius: 8px;
-		box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
+		background-color: var(--vscode-editor-inactiveSelectionBackground);
+		border-radius: 4px;
+		border: 1px solid var(--vscode-panel-border);
 	}
 
 	section:nth-child(odd) {
-		background-color: #3c3c3c; /* Alternate slightly lighter dark sections */
+		background-color: var(--vscode-editor-selectionBackground);
+	}
+
+	.scroll-top-button {
+		position: fixed;
+		bottom: 20px;
+		right: 20px;
+		width: 40px;
+		height: 40px;
+		border-radius: 50%;
+		background-color: var(--vscode-button-background);
+		color: var(--vscode-button-foreground);
+		border: none;
+		cursor: pointer;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		font-size: 10px;
+		opacity: 0.8;
+		transition: opacity 0.2s;
+		z-index: 1000;
+	}
+
+	.scroll-top-button:hover {
+		opacity: 1;
+		background-color: var(--vscode-button-hoverBackground);
 	}
 </style>

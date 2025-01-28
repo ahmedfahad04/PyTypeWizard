@@ -228,54 +228,61 @@ export function registerCommands(context: vscode.ExtensionContext, pyrePath: str
     // command 9 (Ask PyTypeWizard)
     context.subscriptions.push(
         vscode.commands.registerCommand('pytypewizard.addToChat', async (selectedText: string, callback?: () => void) => {
-            const defaultPrompt = `Explain this terminology '${selectedText}' like a high school student with short and simple python example. Add the use cases as well. Be precise and short.
-            Add the coding example at the end
+            const defaultPrompt = `Explain this terminology '${selectedText}' with an coding related analogy and simple python example. Add the use cases as well. Be precise and short.
+            Add the coding example at the end.
+    
+            Answer should following the given format below:
+            * Explain in simple and easy analogy
+            * Explain in technical way to understand relevant usage
+            * Add the use cases in coding
+            * Add the python code example
             `;
-
-            // const userPrompt = await vscode.window.showInputBox({
-            //     value: defaultPrompt,
-            //     placeHolder: "Modify the prompt if needed",
-            //     prompt: "Press Enter to send or Escape to cancel"
-            // });
-            const userPrompt = defaultPrompt;
-
-            if (userPrompt) {
+    
+            const userInput = await vscode.window.showInputBox({
+                placeHolder: "Enter your question about the selected text (Press Enter to use default)",
+                prompt: "What would you like to know about this code?"
+            });
+    
+            const finalPrompt = userInput ? 
+                `Explain about '${selectedText}': ${userInput}` : 
+                defaultPrompt;
+    
+            if (finalPrompt) {
                 const response = await vscode.window.withProgress({
                     location: vscode.ProgressLocation.Notification,
                     title: "PyTypeWizard",
-                    cancellable: false
+                    cancellable: true
                 }, async (progress, token) => {
                     progress.report({ message: 'Generating response...' });
-
-                    // Check for cancellation before making the API call
+    
                     if (token.isCancellationRequested) {
                         return null;
                     }
-
+    
                     const llmService = getLLMService();
-                    const result = await llmService.generateResponse(userPrompt);
-
-                    // Check for cancellation after getting the response
+                    const result = await llmService.generateResponse(finalPrompt);
+    
                     if (token.isCancellationRequested) {
                         return null;
                     }
-
+    
                     return result;
                 });
-
-                if (response.length > 0) {
+    
+                if (response?.length > 0) {
                     sidebarProvider._view?.webview.postMessage({
                         type: 'explainTerminology',
                         explanation: response
                     });
                 }
             }
-
+    
             if (callback) {
                 callback();
             }
         })
     );
+    
 
     // command 9 (show History)
     context.subscriptions.push(

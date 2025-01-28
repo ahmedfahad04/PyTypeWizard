@@ -1,6 +1,6 @@
 <script>
     import { onDestroy, onMount } from 'svelte';
-    // must mention the other component here
+    //! must mention the other component here
     import ErrorList from './ErrorList.svelte';
     import SolutionViewer from './SolutionViewer.svelte';
 	import History from './History.svelte';
@@ -76,7 +76,12 @@
         --warning-color: var(--vscode-errorForeground);
         --button-color: var(--vscode-button-background);
         --button-hover-color: var(--vscode-button-hoverBackground);
-    }
+        --content-font: var(--vscode-editor-font-family);
+	}
+
+	:global(*) {
+		font-size: var(--vscode-editor-font-size);
+	}
 
     hr {
         border: none;
