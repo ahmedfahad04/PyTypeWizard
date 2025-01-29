@@ -20,7 +20,7 @@ export class DatabaseManager {
     constructor() {
         try {
             const homeDir = os.homedir();
-            const dbPath = path.join(homeDir, 'pytypewizard.db');
+            const dbPath = path.join(homeDir, '.pytypewizard.db');
 
             this.db = new sqlite3.Database(dbPath);
         } catch (error) {
@@ -111,6 +111,29 @@ export class DatabaseManager {
         }
     }
 
+    public async getSolutionsByErrorType(errorType: string, limit: number = 5, latestFirst: boolean = true): Promise<Solution[]> {
+        try {
+            return new Promise((resolve, reject) => {
+                const orderClause = latestFirst ? 'ORDER BY timestamp DESC' : 'ORDER BY timestamp ASC';
+                this.db.all(
+                    `SELECT * FROM solutions WHERE errorType = ? ${orderClause} LIMIT ?`,
+                    [errorType, limit],
+                    (err, rows) => {
+                        if (err) {
+                            vscode.window.showErrorMessage(`Failed to retrieve solutions: ${err.message}`);
+                            reject(err);
+                        }
+                        resolve(rows as Solution[]);
+                    }
+                );
+            });
+        } catch (error) {
+            vscode.window.showErrorMessage(`Failed to get solutions: ${error.message}`);
+            throw error;
+        }
+    }
+
+
     async updateSolution(id: string, newSolution: Partial<Solution>): Promise<void> {
         try {
             const setClause = Object.keys(newSolution)
@@ -136,7 +159,6 @@ export class DatabaseManager {
             throw error;
         }
     }
-
 
     async searchSolutions(searchQuery: string, page: number = 1, pageSize: number = 5): Promise<{ solutions: Solution[], total: number }> {
         let queryString = searchQuery.trim();

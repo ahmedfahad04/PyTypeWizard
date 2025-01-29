@@ -2,7 +2,7 @@ import { readFileSync, statSync } from 'fs';
 import { dirname, join } from 'path';
 import * as vscode from 'vscode';
 import { getChunkDatabaseManager } from './db';
-import { Solution } from './db/database';
+import { DatabaseManager, Solution } from './db/database';
 import { processPythonFiles } from './indexing/chunking';
 import { getLLMService } from './llm';
 var Fuse = require('fuse.js');
@@ -237,4 +237,18 @@ export async function fetchContext(source: string): Promise<{
     }
 
     return { context, metadata };
+}
+
+export async function fetchPreviousSolutions(errorType: string, limit: number): Promise<string> {
+    const db = new DatabaseManager();
+    const history: Solution[] = await db.getSolutionsByErrorType(errorType, 3);
+
+    let promptTemplate = "";
+
+    for (const item of history) {
+        promptTemplate += `\n##Error Type: \n${item.errorType}\n\n##Error Message: \n${item.errorMessage}\n\n##Suggested Solution: \n${item.suggestedSolution}\n\n`;
+        promptTemplate += `\n-----\n`;
+    }
+
+    return promptTemplate;
 }
