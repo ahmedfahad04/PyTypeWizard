@@ -58,107 +58,113 @@
 </script>
 
 <div>
-	<div class="header-row">
-		<div>
-			<p class="section-header">Potential Fixes</p>
-		</div>
-		<div>
-			{#if contextFilesCount > 0}
-				<button
-					class="context-count"
-					on:click={() => (showContext = !showContext)}
-				>
-					{contextFilesCount} source files
-				</button>
-			{/if}
-		</div>
-	</div>
-
-	{#if showContext && context}
-		<div class="context-files">
-			{#each context as contextItem}
-				<button
-					class="context-file"
-					on:click={() => {
-						tsvscode.postMessage({
-							type: 'navigateContext',
-							filePath: contextItem.filePath,
-							startLine: contextItem.startLine,
-							endLine: contextItem.endLine,
-						});
-					}}
-				>
-					<span class="file-name">{contextItem.fileName}</span>
-					<span class="file-lines"
-						>Lines {contextItem.startLine}-{contextItem.endLine}</span
+	<div style="min-height: 100px;">
+		<div class="header-row">
+			<div>
+				<p class="section-header">Potential Fixes</p>
+			</div>
+			<div>
+				{#if contextFilesCount > 0}
+					<button
+						class="context-count"
+						on:click={() => (showContext = !showContext)}
 					>
-				</button>
-			{/each}
-		</div>
-	{/if}
-
-	{#if solutionLoading}
-		<div class="loading-container">
-			<p>Generating solution...</p>
-		</div>
-	{:else if solution}
-		<div class="code-container">
-			<pre>{filterCode(solution)}</pre>
-			<button
-				class="copy-button"
-				on:click={(event) => copyCode(filterCode(solution), event.target)}
-				>Copy</button
-			>
-		</div>
-		<p class="section-header">Explanation</p>
-		<div class="explanation">{@html filterExplanation(solution)}</div>
-
-		<div class="button-container">
-			<div class="button-row">
-				<button class="save-button" on:click={() => onSaveSolution()}
-					>Save Suggestion</button
-				>
-				<button
-					class="apply-button"
-					on:click={() =>
-						tsvscode.postMessage(
-							{
-								type: 'applyFix',
-								code: filterCode(solution),
-								solutionObject: solutionObject,
-							},
-							'*'
-						)}>Apply Fix</button
-				>
-			</div>
-			<div class="button-row">
-				<button
-					class="regenerate-button"
-					on:click={() => onReGenerateSolution()}>↺ Try Again</button
-				>
+						{contextFilesCount} source files
+					</button>
+				{/if}
 			</div>
 		</div>
-	{:else}
-		<p class="empty-state">Click on an error to generate a solution</p>
-	{/if}
+
+		{#if showContext && context}
+			<div class="context-files">
+				{#each context as contextItem}
+					<button
+						class="context-file"
+						on:click={() => {
+							tsvscode.postMessage({
+								type: 'navigateContext',
+								filePath: contextItem.filePath,
+								startLine: contextItem.startLine,
+								endLine: contextItem.endLine,
+							});
+						}}
+					>
+						<span class="file-name">{contextItem.fileName}</span>
+						<span class="file-lines"
+							>Lines {contextItem.startLine}-{contextItem.endLine}</span
+						>
+					</button>
+				{/each}
+			</div>
+		{/if}
+
+		{#if solutionLoading}
+			<div class="loading-container">
+				<p style="margin-top: 20px;">Generating solution...</p>
+			</div>
+		{:else if solution}
+			<div class="code-container">
+				<pre>{filterCode(solution)}</pre>
+				<button
+					class="copy-button"
+					on:click={(event) => copyCode(filterCode(solution), event.target)}
+					>Copy</button
+				>
+			</div>
+			<p class="section-header">Explanation</p>
+			<div class="explanation">{@html filterExplanation(solution)}</div>
+
+			<div class="button-container">
+				<div class="button-row">
+					<button class="save-button" on:click={() => onSaveSolution()}
+						>Save Suggestion</button
+					>
+					<button
+						class="apply-button"
+						on:click={() =>
+							tsvscode.postMessage(
+								{
+									type: 'applyFix',
+									code: filterCode(solution),
+									solutionObject: solutionObject,
+								},
+								'*'
+							)}>Apply Fix</button
+					>
+				</div>
+				<div class="button-row">
+					<button
+						class="regenerate-button"
+						on:click={() => onReGenerateSolution()}>↺ Try Again</button
+					>
+				</div>
+			</div>
+		{:else}
+			<p class="empty-state">Click on an error to generate a solution</p>
+		{/if}
+	</div>
 
 	<hr />
 
+	<!-- add a minimum height for this div -->
 	<div>
-		<p class="section-header">Code Insights</p>
-		{#if explainTerminology.length > 0}
-			<div class="explanation">
-				{@html filterExplanation(explainTerminology)}
-				{#if explainTerminology.includes('```python')}
-					<pre>{filterCode(explainTerminology)}</pre>
-				{/if}
-			</div>
-		{:else}
-			<p class="empty-state">
-				Select a keyword or code snippet to see its explanation here
-			</p>
-		{/if}
+		<div style="min-height: 100px;">
+			<p class="section-header">Code Insights</p>
+			{#if explainTerminology.length > 0}
+				<div class="explanation">
+					{@html filterExplanation(explainTerminology)}
+					{#if explainTerminology.includes('```python')}
+						<pre>{filterCode(explainTerminology)}</pre>
+					{/if}
+				</div>
+			{:else}
+				<p class="empty-state-2">
+					Select a keyword or code snippet to see its explanation here
+				</p>
+			{/if}
+		</div>
 	</div>
+	<hr />
 </div>
 
 <style>
@@ -223,6 +229,14 @@
 		text-align: center;
 		font-style: italic;
 		color: var(--vscode-disabledForeground);
+		margin-top: 20px;
+	}
+
+	.empty-state-2 {
+		text-align: center;
+		font-style: italic;
+		color: var(--vscode-disabledForeground);
+		margin-top: 40px;
 	}
 
 	.button-container {
