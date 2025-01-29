@@ -97,6 +97,7 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
                         * put the solution only snippet as python code snippet at first
                         * Add necessary explanation in easy words and bullet points. Important words should be written in bold.
                         * Keep the explanation precise and to the point. Unnecessary exaggeration is discouraged.
+                        * Add reasoning regarding why this solution will work.
                         `;
 
                     const solutionObject = await generateAndStoreSolution(

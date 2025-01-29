@@ -112,8 +112,9 @@ export function registerCommands(context: vscode.ExtensionContext, pyrePath: str
 
                 # Instruction
                 Answer in the following format:
-                * put the solution only snippet as python code snippet at first. No need to mention skipped section or anything else. Just write down the exact lines sequentially.
+                * put the corrected code solution only snippet as python code snippet at first. No need to mention skipped section or anything else. Just write down the exact lines sequentially.
                 * Add necessary explanation in easy words and bullet points. Important words should be written in bold.
+                * Add reasoning regarding why this solution will work. But keep it precise.
                 `;
             } else {
                 prompt = `
@@ -349,7 +350,7 @@ export function registerCommands(context: vscode.ExtensionContext, pyrePath: str
     context.subscriptions.push(
         vscode.commands.registerCommand('pytypewizard.clearContext', async () => {
             llmService.clearConversationHistory();
-            vscode.window.showInformationMessage('LLM Context Cleared Successfully!');
+            vscode.window.showInformationMessage('Conversation history cleared!');
         })
     )
 

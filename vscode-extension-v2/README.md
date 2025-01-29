@@ -54,4 +54,5 @@ Contributions are welcome! Please check our contribution guidelines.
 
 ## License
 
-MIT
+[MIT](AIzaSyD0dffNomGinWh0Z44fKxBqBY_vTpYQbCY)
+[UCB](AIzaSyBDYUajLQgeVcnO3H3XvitRLVexkmOeYxU)
