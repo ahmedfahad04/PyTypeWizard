@@ -25,6 +25,30 @@
 		"commands": [
 			{
 				"category": "PyTypeWizard",
+				"command": "pytypewizard.showHistory",
+				"title": "Show History",
+				"icon": "$(list-tree)"
+			},
+			{
+				"category": "PyTypeWizard",
+				"command": "pytypewizard.openSettings",
+				"title": "Open Settings",
+				"icon": "$(gear)"
+			},
+			{
+				"category": "PyTypeWizard",
+				"command": "pytypewizard.chunkDocuments",
+				"title": "Chunk Documents",
+				"icon": "$(notebook-render-output)"
+			},
+			{
+				"category": "PyTypeWizard",
+				"command": "pytypewizard.clearContext",
+				"title": "Clear Context",
+				"icon": "$(refresh)"
+			},
+			{
+				"category": "PyTypeWizard",
 				"command": "pytypewizard.openDashboard",
 				"title": "Open Dashboard"
 			},
@@ -32,18 +56,6 @@
 				"category": "PyTypeWizard",
 				"command": "pytypewizard.refresh",
 				"title": "Refresh PyTypeWizard"
-			},
-			{
-				"category": "PyTypeWizard",
-				"command": "pytypewizard.showHistory",
-				"title": "Show History",
-				"icon": "$(history)"
-			},
-			{
-				"category": "PyTypeWizard",
-				"command": "pytypewizard.openSettings",
-				"title": "Open Settings",
-				"icon": "$(gear)"
 			},
 			{
 				"category": "PyTypeWizard",
@@ -82,13 +94,25 @@
 					"command": "pytypewizard.showHistory",
 					"when": "view == pytypewizard-sidebar",
 					"group": "navigation",
-					"icon": "$(history)"
+					"icon": "$(list-tree)"
+				},
+				{
+					"command": "pytypewizard.clearContext",
+					"when": "view == pytypewizard-sidebar",
+					"group": "navigation",
+					"icon": "$(refresh)"
 				},
 				{
 					"command": "pytypewizard.openSettings",
 					"when": "view == pytypewizard-sidebar",
 					"group": "navigation",
 					"icon": "$(gear)"
+				},
+				{
+					"command": "pytypewizard.chunkDocuments",
+					"when": "view == pytypewizard-sidebar",
+					"group": "navigation",
+					"icon": "$(notebook-render-output)"
 				}
 			]
 		},
@@ -165,13 +189,13 @@
 		"@vscode/vsce": "^3.2.1",
 		"axios": "^1.7.9",
 		"better-sqlite3": "^11.7.2",
+		"fuse.js": "^7.0.0",
 		"highlight.js": "^11.11.1",
 		"markdown-it": "^14.1.0",
 		"marked": "^15.0.6",
 		"openai": "^4.80.1",
 		"rimraf": "^6.0.1",
 		"sqlite3": "^5.1.7",
-		"uuid": "^11.0.5",
 		"vscode-languageclient": "^9.0.1",
 		"vscode-languageserver-protocol": "^3.17.5",
 		"web-tree-sitter": "^0.24.6",

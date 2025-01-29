@@ -134,7 +134,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
 					outputChannel.appendLine(`Processed ${typeErrors.length} type errors`);
 				} else {
-					outputChannel.appendLine('No type errors found');
+					// outputChannel.appendLine('No type errors found');
 					sideBarProvider._view?.webview.postMessage({
 						type: 'typeErrors',
 						errors: []

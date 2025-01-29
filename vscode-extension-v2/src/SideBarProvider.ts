@@ -1,6 +1,6 @@
 import * as vscode from "vscode";
 import { DatabaseManager, Solution } from "./db/database";
-import { generateAndStoreSolution, outputChannel } from "./utils";
+import { fetchPreviousSolutions, generateAndStoreSolution, outputChannel } from "./utils";
 
 export class SidebarProvider implements vscode.WebviewViewProvider {
     _view?: vscode.WebviewView;
@@ -29,6 +29,15 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
                     const position = new vscode.Position(data.line - 1, data.column);
                     editor.selection = new vscode.Selection(position, position);
                     editor.revealRange(new vscode.Range(position, position));
+                    break;
+                }
+                case "navigateContext": {
+                    const document = await vscode.workspace.openTextDocument(data.filePath);
+                    const editor = await vscode.window.showTextDocument(document);
+                    const startPosition = new vscode.Position(data.startLine - 1, 0);
+                    const endPosition = new vscode.Position(data.endLine - 1, 0);
+                    editor.selection = new vscode.Selection(startPosition, endPosition);
+                    editor.revealRange(new vscode.Range(startPosition, endPosition));
                     break;
                 }
                 case 'deleteEntry': {
@@ -65,24 +74,26 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
                     break;
                 }
                 case 'reGenerateSolution': {
-
-                    // I want to pass the active editor content to the webview and the diagnostics
                     const document = data.document;
                     const diagnostic = data.diagnostic;
+                    const context = data.context;
                     const { errorType, errorMessage, originalCode, suggestedSolution, filePath, lineNumber, timestamp } = data.solutionObject;
 
-                    const prompt = `        
-                        # Error Details
+                    const previousSolution = await fetchPreviousSolutions(errorType, 3);
+                    const prompt = `    
+                        # Few Correct Solutions to Detected Type Errors:
+                        ${previousSolution}
+
+                        Now its your turn to resolve the following issue.
+                    
+                        # Detected Error Details
                         Error Type: ${errorType}
                         Error Message: ${errorMessage}
                         Error Code Snippet: ${originalCode}
                         Source Code: ${document}
-
-                        # Previous Solution:
-                        ${suggestedSolution}
         
                         # Instruction
-                        Your Previous answer was wrong. Now rethink a better correct solution and answer in the following format:
+                        Your last resonse was wrong. Now rethink a better correct solution and answer in the following format:
                         * put the solution only snippet as python code snippet at first
                         * Add necessary explanation in easy words and bullet points. Important words should be written in bold.
                         * Keep the explanation precise and to the point. Unnecessary exaggeration is discouraged.
@@ -98,7 +109,8 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
                             solution: solutionObject.suggestedSolution,
                             solutionObject: solutionObject,
                             document: document,
-                            diagnostic: diagnostic
+                            diagnostic: diagnostic,
+                            context: context
                         });
                     }
 
@@ -123,8 +135,6 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
                     editor.edit(editBuilder => {
                         editBuilder.replace(new vscode.Range(position, position), data.code);
                     });
-
-                    const fixLength = data.code.split('\n').length;
 
                     // now here, register codelense with accept and reject button
                     // if accept, then delete the decoration 

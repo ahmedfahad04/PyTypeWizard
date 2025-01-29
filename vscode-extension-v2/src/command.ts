@@ -7,15 +7,18 @@ import * as vscode from 'vscode';
 import which from "which";
 import { sendApiRequest } from "./api";
 import { PyreCodeActionProvider } from "./codeActionProvider";
-import { getDatabaseManager } from "./db";
+import { getChunkDatabaseManager, getDatabaseManager } from "./db";
 import { Solution } from "./db/database";
 import { DynamicCodeLensProvider } from "./dynamicCodeLensProvider";
 import { getLLMService } from "./llm";
 import { getSimplifiedSmartSelection } from "./smartSelection";
-import { generateAndStoreSolution, getPyRePath, outputChannel } from './utils';
+import { fetchContext, generateAndStoreSolution, getPyRePath, indexRepository, outputChannel } from './utils';
+var Fuse = require('fuse.js');
 
 
 export function registerCommands(context: vscode.ExtensionContext, pyrePath: string, sidebarProvider: any): void {
+
+    const llmService = getLLMService();
 
     // command 1 (for webview)
     context.subscriptions.push(
@@ -78,7 +81,7 @@ export function registerCommands(context: vscode.ExtensionContext, pyrePath: str
         )
     );
 
-    // command 3 (for explain error)
+    // command 3 (Fix & Explain)
     context.subscriptions.push(
         vscode.commands.registerCommand('pytypewizard.explainAndSolve', async (document: vscode.TextDocument, diagnostic: vscode.Diagnostic) => {
 
@@ -87,32 +90,15 @@ export function registerCommands(context: vscode.ExtensionContext, pyrePath: str
                 loading: true
             });
 
-            outputChannel.appendLine(`TEXT: ${diagnostic.message}`)
-
             const errMessage = diagnostic.message;
             const errType = errMessage.split(':', 2);
             const warningLine = document.lineAt(diagnostic.range.start.line).text.trim();
+            const { context, metadata } = await fetchContext(warningLine);
 
-            // const prompt = `
-            //     Explain the following error in given instructions:
+            let prompt = "";
 
-            //     # Error Details
-            //     Error Type: ${errType[0]}
-            //     Error Message: ${errType[1]}
-            //     Code: ${warningLine}
-
-            //     # Instruction
-            //     Explain the given Python type error in simple and clear language in bullet point. The explanation should include the following section:
-            //     1. What this error means.
-            //     2. Why it occurs in the provided code.
-            //     3. A short and practical hint (not the solution) to fix the error.
-
-            //     Keep the explanation in details and focused so that developers can quickly understand and resolve the issue. Answer in markdown format.
-            //     `;
-
-            outputChannel.appendLine(`TEXT: ${vscode.window.activeTextEditor?.document.getText()}`)
-
-            const prompt = `
+            if (context.length != 0) {
+                prompt = `
                 Explain the following error in given instructions:
 
                 # Error Details
@@ -121,11 +107,30 @@ export function registerCommands(context: vscode.ExtensionContext, pyrePath: str
                 Error Code Snippet: ${warningLine}
                 Source Code: ${vscode.window.activeTextEditor?.document.getText()}
 
+                # Additional Code Context
+                ${context}
+
                 # Instruction
                 Answer in the following format:
                 * put the solution only snippet as python code snippet at first. No need to mention skipped section or anything else. Just write down the exact lines sequentially.
                 * Add necessary explanation in easy words and bullet points. Important words should be written in bold.
                 `;
+            } else {
+                prompt = `
+                Explain the following error in given instructions:
+
+                # Error Details
+                Error Type: ${errType[0]}
+                Error Message: ${errType[1]}
+                Error Code Snippet: ${warningLine}
+                Source Code: ${vscode.window.activeTextEditor?.document.getText()}                
+
+                # Instruction
+                Answer in the following format:
+                * put the solution only snippet as python code snippet at first. No need to mention skipped section or anything else. Just write down the exact lines sequentially.
+                * Add necessary explanation in easy words and bullet points. Important words should be written in bold.
+                `;
+            }
 
             outputChannel.appendLine(`PROMPT:>> ${prompt}`);
             const solutionObject = await generateAndStoreSolution(errType[0], errMessage, document.uri.fsPath, diagnostic.range.start.line, warningLine, prompt);
@@ -136,7 +141,8 @@ export function registerCommands(context: vscode.ExtensionContext, pyrePath: str
                     solution: solutionObject.suggestedSolution,
                     solutionObject: solutionObject,
                     document: document,
-                    diagnostic: diagnostic
+                    diagnostic: diagnostic,
+                    context: metadata
                 });
             } else {
                 sidebarProvider._view?.webview.postMessage({
@@ -188,34 +194,48 @@ export function registerCommands(context: vscode.ExtensionContext, pyrePath: str
     // command 7 (Search Code)
     context.subscriptions.push(
         vscode.commands.registerCommand('pytypewizard.searchCode', async () => {
-            const query = await vscode.window.showInputBox({ placeHolder: 'Enter search query' });
-            if (!query) return;
+            // search the chunkdb for the code snippet
+            const chunkDb = await getChunkDatabaseManager();
 
-            try {
-                const response = await axios.post('http://localhost:8000/search', { query });
-                const results = response.data.results;
+            // show input box
+            const input = await vscode.window.showInputBox({
+                placeHolder: "Search code snippet",
+                prompt: "Enter the code snippet to search"
+            });
 
-                if (results.length > 0) {
-                    const items = results.map((result: any) => ({
-                        label: `${result.file}:${result.line}`,
-                        detail: result.snippet,
-                    }));
+            if (input.length > 0) {
 
-                    const selection = await vscode.window.showQuickPick(items, { placeHolder: 'Search Results' });
-                    if (selection) {
-                        vscode.window.showInformationMessage(`Selected: ${selection}`);
-                        // const [file, line] = selection.label.split(':');
-                        // const doc = await vscode.workspace.openTextDocument(vscode.Uri.file(file));
-                        // const editor = await vscode.window.showTextDocument(doc);
-                        // const position = new vscode.Position(Number(line) - 1, 0);
-                        // editor.selection = new vscode.Selection(position, position);
-                        // editor.revealRange(new vscode.Range(position, position));
-                    }
-                } else {
-                    vscode.window.showInformationMessage('No results found!');
+                let context: string = "";
+
+                const searchResults = await chunkDb.searchChunks(input);
+                outputChannel.appendLine(`Search Results: ${searchResults.length}`);
+                // outputChannel.appendLine(`Search Results: ${searchResults.map(i => i.filePath).join('\n')}`);
+
+                const fuseOptions = {
+                    shouldSort: true,
+                    isCaseSensitive: true,
+                    threshold: 0.6,
+                    keys: [
+                        "content",
+                    ]
+                };
+
+                // use fuse.js to rank query
+                const fuse = new Fuse(searchResults, fuseOptions);
+                const rankedResults = fuse.search(input);
+                outputChannel.appendLine(`Ranked Results Count: ${rankedResults.length}`);
+                outputChannel.appendLine(`Ranked Results File Path: ${rankedResults.map(i => i.item['filePath']).join('\n')}`);
+
+                // Get top 5 results with highest relevance scores
+                const topResults = rankedResults.length > 0
+                    ? rankedResults.slice(0, Math.min(5, rankedResults.length)).map(result => result.item)
+                    : searchResults.length > 5 ? searchResults.slice(0, 5) : searchResults;
+
+                for (const item of topResults) {
+                    context += `##File Path: \n${item['filePath']}\n\n##Code Snippet: \n${item['content']}\n\n`;
                 }
-            } catch (error) {
-                vscode.window.showErrorMessage(`Search failed: ${error.message}`);
+
+                outputChannel.appendLine(`Final Context: ${context}`);
             }
         })
     );
@@ -237,16 +257,16 @@ export function registerCommands(context: vscode.ExtensionContext, pyrePath: str
             * Add the use cases in coding
             * Add the python code example
             `;
-    
+
             const userInput = await vscode.window.showInputBox({
                 placeHolder: "Enter your question about the selected text (Press Enter to use default)",
                 prompt: "What would you like to know about this code?"
             });
-    
-            const finalPrompt = userInput ? 
-                `Explain about '${selectedText}': ${userInput}` : 
+
+            const finalPrompt = userInput ?
+                `Explain about '${selectedText}': ${userInput}` :
                 defaultPrompt;
-    
+
             if (finalPrompt) {
                 const response = await vscode.window.withProgress({
                     location: vscode.ProgressLocation.Notification,
@@ -254,21 +274,20 @@ export function registerCommands(context: vscode.ExtensionContext, pyrePath: str
                     cancellable: true
                 }, async (progress, token) => {
                     progress.report({ message: 'Generating response...' });
-    
+
                     if (token.isCancellationRequested) {
                         return null;
                     }
-    
-                    const llmService = getLLMService();
+
                     const result = await llmService.generateResponse(finalPrompt);
-    
+
                     if (token.isCancellationRequested) {
                         return null;
                     }
-    
+
                     return result;
                 });
-    
+
                 if (response?.length > 0) {
                     sidebarProvider._view?.webview.postMessage({
                         type: 'explainTerminology',
@@ -276,15 +295,14 @@ export function registerCommands(context: vscode.ExtensionContext, pyrePath: str
                     });
                 }
             }
-    
+
             if (callback) {
                 callback();
             }
         })
     );
-    
 
-    // command 9 (show History)
+    // command 10 (show History)
     context.subscriptions.push(
         vscode.commands.registerCommand('pytypewizard.showHistory', async () => {
 
@@ -305,6 +323,36 @@ export function registerCommands(context: vscode.ExtensionContext, pyrePath: str
 
         })
     );
+
+    // command 11 (chunk Documents)
+    context.subscriptions.push(
+        vscode.commands.registerCommand('pytypewizard.chunkDocuments', async () => {
+
+            const currentDirectory = vscode.workspace.workspaceFolders?.[0].uri.fsPath || '';
+            let context: string = "";
+            const metadata: Array<{ startLine: number, endLine: number, fileName: string, filePath: string }> = [];
+            const chunkDb = await getChunkDatabaseManager();
+
+            //! check if the repository has been indexed
+            const isChunked = await chunkDb.isChunked(currentDirectory);
+
+            if (!isChunked) {
+                vscode.window.showWarningMessage('Repository has not been Indexed yet!');
+                await indexRepository();
+            } else {
+                vscode.window.showInformationMessage('Repository has been Indexed already!');
+            }
+        })
+    );
+
+    // command 12 (clear LLM context)
+    context.subscriptions.push(
+        vscode.commands.registerCommand('pytypewizard.clearContext', async () => {
+            llmService.clearConversationHistory();
+            vscode.window.showInformationMessage('LLM Context Cleared Successfully!');
+        })
+    )
+
 }
 
 export async function findPyreCommand(envPath: EnvironmentPath): Promise<string | undefined> {
@@ -369,6 +417,3 @@ export async function runErrorExtractor(context: vscode.ExtensionContext, filePa
         });
     });
 }
-
-// Register the "Add to Chat" command
-// export const addToChatCommand = 

@@ -9,10 +9,8 @@
 5. Fixed auto install pyre-check issue ✅
 6. Show loading state while generating solutions & show the generated solutions. ✅
 7. Add enable/disable option in vscode 'panel'.⌛
-8. Add activity icon in the bottom panel like cody/copilot instead of sidebar.⌛
-9. Show count of total detected error in the sidebar Icon ⌛
-10. Show a Re-generate Solution button. ✅
-11. Show previously fixed solution History ✅
+8. Show a Re-generate Solution button. ✅
+9. Show previously fixed solution History ✅
 
 ## VSCODE Packaging
 
@@ -22,22 +20,15 @@
 
 - Add command in Copilot Chat Interface (like specific command to explain, debug etc... think more!!) ✅
 - Add Walkthrough window if time demands about how to use this application [lowest priority]
-- Add project readability or cognitive complexity due to usage of type hints
 - We should have the option to ignore some errors ✅
 - Show the generated solution above the error-generated code snippet.
 - Curate Best **Prompt** to get the best results.
 - Check suggestions in Keeps
 - Add Temperature and Others features of LLM as settings options
-- Add a learn more option in Terminology Section and by clicking it take him to chatbot
 
 ## RAG
 
-1. Feed all the details of the detected errors to get better context.
-
-## Solution Generation
-
-1. Provide necessary indentation of generated python code.
-2. Integrate Typescript based LLM to get selected code.
+1. Feed all the details of the detected errors to get better context. ✅
 
 ## Issues
 

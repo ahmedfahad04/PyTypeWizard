@@ -1,9 +1,12 @@
 import { readFileSync, statSync } from 'fs';
 import { dirname, join } from 'path';
-import { v4 as uuidv4 } from 'uuid';
 import * as vscode from 'vscode';
-import { Solution } from './db/database';
+import { getChunkDatabaseManager } from './db';
+import { DatabaseManager, Solution } from './db/database';
+import { processPythonFiles } from './indexing/chunking';
 import { getLLMService } from './llm';
+var Fuse = require('fuse.js');
+
 
 export let outputChannel = vscode.window.createOutputChannel('PyTypeWizard');
 
@@ -75,6 +78,7 @@ export async function generateAndStoreSolution(
     warningLine: string,
     prompt: string,
 ): Promise<Solution> {
+
     const response = await vscode.window.withProgress(
         {
             location: vscode.ProgressLocation.Notification,
@@ -108,7 +112,7 @@ export async function generateAndStoreSolution(
     }
 
     const solutionObject: Solution = {
-        id: uuidv4(),
+        id: crypto.randomUUID(),
         errorType: errType,
         errorMessage: errMessage,
         originalCode: warningLine,
@@ -119,4 +123,132 @@ export async function generateAndStoreSolution(
     };
 
     return solutionObject
+}
+
+export async function indexRepository(): Promise<void> {
+    const { chunks } = await processPythonFiles(vscode.workspace.workspaceFolders?.[0].uri.fsPath || '');
+    const chunkDb = await getChunkDatabaseManager();
+
+    await vscode.window.withProgress(
+        {
+            location: vscode.ProgressLocation.Notification,
+            title: 'Indexing Project',
+            cancellable: true,
+        },
+        async (progress, token) => {
+            const batchSize = 100; // Process chunks in batches
+            const totalBatches = Math.ceil(chunks.length / batchSize);
+
+            for (let i = 0; i < chunks.length; i += batchSize) {
+                if (token.isCancellationRequested) {
+                    chunkDb.close();
+                    return;
+                }
+
+                const batch = chunks.slice(i, i + batchSize).map(chunk => ({
+                    id: crypto.randomUUID(),
+                    content: chunk.content,
+                    filePath: chunk.metadata.filePath,
+                    startLine: chunk.metadata.startLine,
+                    endLine: chunk.metadata.endLine,
+                    chunkType: chunk.metadata.type,
+                    timestamp: new Date().toISOString()
+                }));
+
+                // Process batch in a single transaction
+                await chunkDb.addChunks(batch);
+
+                const progressPercent = ((i + batchSize) / chunks.length) * 100;
+                progress.report({
+                    message: `Storing chunks... ${Math.min(progressPercent, 100).toFixed(1)}%`,
+                    increment: (1 / totalBatches) * 100
+                });
+            }
+
+            chunkDb.trackRepository(vscode.workspace.workspaceFolders?.[0].uri.fsPath || '');
+
+            vscode.window.showInformationMessage(`Successfully indexed ${chunks.length} code chunks`);
+        }
+    );
+}
+
+export async function fetchContext(source: string): Promise<{
+    context: string,
+    metadata: Array<{ startLine: number, endLine: number, fileName: string, filePath: string }>
+}> {
+
+    const currentDirectory = vscode.workspace.workspaceFolders?.[0].uri.fsPath || '';
+    let context: string = "";
+    const metadata: Array<{ startLine: number, endLine: number, fileName: string, filePath: string }> = [];
+    const chunkDb = await getChunkDatabaseManager();
+
+    //! check if the repository has been indexed
+    const isChunked = await chunkDb.isChunked(currentDirectory);
+
+    if (!isChunked) {
+        vscode.window.showWarningMessage('Repository has not been Indexed yet!');
+
+        const solution = await vscode.window.showInformationMessage(
+            'Would you like to index the repository now?',
+            'Yes',
+            'No'
+        );
+
+        if (solution === 'Yes') {
+            await indexRepository();
+        } else {
+            return { context, metadata };
+        }
+    }
+
+    const searchResults = await chunkDb.searchChunks(source);
+    outputChannel.appendLine(`Search Results: ${searchResults.length}`);
+    outputChannel.appendLine(`Search Results: ${searchResults.map(i => i.filePath).join('\n')}`);
+
+    const fuseOptions = {
+        shouldSort: true,
+        isisCaseSensitive: true,
+        threshold: 0.6,
+        keys: ["content"]
+    };
+
+    const fuse = new Fuse(searchResults, fuseOptions);
+    const rankedResults = fuse.search(source);
+
+    const topResults = rankedResults.length > 0
+        ? rankedResults.slice(0, Math.min(5, rankedResults.length)).map(result => result.item)
+        : searchResults.length > 5 ? searchResults.slice(0, 5) : searchResults;
+
+    for (const item of topResults) {
+        const currentScriptPath = vscode.window.activeTextEditor.document.uri.fsPath;
+        if (item['filePath'] === currentScriptPath) {
+            continue;
+        }
+
+        context += `##File Path: \n${item['filePath']}\n\n##Code Snippet: \n${item['content']}\n\n`;
+
+        metadata.push({
+            startLine: item['startLine'],
+            endLine: item['endLine'],
+            fileName: item['filePath'].split('/').pop(),
+            filePath: item['filePath']
+        });
+
+    }
+
+    return { context, metadata };
+}
+
+export async function fetchPreviousSolutions(errorType: string, limit: number): Promise<string> {
+    const db = new DatabaseManager();
+    const history: Solution[] = await db.getSolutionsByErrorType(errorType, 3);
+
+    let promptTemplate = "";
+
+    for (const item of history) {
+        promptTemplate += `\n##Error Type: \n${item.errorType}\n\n##Error Message: \n${item.errorMessage}\n\n##Suggested Solution: \n${item.suggestedSolution}\n\n`;
+        promptTemplate += `\n-----\n`;
+    }
+
+    return promptTemplate;
 }
