@@ -3,6 +3,7 @@ import { dirname, join } from 'path';
 import * as vscode from 'vscode';
 import { getChunkDatabaseManager } from './db';
 import { Solution } from './db/database';
+import { processPythonFiles } from './indexing/chunking';
 import { getLLMService } from './llm';
 var Fuse = require('fuse.js');
 
@@ -124,14 +125,81 @@ export async function generateAndStoreSolution(
     return solutionObject
 }
 
+export async function indexRepository(): Promise<void> {
+    const { chunks } = await processPythonFiles(vscode.workspace.workspaceFolders?.[0].uri.fsPath || '');
+    const chunkDb = await getChunkDatabaseManager();
+
+    await vscode.window.withProgress(
+        {
+            location: vscode.ProgressLocation.Notification,
+            title: 'Indexing Project',
+            cancellable: true,
+        },
+        async (progress, token) => {
+            const batchSize = 100; // Process chunks in batches
+            const totalBatches = Math.ceil(chunks.length / batchSize);
+
+            for (let i = 0; i < chunks.length; i += batchSize) {
+                if (token.isCancellationRequested) {
+                    chunkDb.close();
+                    return;
+                }
+
+                const batch = chunks.slice(i, i + batchSize).map(chunk => ({
+                    id: crypto.randomUUID(),
+                    content: chunk.content,
+                    filePath: chunk.metadata.filePath,
+                    startLine: chunk.metadata.startLine,
+                    endLine: chunk.metadata.endLine,
+                    chunkType: chunk.metadata.type,
+                    timestamp: new Date().toISOString()
+                }));
+
+                // Process batch in a single transaction
+                await chunkDb.addChunks(batch);
+
+                const progressPercent = ((i + batchSize) / chunks.length) * 100;
+                progress.report({
+                    message: `Storing chunks... ${Math.min(progressPercent, 100).toFixed(1)}%`,
+                    increment: (1 / totalBatches) * 100
+                });
+            }
+
+            chunkDb.trackRepository(vscode.workspace.workspaceFolders?.[0].uri.fsPath || '');
+
+            vscode.window.showInformationMessage(`Successfully indexed ${chunks.length} code chunks`);
+        }
+    );
+}
+
 export async function fetchContext(source: string): Promise<{
     context: string,
     metadata: Array<{ startLine: number, endLine: number, fileName: string, filePath: string }>
 }> {
 
+    const currentDirectory = vscode.workspace.workspaceFolders?.[0].uri.fsPath || '';
     let context: string = "";
     const metadata: Array<{ startLine: number, endLine: number, fileName: string, filePath: string }> = [];
     const chunkDb = await getChunkDatabaseManager();
+
+    //! check if the repository has been indexed
+    const isChunked = await chunkDb.isChunked(currentDirectory);
+
+    if (!isChunked) {
+        vscode.window.showWarningMessage('Repository has not been Indexed yet!');
+
+        const solution = await vscode.window.showInformationMessage(
+            'Would you like to index the repository now?',
+            'Yes',
+            'No'
+        );
+
+        if (solution === 'Yes') {
+            await indexRepository();
+        } else {
+            return { context, metadata };
+        }
+    }
 
     const searchResults = await chunkDb.searchChunks(source);
     outputChannel.appendLine(`Search Results: ${searchResults.length}`);

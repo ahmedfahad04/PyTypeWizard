@@ -10,10 +10,9 @@ import { PyreCodeActionProvider } from "./codeActionProvider";
 import { getChunkDatabaseManager, getDatabaseManager } from "./db";
 import { Solution } from "./db/database";
 import { DynamicCodeLensProvider } from "./dynamicCodeLensProvider";
-import { processPythonFiles } from "./indexing/chunking";
 import { getLLMService } from "./llm";
 import { getSimplifiedSmartSelection } from "./smartSelection";
-import { fetchContext, generateAndStoreSolution, getPyRePath, outputChannel } from './utils';
+import { fetchContext, generateAndStoreSolution, getPyRePath, indexRepository, outputChannel } from './utils';
 var Fuse = require('fuse.js');
 
 
@@ -328,49 +327,21 @@ export function registerCommands(context: vscode.ExtensionContext, pyrePath: str
     // command 11 (chunk Documents)
     context.subscriptions.push(
         vscode.commands.registerCommand('pytypewizard.chunkDocuments', async () => {
-            const { chunks } = await processPythonFiles(vscode.workspace.workspaceFolders?.[0].uri.fsPath || '');
+
+            const currentDirectory = vscode.workspace.workspaceFolders?.[0].uri.fsPath || '';
+            let context: string = "";
+            const metadata: Array<{ startLine: number, endLine: number, fileName: string, filePath: string }> = [];
             const chunkDb = await getChunkDatabaseManager();
 
-            await vscode.window.withProgress(
-                {
-                    location: vscode.ProgressLocation.Notification,
-                    title: 'Indexing Project',
-                    cancellable: true,
-                },
-                async (progress, token) => {
-                    const batchSize = 100; // Process chunks in batches
-                    const totalBatches = Math.ceil(chunks.length / batchSize);
+            //! check if the repository has been indexed
+            const isChunked = await chunkDb.isChunked(currentDirectory);
 
-                    for (let i = 0; i < chunks.length; i += batchSize) {
-                        if (token.isCancellationRequested) {
-                            chunkDb.close();
-                            return;
-                        }
-
-                        const batch = chunks.slice(i, i + batchSize).map(chunk => ({
-                            id: crypto.randomUUID(),
-                            content: chunk.content,
-                            filePath: chunk.metadata.filePath,
-                            startLine: chunk.metadata.startLine,
-                            endLine: chunk.metadata.endLine,
-                            chunkType: chunk.metadata.type,
-                            timestamp: new Date().toISOString()
-                        }));
-
-                        // Process batch in a single transaction
-                        await chunkDb.addChunks(batch);
-
-                        const progressPercent = ((i + batchSize) / chunks.length) * 100;
-                        progress.report({
-                            message: `Storing chunks... ${Math.min(progressPercent, 100).toFixed(1)}%`,
-                            increment: (1 / totalBatches) * 100
-                        });
-                    }
-
-                    vscode.window.showInformationMessage(`Successfully indexed ${chunks.length} code chunks`);
-                    chunkDb.close();
-                }
-            );
+            if (!isChunked) {
+                vscode.window.showWarningMessage('Repository has not been Indexed yet!');
+                await indexRepository();
+            } else {
+                vscode.window.showInformationMessage('Repository has been Indexed already!');
+            }
         })
     );
 

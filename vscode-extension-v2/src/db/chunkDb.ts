@@ -1,3 +1,4 @@
+import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 import * as sqlite3 from 'sqlite3';
@@ -13,6 +14,13 @@ export interface CodeChunk {
     timestamp: string;
 }
 
+export interface RepoLog {
+    id: string;
+    path: string;
+    last_chunked: string;
+    chunk_count: number;
+}
+
 export class ChunkDatabaseManager {
     private db: sqlite3.Database;
 
@@ -20,6 +28,7 @@ export class ChunkDatabaseManager {
         const homeDir = os.homedir();
         const dbPath = path.join(homeDir, '.pytypewizard_chunks.db');
         this.db = new sqlite3.Database(dbPath);
+        // this.cleanupOldChunks();
     }
 
     public async initializeDatabase() {
@@ -70,9 +79,20 @@ export class ChunkDatabaseManager {
             END;
         `;
 
+        // Repo table to keep track which repo was chunked when
+        const createRepoTable = `
+        CREATE TABLE IF NOT EXISTS repositories (
+            id TEXT PRIMARY KEY,
+            path TEXT NOT NULL,
+            last_chunked DATETIME NOT NULL,
+            chunk_count INTEGER DEFAULT 0
+        )
+        `;
+
         await this.runQuery(createMainTable);
         await this.runQuery(createFTSTable);
         await this.runQuery(createTriggers);
+        await this.runQuery(createRepoTable);
     }
 
     async addChunk(chunk: CodeChunk): Promise<void> {
@@ -114,6 +134,52 @@ export class ChunkDatabaseManager {
                     else resolve();
                 });
             });
+        });
+    }
+
+    async trackRepository(repoPath: string): Promise<void> {
+        const query = `
+            INSERT INTO repositories (id, path, last_chunked, chunk_count)
+            VALUES (?, ?, datetime('now'), (
+                SELECT COUNT(*) FROM chunks WHERE filePath LIKE ?
+            ))
+        `;
+        const repoId = Buffer.from(repoPath).toString('base64');
+        await this.runQuery(query, [repoId, repoPath, `${repoPath}%`]);
+    }
+
+    async getRepositoryStatus(repoPath: string): Promise<RepoLog[]> {
+        return new Promise((resolve, reject) => {
+            this.db.all(
+                'SELECT * FROM RepoLog WHERE path = ?',
+                [repoPath],
+                (err, rows) => {
+                    if (err) reject(err);
+                    resolve(rows as RepoLog[]);
+                }
+            );
+        });
+    }
+
+    // create a method isChunked(repoPath: string): Promise<boolean> that checks if a repository has been chunked
+    async isChunked(repoPath: string): Promise<number> {
+        return new Promise((resolve, reject) => {
+            this.db.get(
+                'SELECT chunk_count FROM repositories WHERE path LIKE ?',
+                [`${repoPath}%`],
+                (err, row) => {
+                    if (err) {
+                        reject(err);
+                    } else {
+                        // If no row found, return 0
+                        if (!row) {
+                            resolve(0);
+                        } else {
+                            resolve((row as RepoLog).chunk_count);
+                        }
+                    }
+                }
+            );
         });
     }
 
@@ -180,6 +246,36 @@ export class ChunkDatabaseManager {
         });
     }
 
+    private async cleanupOldChunks(): Promise<void> {
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+        const cutoffDate = sevenDaysAgo.toISOString();
+
+        const query = `
+            DELETE FROM chunks 
+            WHERE timestamp < ?
+        `;
+
+        await this.runQuery(query, [cutoffDate]);
+        await this.recreateDatabase();
+    }
+
+    public async recreateDatabase(): Promise<void> {
+        // Close existing connection
+        this.db.close();
+
+        // Delete the database file
+        const homeDir = os.homedir();
+        const dbPath = path.join(homeDir, '.pytypewizard_chunks.db');
+        fs.unlinkSync(dbPath);
+
+        // Create new connection
+        this.db = new sqlite3.Database(dbPath);
+
+        // Reinitialize database schema
+        await this.initializeDatabase();
+
+    }
 
 
     private runQuery(query: string, params: any[] = []): Promise<void> {
