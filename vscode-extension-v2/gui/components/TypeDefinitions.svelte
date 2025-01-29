@@ -16,7 +16,28 @@
 
 <main>
 	<h1>Python Type Hints Overview</h1>
-	<section>
+
+	<nav class="section-nav">
+		<h3>Quick Navigation</h3>
+		<ul>
+			<li><a href="#introduction">Introduction to Type Hints</a></li>
+			<li><a href="#basic-types">Basic Types</a></li>
+			<li><a href="#none-type">None Type</a></li>
+			<li><a href="#any-type">Any Type</a></li>
+			<li><a href="#union-type">Union Type</a></li>
+			<li><a href="#optional-type">Optional Type</a></li>
+			<li><a href="#list-tuple">List and Tuple Types</a></li>
+			<li><a href="#dictionary-type">Dictionary Type</a></li>
+			<li><a href="#callable-type">Callable Type</a></li>
+			<li><a href="#custom-types">Custom Types</a></li>
+			<li><a href="#generic-types">Generic Types</a></li>
+			<li><a href="#final-type">Final Type</a></li>
+			<li><a href="#literal-type">Literal Type</a></li>
+			<li><a href="#annotated-type">Annotated Type</a></li>
+		</ul>
+	</nav>
+
+	<section id="introduction">
 		<h2>Introduction to Type Hints</h2>
 		<p>
 			Python's type hints, introduced in PEP 484, allow for optional type
@@ -26,7 +47,7 @@
 		</p>
 	</section>
 
-	<section>
+	<section id="basic-types">
 		<h2>Basic Types</h2>
 		<p>The most fundamental types in Python include:</p>
 		<ul>
@@ -50,7 +71,7 @@ def add(a: int, b: int) -> int:
 		</p>
 	</section>
 
-	<section>
+	<section id="none-type">
 		<h2>None Type</h2>
 		<p>
 			The <code>None</code> type is used to indicate that a function does not return
@@ -68,7 +89,7 @@ def greet(name: str) -> None:
 		</p>
 	</section>
 
-	<section>
+	<section id="any-type">
 		<h2>Any Type</h2>
 		<p>
 			The <code>Any</code> type is a special type that can match any type:
@@ -86,7 +107,7 @@ def process(data: Any) -> None:
 		</p>
 	</section>
 
-	<section>
+	<section id="union-type">
 		<h2>Union Type</h2>
 		<p>
 			The <code>Union</code> type allows a variable to be one of multiple types:
@@ -104,7 +125,7 @@ def process(data: Any) -> None:
 		</p>
 	</section>
 
-	<section>
+	<section id="optional-type">
 		<h2>Optional Type</h2>
 		<p>
 			The <code>Optional</code> type is a shorthand for a <code>Union</code>
@@ -124,7 +145,7 @@ def process(data: Any) -> None:
 		</p>
 	</section>
 
-	<section>
+	<section id="list-tuple">
 		<h2>List and Tuple Types</h2>
 		<p>To specify a list of a certain type or a tuple with specific types:</p>
 		<div class="code-example">
@@ -144,7 +165,7 @@ def process(data: Any) -> None:
 		</p>
 	</section>
 
-	<section>
+	<section id="dictionary-type">
 		<h2>Dictionary Type</h2>
 		<p>To specify a dictionary with specific key-value types:</p>
 		<div class="code-example">
@@ -160,7 +181,7 @@ def process(data: Any) -> None:
 		</p>
 	</section>
 
-	<section>
+	<section id="callable-type">
 		<h2>Callable Type</h2>
 		<p>
 			The <code>Callable</code> type is used for functions or callable objects:
@@ -177,7 +198,7 @@ def apply_function(func: Callable[[int, int], int], a: int, b: int) -> int:
 		returns an integer.
 	</section>
 
-	<section>
+	<section id="custom-types">
 		<h2>Custom Types</h2>
 		<p>
 			You can create aliases for complex types using <code>NewType</code> or by assigning
@@ -200,7 +221,7 @@ return "John Doe"
 		</p>
 	</section>
 
-	<section>
+	<section id="generic-types">
 		<h2>Generic Types</h2>
 		<p>
 			Python supports generic types to create reusable, type-safe data
@@ -222,7 +243,7 @@ return items[0]
 		</p>
 	</section>
 
-	<section>
+	<section id="final-type">
 		<h2>Final Type</h2>
 		<p>
 			The <code>Final</code> type specifies that a variable should not be reassigned:
@@ -241,7 +262,7 @@ PI: Final = 3.14159
 		</p>
 	</section>
 
-	<section>
+	<section id="literal-type">
 		<h2>Literal Type</h2>
 		<p>
 			The <code>Literal</code> type restricts a variable to specific literal values:
@@ -260,7 +281,7 @@ print(f"Processing status: {status}")
 		</p>
 	</section>
 
-	<section>
+	<section id="annotated-type">
 		<h2>Annotated Type</h2>
 		<p>
 			The <code>Annotated</code> type allows adding metadata or multiple type hints
@@ -280,7 +301,7 @@ print("Processing value: ", value)
 		</p>
 	</section>
 
-	<section>
+	<section id="conclusion">
 		<h2>Conclusion</h2>
 		<p>
 			Type hints in Python provide a way to add type information to your code
@@ -289,6 +310,7 @@ print("Processing value: ", value)
 			experience.
 		</p>
 	</section>
+
 	{#if showScrollButton}
 		<button
 			class="scroll-top-button"
@@ -384,6 +406,39 @@ print("Processing value: ", value)
 
 	.code-example code {
 		color: var(--vscode-textPreformat-foreground);
+	}
+
+	.section-nav {
+		background-color: var(--vscode-editor-inactiveSelectionBackground);
+		padding: 15px 20px;
+		border-radius: 6px;
+		margin-bottom: 10px;
+	}
+
+	.section-nav ul {
+		list-style: none;
+		padding: 0;
+		margin: 10px 0 0 0;
+		display: grid;
+		grid-template-columns: repeat(2, 1fr);
+		gap: 2px 5px;
+	}
+
+	.section-nav li {
+		margin: 0;
+		/* padding: 4px 0; */
+	}
+
+	.section-nav a {
+		color: var(--vscode-textLink-foreground);
+		text-decoration: none;
+		font-size: 1.1rem;
+		display: block;
+	}
+
+	.section-nav a:hover {
+		text-decoration: underline;
+		color: var(--vscode-textLink-activeForeground);
 	}
 
 	section {
