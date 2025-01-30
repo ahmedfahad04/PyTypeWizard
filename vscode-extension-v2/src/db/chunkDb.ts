@@ -2,24 +2,9 @@ import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 import * as sqlite3 from 'sqlite3';
+import { CodeChunk } from '../types/codeChunk.type';
+import { RepoLog } from '../types/repositoryLog.type';
 import { PYTHON_KEYWORDS } from '../utils/constant';
-
-export interface CodeChunk {
-    id: string;
-    content: string;
-    filePath: string;
-    startLine: number;
-    endLine: number;
-    chunkType: 'function' | 'standalone';
-    timestamp: string;
-}
-
-export interface RepoLog {
-    id: string;
-    path: string;
-    last_chunked: string;
-    chunk_count: number;
-}
 
 export class ChunkDatabaseManager {
     private db: sqlite3.Database;

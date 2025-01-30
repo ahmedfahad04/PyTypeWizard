@@ -4,9 +4,10 @@ import { existsSync, statSync } from 'fs';
 import * as vscode from 'vscode';
 import which from "which";
 import { getChunkDatabaseManager, getDatabaseManager } from "../db";
-import { Solution } from "../db/database";
+
 import { PyreCodeActionProvider } from "../model/CodeActionProvider";
 import { DynamicCodeLensProvider } from "../model/DynamicCodeLensProvider";
+import { Solution } from "../types/solution.type";
 import { fetchContext, generateAndStoreSolution, getPyRePath, indexRepository, outputChannel } from '../utils/helper';
 import { getLLMService } from "./llm";
 var Fuse = require('fuse.js');

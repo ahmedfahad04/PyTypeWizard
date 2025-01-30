@@ -7,7 +7,7 @@ import { checkPyreConfigFiles, isPyreCheckInstalled, setupPyreConfig } from './c
 import { createLanguageClient, listenForEnvChanges } from './core/languageClient';
 import { closeDatabaseConnection } from './db';
 import { SidebarProvider } from './model/SideBarProvider';
-import { ErrorObjectType } from './types/errorObjType';
+import { ErrorObjectType } from './types/error.type';
 import { getPyRePath, outputChannel } from './utils/helper';
 
 type LanguageClientState = {
