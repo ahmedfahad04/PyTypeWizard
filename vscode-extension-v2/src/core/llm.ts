@@ -95,7 +95,6 @@ export class LLMService {
         return completion.choices[0].message.content;
     }
 
-    // Add this method to the LLMService class
     public clearConversationHistory(): void {
         this.conversationHistory = [];
         this.initializeProviders();

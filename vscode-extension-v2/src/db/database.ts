@@ -123,7 +123,6 @@ export class DatabaseManager {
         }
     }
 
-
     async updateSolution(id: string, newSolution: Partial<Solution>): Promise<void> {
         try {
             const setClause = Object.keys(newSolution)

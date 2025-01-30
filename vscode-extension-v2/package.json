@@ -59,11 +59,6 @@
 			},
 			{
 				"category": "PyTypeWizard",
-				"command": "pytypewizard.indexProject",
-				"title": "Index Project"
-			},
-			{
-				"category": "PyTypeWizard",
 				"command": "pytypewizard.searchCode",
 				"title": "Search Code"
 			}

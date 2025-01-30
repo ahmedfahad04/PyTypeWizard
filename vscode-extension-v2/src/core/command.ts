@@ -17,7 +17,7 @@ export function registerCommands(context: vscode.ExtensionContext, pyrePath: str
 
     const llmService = getLLMService();
 
-    // command 2 (for Quick Fix option)
+    // command 1 (for Quick Fix option)
     context.subscriptions.push(
         vscode.languages.registerCodeActionsProvider(
             { scheme: 'file', language: 'python' },
@@ -26,7 +26,7 @@ export function registerCommands(context: vscode.ExtensionContext, pyrePath: str
         )
     );
 
-    // command 3 (Fix & Explain)
+    // command 2 (Fix & Explain)
     context.subscriptions.push(
         vscode.commands.registerCommand('pytypewizard.explainAndSolve', async (document: vscode.TextDocument, diagnostic: vscode.Diagnostic) => {
 
@@ -57,7 +57,7 @@ export function registerCommands(context: vscode.ExtensionContext, pyrePath: str
 
                 # Instruction
                 Answer in the following format:
-                * Put the corrected code solution as python code snippet at first. No need to mention skipped section or anything else. No need to fix other error of the script, just solve the selected error. 
+                * Write the corrected code solution raised by Error Code Snippet at first. No need to mention skipped section or anything else. No need to fix other error of the script, just solve the selected error. No need to write the full script.
                 * Add reasoning regarding why this solution will work precisely.
                 * Add necessary explanation in easy words and bullet points. Important words should be written in bold. But keep it precise.
                 `;
@@ -99,45 +99,14 @@ export function registerCommands(context: vscode.ExtensionContext, pyrePath: str
         })
     );
 
-    // command 4 (Create a chat participant)
-    vscode.chat.createChatParticipant('pytypewizard-chat', async (request, _context, response, token) => {
-        const userQuery = request.prompt;
-        const chatModels = await vscode.lm.selectChatModels({ family: 'gpt-4' });
-        const messages = [
-            vscode.LanguageModelChatMessage.User(userQuery)
-        ];
-        const chatRequest = await chatModels[0].sendRequest(messages, undefined, token);
-        for await (const token of chatRequest.text) {
-            response.markdown(token);
-        }
-    });
-
-    // command 5 (Open Settings Page)
+    // command 3 (Open Settings Page)
     context.subscriptions.push(
         vscode.commands.registerCommand('pytypewizard.openSettings', () => {
             vscode.commands.executeCommand('workbench.action.openSettings', 'pytypewizard settings');
         })
     );
 
-    // Command 6 (Index Project)
-    context.subscriptions.push(
-        vscode.commands.registerCommand('pytypewizard.indexProject', async () => {
-            const projectPath = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
-            if (!projectPath) {
-                vscode.window.showErrorMessage('No project folder found!');
-                return;
-            }
-
-            try {
-                const response = await axios.post('http://localhost:8000/index', { project_path: projectPath });
-                vscode.window.showInformationMessage(response.data.message);
-            } catch (error) {
-                vscode.window.showErrorMessage(`Indexing failed: ${error.message}`);
-            }
-        })
-    );
-
-    // command 7 (Search Code)
+    // command 4 (Search Code)
     context.subscriptions.push(
         vscode.commands.registerCommand('pytypewizard.searchCode', async () => {
             // search the chunkdb for the code snippet
@@ -186,12 +155,12 @@ export function registerCommands(context: vscode.ExtensionContext, pyrePath: str
         })
     );
 
-    // command 8 (Ask PyTypeWizard CodeLens Only)
+    // command 5 (Ask PyTypeWizard CodeLens Only)
     context.subscriptions.push(
         vscode.languages.registerCodeLensProvider({ scheme: 'file', language: 'python' }, new DynamicCodeLensProvider())
     );
 
-    // command 9 (Ask PyTypeWizard)
+    // command 6 (Ask PyTypeWizard)
     context.subscriptions.push(
         vscode.commands.registerCommand('pytypewizard.addToChat', async (selectedText: string, callback?: () => void) => {
             const defaultPrompt = `Explain this terminology '${selectedText}' with an coding related analogy and simple python example. Add the use cases as well. Be precise and short.
@@ -248,7 +217,7 @@ export function registerCommands(context: vscode.ExtensionContext, pyrePath: str
         })
     );
 
-    // command 10 (show History)
+    // command 7 (show History)
     context.subscriptions.push(
         vscode.commands.registerCommand('pytypewizard.showHistory', async () => {
 
@@ -270,7 +239,7 @@ export function registerCommands(context: vscode.ExtensionContext, pyrePath: str
         })
     );
 
-    // command 11 (chunk Documents)
+    // command 8 (chunk Documents)
     context.subscriptions.push(
         vscode.commands.registerCommand('pytypewizard.chunkDocuments', async () => {
 
@@ -291,7 +260,7 @@ export function registerCommands(context: vscode.ExtensionContext, pyrePath: str
         })
     );
 
-    // command 12 (clear LLM context)
+    // command 9 (clear LLM context)
     context.subscriptions.push(
         vscode.commands.registerCommand('pytypewizard.clearContext', async () => {
             llmService.clearConversationHistory();

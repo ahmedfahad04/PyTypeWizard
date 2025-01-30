@@ -146,7 +146,6 @@ export class ChunkDatabaseManager {
         });
     }
 
-    // create a method isChunked(repoPath: string): Promise<boolean> that checks if a repository has been chunked
     async isChunked(repoPath: string): Promise<number> {
         return new Promise((resolve, reject) => {
             this.db.get(
@@ -191,7 +190,6 @@ export class ChunkDatabaseManager {
     }
 
     public async searchChunks(query: string): Promise<CodeChunk[]> {
-
 
         let sanitizedQuery = query.replace(/[^\w\s]/gi, ' ');
         sanitizedQuery = sanitizedQuery.trim();
