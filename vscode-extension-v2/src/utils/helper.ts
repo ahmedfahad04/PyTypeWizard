@@ -1,10 +1,11 @@
 import { readFileSync, statSync } from 'fs';
 import { dirname, join } from 'path';
 import * as vscode from 'vscode';
+import { processPythonFiles } from '../core/chunking';
 import { getLLMService } from '../core/llm';
 import { getChunkDatabaseManager } from '../db';
-import { DatabaseManager, Solution } from '../db/database';
-import { processPythonFiles } from '../core/chunking';
+import { DatabaseManager } from '../db/database';
+import { Solution } from '../types/solution.type';
 var Fuse = require('fuse.js');
 
 export let outputChannel = vscode.window.createOutputChannel('PyTypeWizard');
