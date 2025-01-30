@@ -1,76 +1,20 @@
 import { EnvironmentPath } from "@vscode/python-extension";
 import axios from 'axios';
-import { spawn } from "child_process";
 import { existsSync, statSync } from 'fs';
-import path from 'path';
 import * as vscode from 'vscode';
 import which from "which";
-import { sendApiRequest } from "./api";
-import { PyreCodeActionProvider } from "./codeActionProvider";
-import { getChunkDatabaseManager, getDatabaseManager } from "./db";
-import { Solution } from "./db/database";
-import { DynamicCodeLensProvider } from "./dynamicCodeLensProvider";
+import { getChunkDatabaseManager, getDatabaseManager } from "../db";
+import { Solution } from "../db/database";
+import { PyreCodeActionProvider } from "../model/CodeActionProvider";
+import { DynamicCodeLensProvider } from "../model/DynamicCodeLensProvider";
+import { fetchContext, generateAndStoreSolution, getPyRePath, indexRepository, outputChannel } from '../utils/helper';
 import { getLLMService } from "./llm";
-import { getSimplifiedSmartSelection } from "./smartSelection";
-import { fetchContext, generateAndStoreSolution, getPyRePath, indexRepository, outputChannel } from './utils';
 var Fuse = require('fuse.js');
 
 
 export function registerCommands(context: vscode.ExtensionContext, pyrePath: string, sidebarProvider: any): void {
 
     const llmService = getLLMService();
-
-    // command 1 (for webview)
-    context.subscriptions.push(
-        vscode.commands.registerCommand('pytypewizard.fixError', async (document: vscode.TextDocument, diagnostic: vscode.Diagnostic) => {
-            const filePath = document.uri.fsPath;
-            const errMessage = diagnostic.message;
-            const lineNum = diagnostic.range.start.line + 1;
-            const colNum = diagnostic.range.start.character + 1;
-            const outputDir = vscode.workspace.workspaceFolders?.[0].uri.fsPath || '';
-            const errType = errMessage.split(':', 2);
-            const warningLine = document.lineAt(diagnostic.range.start.line).text.trim();
-
-            const expandedRange = new vscode.Range(
-                document.lineAt(diagnostic.range.start.line).range.start,
-                document.lineAt(diagnostic.range.end.line).range.end
-            );
-
-            const targetPosition = new vscode.Position(diagnostic.range.start.line, diagnostic.range.start.character);
-            const selection = getSimplifiedSmartSelection(document, targetPosition);
-
-            //? set selection for desired code snippet
-            if (selection && vscode.window.activeTextEditor) {
-                // Set the selection in the editor
-                vscode.window.activeTextEditor.selection = new vscode.Selection(document.lineAt(selection.start.line).range.start, document.lineAt(selection.end.line).range.end);
-
-                // Reveal the selection in the editor
-                vscode.window.activeTextEditor.revealRange(vscode.window.activeTextEditor.selection, vscode.TextEditorRevealType.InCenter);
-            }
-
-            let sourceCode: string;
-            if (selection) {
-                sourceCode = document.getText(new vscode.Range(document.lineAt(selection.start.line).range.start, document.lineAt(selection.end.line).range.end));
-            } else {
-                sourceCode = document.getText(expandedRange);
-            }
-
-            vscode.window.showInformationMessage(`SOURCE: ${selection?.start} - ${selection?.end}`);
-            vscode.window.showInformationMessage(`SOURCE: ${sourceCode}`);
-
-
-            const errorObject = {
-                rule_id: errType[0],
-                message: errType[1],
-                warning_line: warningLine,
-                source_code: sourceCode,
-                // file_name: filePath,
-                // line_num: lineNum,
-                // col_num: colNum
-            };
-
-            await runErrorExtractor(context, filePath, errType[0], errType[1], lineNum, colNum, outputDir, pyrePath, errorObject);
-        }));
 
     // command 2 (for Quick Fix option)
     context.subscriptions.push(
@@ -112,9 +56,9 @@ export function registerCommands(context: vscode.ExtensionContext, pyrePath: str
 
                 # Instruction
                 Answer in the following format:
-                * put the corrected code solution only snippet as python code snippet at first. No need to mention skipped section or anything else. Just write down the exact lines sequentially.
-                * Add necessary explanation in easy words and bullet points. Important words should be written in bold.
-                * Add reasoning regarding why this solution will work. But keep it precise.
+                * Put the corrected code solution as python code snippet at first. No need to mention skipped section or anything else. No need to fix other error of the script, just solve the selected error. 
+                * Add reasoning regarding why this solution will work precisely.
+                * Add necessary explanation in easy words and bullet points. Important words should be written in bold. But keep it precise.
                 `;
             } else {
                 prompt = `
@@ -379,42 +323,4 @@ export async function findPyreCommand(envPath: EnvironmentPath): Promise<string 
 
     vscode.window.showInformationMessage(`Could not find pyre path from python environment: ${envPath.id} at ${envPath.path}`);
     return pyreCheckPath;
-}
-
-export async function runErrorExtractor(context: vscode.ExtensionContext, filePath: string, errType: string, errMessage: string, lineNum: number, colNum: number, outputDir: string, pythonPath: string, _inputobj: any) {
-    return new Promise(async (resolve, reject) => {
-
-        const scriptPath = path.join(context.extensionPath, 'src', 'script', 'error_extractor.py');
-
-        const process = spawn(pythonPath, [scriptPath, filePath, errType, errMessage, lineNum.toString(), colNum.toString(), outputDir]);
-        let output = '';
-
-        process.stdout.on('data', (data) => {
-            output += data.toString();
-        });
-
-        process.stderr.on('data', (data) => {
-            console.error(`Error extractor error: ${data}`);
-        });
-
-        process.on('close', async (code) => {
-            if (code === 0 && output) {
-                try {
-                    // const jsonOutput = JSON.parse(output);
-                    const apiResponse = await sendApiRequest(_inputobj);
-                    // print all of the generated solutions one by one in outputChannel
-                    apiResponse.forEach((solution: string, index: number) => {
-                        outputChannel.appendLine(`Solution ${index + 1}: ${solution}`);
-                    });
-
-                    resolve(Object.values(apiResponse));
-                } catch (error) {
-                    console.error('Error parsing output or sending API request:', error);
-                    reject(error);
-                }
-            } else {
-                reject(new Error('Error extractor failed'));
-            }
-        });
-    });
 }

@@ -3,7 +3,6 @@ import * as vscode from 'vscode';
 import { Middleware } from 'vscode-languageclient';
 import { LanguageClient, LanguageClientOptions } from 'vscode-languageclient/node';
 import { findPyreCommand } from './command';
-import { outputChannel } from './utils';
 
 type LanguageClientState = {
     languageClient: LanguageClient,

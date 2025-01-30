@@ -2,7 +2,7 @@ import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 import * as sqlite3 from 'sqlite3';
-import { PYTHON_KEYWORDS } from '../constant';
+import { PYTHON_KEYWORDS } from '../utils/constant';
 
 export interface CodeChunk {
     id: string;

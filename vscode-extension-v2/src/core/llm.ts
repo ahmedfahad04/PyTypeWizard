@@ -22,7 +22,7 @@ export class LLMService {
         if (apiKey) {
             this.genAI = new GoogleGenerativeAI(apiKey);
             this.geminiModel = this.genAI.getGenerativeModel({
-                model: "gemini-2.0-flash-thinking-exp-01-21",
+                model: "gemini-2.0-flash-exp", // gemini-2.0-flash-thinking-exp-01-21
                 systemInstruction: `You are an expert in solving Python type hint-related bugs. I will provide you with code snippets and corresponding bug messages. Your task is to analyze these and provide solutions based on the descriptions of type errors from Pyre's documentation. But never alter anything from the source code that alters the functionality or breaks the code. Please refer to the following Pyre type error explanations when formulating your responses:
 
                 ${pyreTypeErrorsExplanation}

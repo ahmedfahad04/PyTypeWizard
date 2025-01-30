@@ -1,6 +1,6 @@
 import * as vscode from "vscode";
-import { DatabaseManager, Solution } from "./db/database";
-import { fetchPreviousSolutions, generateAndStoreSolution, outputChannel } from "./utils";
+import { DatabaseManager, Solution } from "../db/database";
+import { fetchPreviousSolutions, generateAndStoreSolution, outputChannel } from "../utils/helper";
 
 export class SidebarProvider implements vscode.WebviewViewProvider {
     _view?: vscode.WebviewView;
