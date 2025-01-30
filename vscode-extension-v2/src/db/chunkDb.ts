@@ -2,24 +2,9 @@ import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 import * as sqlite3 from 'sqlite3';
-import { PYTHON_KEYWORDS } from '../constant';
-
-export interface CodeChunk {
-    id: string;
-    content: string;
-    filePath: string;
-    startLine: number;
-    endLine: number;
-    chunkType: 'function' | 'standalone';
-    timestamp: string;
-}
-
-export interface RepoLog {
-    id: string;
-    path: string;
-    last_chunked: string;
-    chunk_count: number;
-}
+import { CodeChunk } from '../types/codeChunk.type';
+import { RepoLog } from '../types/repositoryLog.type';
+import { PYTHON_KEYWORDS } from '../utils/constant';
 
 export class ChunkDatabaseManager {
     private db: sqlite3.Database;
@@ -161,7 +146,6 @@ export class ChunkDatabaseManager {
         });
     }
 
-    // create a method isChunked(repoPath: string): Promise<boolean> that checks if a repository has been chunked
     async isChunked(repoPath: string): Promise<number> {
         return new Promise((resolve, reject) => {
             this.db.get(
@@ -206,7 +190,6 @@ export class ChunkDatabaseManager {
     }
 
     public async searchChunks(query: string): Promise<CodeChunk[]> {
-
 
         let sanitizedQuery = query.replace(/[^\w\s]/gi, ' ');
         sanitizedQuery = sanitizedQuery.trim();

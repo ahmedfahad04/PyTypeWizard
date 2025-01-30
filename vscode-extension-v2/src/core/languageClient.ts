@@ -3,14 +3,12 @@ import * as vscode from 'vscode';
 import { Middleware } from 'vscode-languageclient';
 import { LanguageClient, LanguageClientOptions } from 'vscode-languageclient/node';
 import { findPyreCommand } from './command';
-import { outputChannel } from './utils';
 
 type LanguageClientState = {
     languageClient: LanguageClient,
     configListener: Promise<vscode.Disposable>
 }
 
-//! here it use pyre to check for type error
 export function createLanguageClient(pyrePath: string): LanguageClientState {
     const serverOptions = {
         command: pyrePath,
@@ -26,13 +24,9 @@ export function createLanguageClient(pyrePath: string): LanguageClientState {
         handleDiagnostics: (uri, diagnostics, next) => {
             const selectedErrorTypes = getSelectedErrorTypes();
 
-            // outputChannel.appendLine(`Selected error types: ${selectedErrorTypes.map(type => `"${type}"`).join(', ')}`);
-
             const filteredDiagnostics = diagnostics.filter(diagnostic =>
                 selectedErrorTypes.some(errorType => diagnostic.message.includes(errorType))
             );
-
-            // outputChannel.appendLine(`Filtered diagnostics: ${filteredDiagnostics.length}`);
 
             // Pass the filtered diagnostics to the next handler
             next(uri, filteredDiagnostics);

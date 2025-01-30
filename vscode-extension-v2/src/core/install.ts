@@ -2,7 +2,7 @@ import { exec } from 'child_process';
 import { existsSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import * as vscode from 'vscode';
-import { outputChannel } from './utils';
+import { outputChannel } from '../utils/helper';
 
 export async function isPyreCheckInstalled(): Promise<boolean> {
     return new Promise((resolve) => {

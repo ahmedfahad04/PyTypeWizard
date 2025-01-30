@@ -1,6 +1,7 @@
 import * as vscode from "vscode";
-import { DatabaseManager, Solution } from "./db/database";
-import { fetchPreviousSolutions, generateAndStoreSolution, outputChannel } from "./utils";
+import { DatabaseManager } from "../db/database";
+import { Solution } from "../types/solution.type";
+import { fetchPreviousSolutions, generateAndStoreSolution, outputChannel } from "../utils/helper";
 
 export class SidebarProvider implements vscode.WebviewViewProvider {
     _view?: vscode.WebviewView;
@@ -97,6 +98,7 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
                         * put the solution only snippet as python code snippet at first
                         * Add necessary explanation in easy words and bullet points. Important words should be written in bold.
                         * Keep the explanation precise and to the point. Unnecessary exaggeration is discouraged.
+                        * Add reasoning regarding why this solution will work.
                         `;
 
                     const solutionObject = await generateAndStoreSolution(

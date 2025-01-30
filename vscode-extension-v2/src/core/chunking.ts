@@ -1,7 +1,7 @@
 import { promises as fsPromises } from "fs";
 import * as path from "path";
 import * as vscode from 'vscode';
-import { outputChannel } from "../utils";
+import { outputChannel } from "../utils/helper";
 
 export async function findPythonFiles(rootDir: string): Promise<string[]> {
     const pythonFiles: string[] = [];
@@ -194,13 +194,6 @@ async function readPythonFilesConcurrently(files: string[]): Promise<{
 
 
 export async function processPythonFiles(rootDir: string) {
-    // outputChannel.appendLine("Finding Python files...");
-    // const pythonFiles = await findPythonFiles(rootDir);
-
-    // outputChannel.appendLine("Reading Python files concurrently...");
-    // const result = await readPythonFilesConcurrently(pythonFiles);
-    // outputChannel.appendLine(`Successfully read ${result.fileContents.size} Python files with ${result.chunks.length} chunks.`);
-
     const response = await vscode.window.withProgress(
         {
             location: vscode.ProgressLocation.Notification,

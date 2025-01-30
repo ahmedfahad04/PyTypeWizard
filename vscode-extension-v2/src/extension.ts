@@ -2,13 +2,13 @@ import { PVSC_EXTENSION_ID, PythonExtension } from '@vscode/python-extension';
 import { exec } from 'child_process';
 import * as vscode from 'vscode';
 import { LanguageClient } from 'vscode-languageclient/node';
-import { findPyreCommand, registerCommands } from './command';
+import { findPyreCommand, registerCommands } from './core/command';
+import { checkPyreConfigFiles, isPyreCheckInstalled, setupPyreConfig } from './core/install';
+import { createLanguageClient, listenForEnvChanges } from './core/languageClient';
 import { closeDatabaseConnection } from './db';
-import { checkPyreConfigFiles, isPyreCheckInstalled, setupPyreConfig } from './install';
-import { createLanguageClient, listenForEnvChanges } from './languageClient';
-import { SidebarProvider } from './SideBarProvider';
-import { ErrorObjectType } from './types/errorObjType';
-import { getPyRePath, outputChannel } from './utils';
+import { SidebarProvider } from './model/SideBarProvider';
+import { ErrorObjectType } from './types/error.type';
+import { getPyRePath, outputChannel } from './utils/helper';
 
 type LanguageClientState = {
 	languageClient: LanguageClient,

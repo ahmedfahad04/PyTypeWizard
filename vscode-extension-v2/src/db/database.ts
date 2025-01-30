@@ -2,17 +2,7 @@ import * as os from 'os';
 import * as path from 'path';
 import * as sqlite3 from 'sqlite3';
 import * as vscode from 'vscode';
-
-export interface Solution {
-    id: string;
-    errorType: string;
-    errorMessage: string;
-    originalCode: string;
-    suggestedSolution: string;
-    filePath: string;
-    lineNumber: number;
-    timestamp: string;
-}
+import { Solution } from '../types/solution.type';
 
 export class DatabaseManager {
     private db: sqlite3.Database;
@@ -132,7 +122,6 @@ export class DatabaseManager {
             throw error;
         }
     }
-
 
     async updateSolution(id: string, newSolution: Partial<Solution>): Promise<void> {
         try {

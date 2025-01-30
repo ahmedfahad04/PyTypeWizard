@@ -59,11 +59,6 @@
 			},
 			{
 				"category": "PyTypeWizard",
-				"command": "pytypewizard.indexProject",
-				"title": "Index Project"
-			},
-			{
-				"category": "PyTypeWizard",
 				"command": "pytypewizard.searchCode",
 				"title": "Search Code"
 			}
@@ -139,15 +134,15 @@
 							"Invalid type",
 							"Unbound name",
 							"Incompatible attribute type",
-							"Unsupported operand",
-							"Call error"
+							"Uninitialized Local",
+							"Duplicate Parameter"
 						]
 					}
 				},
-				"pytypewizard.geminiApiKey": {
+				"pytypewizard.ApiKey": {
 					"type": "string",
 					"default": "",
-					"description": "API Key for Google Gemini"
+					"description": "API Key"
 				},
 				"pytypewizard.enableCodeLens": {
 					"type": "boolean",
@@ -162,11 +157,6 @@
 					],
 					"default": "gemini",
 					"description": "Select the LLM provider to use"
-				},
-				"pytypewizard.openaiApiKey": {
-					"type": "string",
-					"default": "",
-					"description": "OpenAI API Key"
 				}
 			}
 		}

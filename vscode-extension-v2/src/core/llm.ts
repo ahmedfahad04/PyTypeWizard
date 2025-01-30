@@ -18,11 +18,11 @@ export class LLMService {
 
     private initializeProviders() {
         // Initialize Gemini
-        const geminiApiKey = vscode.workspace.getConfiguration('pytypewizard').get('geminiApiKey') as string;
-        if (geminiApiKey) {
-            this.genAI = new GoogleGenerativeAI(geminiApiKey);
+        const apiKey = vscode.workspace.getConfiguration('pytypewizard').get('ApiKey') as string;
+        if (apiKey) {
+            this.genAI = new GoogleGenerativeAI(apiKey);
             this.geminiModel = this.genAI.getGenerativeModel({
-                model: "gemini-2.0-flash-exp",
+                model: "gemini-2.0-flash-exp", // gemini-2.0-flash-thinking-exp-01-21
                 systemInstruction: `You are an expert in solving Python type hint-related bugs. I will provide you with code snippets and corresponding bug messages. Your task is to analyze these and provide solutions based on the descriptions of type errors from Pyre's documentation. But never alter anything from the source code that alters the functionality or breaks the code. Please refer to the following Pyre type error explanations when formulating your responses:
 
                 ${pyreTypeErrorsExplanation}
@@ -34,10 +34,9 @@ export class LLMService {
         }
 
         // Initialize OpenAI
-        const openaiApiKey = vscode.workspace.getConfiguration('pytypewizard').get('openaiApiKey') as string;
-        if (openaiApiKey) {
+        if (apiKey) {
             this.openAI = new OpenAI({
-                apiKey: openaiApiKey
+                apiKey: apiKey
             });
         }
     }
@@ -96,7 +95,6 @@ export class LLMService {
         return completion.choices[0].message.content;
     }
 
-    // Add this method to the LLMService class
     public clearConversationHistory(): void {
         this.conversationHistory = [];
         this.initializeProviders();
