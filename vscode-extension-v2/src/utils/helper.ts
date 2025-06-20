@@ -8,6 +8,15 @@ import { DatabaseManager } from '../db/database';
 import { Solution } from '../types/solution.type';
 var Fuse = require('fuse.js');
 
+// Simple UUID v4 generator
+function generateUUID(): string {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+        const r = Math.random() * 16 | 0;
+        const v = c === 'x' ? r : (r & 0x3 | 0x8);
+        return v.toString(16);
+    });
+}
+
 export let outputChannel = vscode.window.createOutputChannel('PyTypeWizard');
 
 export function getStylesheet(context: vscode.ExtensionContext): string {
@@ -112,7 +121,7 @@ export async function generateAndStoreSolution(
     }
 
     const solutionObject: Solution = {
-        id: crypto.randomUUID(),
+        id: generateUUID(),
         errorType: errType,
         errorMessage: errMessage,
         originalCode: warningLine,
@@ -122,7 +131,7 @@ export async function generateAndStoreSolution(
         timestamp: new Date().toISOString(),
     };
 
-    return solutionObject
+    return solutionObject;
 }
 
 export async function indexRepository(): Promise<void> {
@@ -146,7 +155,7 @@ export async function indexRepository(): Promise<void> {
                 }
 
                 const batch = chunks.slice(i, i + batchSize).map(chunk => ({
-                    id: crypto.randomUUID(),
+                    id: generateUUID(),
                     content: chunk.content,
                     filePath: chunk.metadata.filePath,
                     startLine: chunk.metadata.startLine,
