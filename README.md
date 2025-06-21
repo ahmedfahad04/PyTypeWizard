@@ -2,6 +2,8 @@
 
 > A powerful Visual Studio Code extension for Python static type checking and intelligent error fixing
 
+**For detailed Documentation, click [here](https://deepwiki.com/ahmedfahad04/PyTypeWizard)**
+
 ## Python Type Error Resolution with AI Assistance
 
 PyTypeWizard is a comprehensive VS Code extension that integrates **Pyre** static type checker with advanced Large Language Models (LLMs) to automatically detect and fix Python type errors with intelligent suggestions.
